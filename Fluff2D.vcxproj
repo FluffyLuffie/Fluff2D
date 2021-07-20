@@ -78,13 +78,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Dev\MyProjects\Fluff2D\dependencies\glad\include;C:\Dev\MyProjects\Fluff2D\dependencies\glm_include;C:\Dev\MyProjects\Fluff2D\dependencies\glfw\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Dev\MyProjects\Fluff2D\dependencies\glfw\lib-vc2019;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Dev\MyProjects\Fluff2D\dependencies\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Dev\MyProjects\Fluff2D\dependencies\lib\GLFW;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\Dev\MyProjects\Fluff2D\dependencies\glad\include;C:\Dev\MyProjects\Fluff2D\dependencies\glm_include;C:\Dev\MyProjects\Fluff2D\dependencies\glfw\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Dev\MyProjects\Fluff2D\dependencies\glfw\lib-vc2019;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Dev\MyProjects\Fluff2D\src;C:\Dev\MyProjects\Fluff2D\dependencies\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Dev\MyProjects\Fluff2D\dependencies\lib\GLFW;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -92,6 +92,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -106,6 +107,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -120,13 +122,16 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\dependencies\stb_image_write;$(SolutionDir)\dependencies\stb_image;$(SolutionDir)\src;$(SolutionDir)\dependencies\glm_include;$(SolutionDir)\dependencies\glad\include;$(SolutionDir)\dependencies\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Dev\MyProjects\Fluff2D\dependencies\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\dependencies\glfw\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Dev\MyProjects\Fluff2D\dependencies\lib\GLFW;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -137,24 +142,29 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\dependencies\stb_image_write;$(SolutionDir)\dependencies\stb_image;$(SolutionDir)\src;$(SolutionDir)\dependencies\glm_include;$(SolutionDir)\dependencies\glad\include;$(SolutionDir)\dependencies\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Dev\MyProjects\Fluff2D\src;C:\Dev\MyProjects\Fluff2D\dependencies\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\dependencies\glfw\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Dev\MyProjects\Fluff2D\dependencies\lib\GLFW;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\Fluff2D\Core\Rectangle.cpp" />
+    <ClCompile Include="dependencies\include\glad\glad.c" />
+    <ClCompile Include="src\Fluff2D\UI\ModelPartUI.cpp" />
+    <ClCompile Include="src\Fluff2D\Renderer\LayerRect.cpp" />
+    <ClCompile Include="src\Fluff2D\Core\SaveSystem.cpp" />
     <ClCompile Include="src\Fluff2D\Renderer\Shader.cpp" />
     <ClCompile Include="src\Fluff2D\Renderer\Model.cpp" />
     <ClCompile Include="src\Fluff2D\Renderer\ModelPart.cpp" />
     <ClCompile Include="src\Fluff2D\Core\Application.cpp" />
-    <ClCompile Include="dependencies\glad\src\glad.c" />
     <ClCompile Include="src\Fluff2D\Core\Main.cpp" />
     <ClCompile Include="src\Fluff2D\Events\Event.cpp" />
     <ClCompile Include="src\Fluff2D\Renderer\ModelMesh.cpp" />
@@ -165,8 +175,18 @@
     <ClCompile Include="src\Fluff2D\Renderer\Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dependencies\include\alpha-bleeding\alphaBleeding.h" />
+    <ClInclude Include="dependencies\include\threadPool\ThreadPool.h" />
+    <ClInclude Include="dependencies\rectpack2D\best_bin_finder.h" />
+    <ClInclude Include="dependencies\rectpack2D\finders_interface.h" />
+    <ClInclude Include="dependencies\rectpack2D\empty_spaces.h" />
+    <ClInclude Include="dependencies\rectpack2D\empty_space_allocators.h" />
+    <ClInclude Include="dependencies\rectpack2D\insert_and_split.h" />
+    <ClInclude Include="dependencies\rectpack2D\rect_structs.h" />
     <ClInclude Include="dependencies\stb_image\stb_image_write.h" />
-    <ClInclude Include="src\Fluff2D\Core\Rectangle.h" />
+    <ClInclude Include="src\Fluff2D\UI\ModelPartUI.h" />
+    <ClInclude Include="src\Fluff2D\Renderer\LayerRect.h" />
+    <ClInclude Include="src\Fluff2D\Core\SaveSystem.h" />
     <ClInclude Include="src\Fluff2D\Renderer\Shader.h" />
     <ClInclude Include="src\Fluff2D\Renderer\Model.h" />
     <ClInclude Include="src\Fluff2D\Renderer\ModelPart.h" />

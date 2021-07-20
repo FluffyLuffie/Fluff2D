@@ -1,6 +1,11 @@
 #include "Shader.h"
 
-Shader::Shader(const char* vertexPath, const char* fragmentPath)
+Shader::~Shader()
+{
+	glDeleteProgram(ID);
+}
+
+void Shader::setShader(const char* vertexPath, const char* fragmentPath)
 {
 	std::string vertexCode;
 	std::string fragmentCode;
@@ -73,11 +78,6 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
 	glDeleteShader(fragment);
 }
 
-Shader::~Shader()
-{
-	glDeleteProgram(ID);
-}
-
 void Shader::use()
 {
 	glUseProgram(ID);
@@ -101,4 +101,9 @@ void Shader::setFloat(const std::string& name, float value) const
 void Shader::setMat4(const std::string& name, const glm::mat4& mat) const
 {
 	glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+}
+
+void Shader::setVec4(const std::string& name, const glm::vec4& vec) const
+{
+	glUniform4fv(glGetUniformLocation(ID, name.c_str()), 1, &vec[0]);
 }

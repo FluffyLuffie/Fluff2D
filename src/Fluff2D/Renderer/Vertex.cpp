@@ -13,3 +13,11 @@ Vertex::Vertex(float posX, float posY, float texX, float texY)
 	texCoord.x = texX;
 	texCoord.y = texY;
 }
+
+void Vertex::setVertex(float posX, float posY, float texX, float texY)
+{
+	position.x = posX;
+	position.y = posY;
+	texCoord.x = texX;
+	texCoord.y = texY;
+}

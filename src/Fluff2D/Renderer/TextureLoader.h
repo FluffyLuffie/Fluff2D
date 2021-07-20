@@ -4,57 +4,32 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <thread>
 #include <glad/glad.h>
 
-#include "stb_image.h"
-#include "stb_image_write.h"
+#include "Model.h"
+#include "LayerRect.h"
+#include "../UI/ModelPartUI.h"
+
+#include "stb_image/stb_image.h"
+#include "stb_image/stb_image_write.h"
+#include "rectpack2D/finders_interface.h"
+#include "alpha-bleeding/alphaBleeding.h"
+#include "threadPool/ThreadPool.h"
+
+using spaces_type = rectpack2D::empty_spaces<true, rectpack2D::default_empty_spaces>;
+using rect_type = rectpack2D::output_rect_t<spaces_type>;
 
 class TextureLoader
 {
 public:
 	static void loadTexture(unsigned int* texture, const char* fileName, int* width, int* height, int* nrChannels);
-	static void loadPsdFile(const char* fileName);
+	static void loadPsdFile(const char* fileName, Model *model);
 
 private:
-	enum class LayerType : int {image = 0, folder = 1, divider = 2};
+	static std::vector<rect_type> prepareTextureAtlas(std::vector <LayerRect>& layerRects, int texturePixelBuffer, int *atlasWidth, int *atlasHeight);
+	static void bleedPng(unsigned char* data, int width, int height);
 
-	struct LayerRect
-	{
-		//from psd
-		int top, left, bottom, right;
-		std::string layerName = "";
-		TextureLoader::LayerType layerType = TextureLoader::LayerType::image;
-		std::vector <char> imageBytes;
-
-		//to be used in making texture atlas
-		int width, height;
-		int posX = 0, posY = 0;
-
-		LayerRect()
-		{
-			top = left = bottom = right = width = height = 0;
-		}
-
-		LayerRect(int _top, int _left, int _bottom, int _right)
-		{
-			top = _top;
-			left = _left;
-			bottom = _bottom;
-			right = _right;
-
-			width = right = left;
-			height = bottom - top;
-		}
-
-		~LayerRect() {}
-
-		void calculateDimensions()
-		{
-			width = right - left;
-			height = bottom - top;
-		}
-	};
-
-	static void createTextureAtlas(std::vector <LayerRect> &layerRects);
+	static int nextPower2(int num);
 };
 

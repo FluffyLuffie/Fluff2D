@@ -4,8 +4,11 @@
 #include <memory>
 #include <vector>
 #include <map>
-#include "Fluff2D/Renderer/ModelMesh.h"
-#include "Fluff2D/Core/Rectangle.h"
+
+#include "ModelMesh.h"
+#include "LayerRect.h"
+#include "../Core/Window.h"
+#include "../UI/ModelPartUI.h"
 
 class Model
 {
@@ -13,17 +16,32 @@ public:
 	Model();
 	~Model();
 
+	//DELETE LATER
+	bool testModelRotation = false;
+
+	glm::vec2 modelPos;
+	float scale = 1.0f;
+	float rotation = 0.0f;
+
 	unsigned int textureID = 0;
-	std::vector<std::unique_ptr<ModelPart>> partList;
-	//std::vector<std::unique_ptr<ModelMesh>> meshList;
+	Shader shader;
+
+	ModelPartUI rootPart;
+	std::vector<ModelMesh> meshList;
 	std::map<std::string, float> paramList;
 
-	void update();
-
-	void loadTextureAtlas(const char* filePath);
-	void addMesh(const char* filePath);
-	void createNewModel(const char* filePath, const std::vector<Rectangle>& rects);
-private:
 	int atlasWidth, atlasHeight, atlasNrChannels;
+
+	void update();
+	void render();
+
+	void setShader();
+	void updateMeshNumber();
+
+	//testing functions
+	void printPartsList();
+
+private:
+	std::vector<unsigned int> VAO, VBO, EBO;
 };
 

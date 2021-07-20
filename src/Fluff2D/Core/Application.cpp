@@ -2,7 +2,6 @@
 
 Application::Application()
 {
-	init();
 }
 
 Application::~Application()
@@ -11,29 +10,33 @@ Application::~Application()
 
 void Application::update()
 {
-	window->update();
-	model->update();
-	//model->renderModel();
+	window.update();
+	model.update();
+	model.render();
 
-	glfwSwapBuffers(window->getWindow());
+	glfwSwapBuffers(window.getWindow());
 	glfwPollEvents();
+
+	Event::calculateDeltaTime();
 
 	checkRunning();
 }
 
 void Application::createNewModel()
 {
-	model = std::make_unique<Model>();
+	//model = Model();
 }
 
 void Application::initializeModelFromPsd(const char* fileName)
 {
-	TextureLoader::loadPsdFile(fileName);
+	TextureLoader::loadPsdFile(fileName, &model);
+	TextureLoader::loadTexture(&model.textureID, "saves/testExports/textureAtlas.png", &model.atlasWidth, &model.atlasHeight, &model.atlasNrChannels);
+	model.updateMeshNumber();
 }
 
-void Application::addModelMesh(const char* filePath)
+void Application::saveModel()
 {
-	model->addMesh(filePath);
+	SaveSystem::saveModel(model);
 }
 
 int Application::loadModel(const char* filePath)
@@ -50,16 +53,21 @@ int Application::loadModel(const char* filePath)
 
 void Application::init()
 {
-	window = std::make_unique<Window>();
+	window.init();
 
-	glfwSetFramebufferSizeCallback(window->getWindow(), Event::framebuffer_size_callback);
+	Event::GLFWWin = window.getWindow();
+
+	model.setShader();
+
+	glfwSetFramebufferSizeCallback(window.getWindow(), Event::framebuffer_size_callback);
+	glfwSetScrollCallback(window.getWindow(), Event::scroll_callback);
 
 	stbi_set_flip_vertically_on_load(true);
 }
 
 void Application::checkRunning()
 {
-	if (glfwWindowShouldClose(window->getWindow()))
+	if (glfwWindowShouldClose(window.getWindow()))
 	{
 		isRunning = false;
 	}

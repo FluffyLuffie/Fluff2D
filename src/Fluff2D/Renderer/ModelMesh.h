@@ -4,10 +4,9 @@
 #include <string>
 #include <vector>
 
-#include "Fluff2D/Renderer/Vertex.h"
-#include "Fluff2D/Renderer/ModelPart.h"
-#include "Fluff2D/Renderer/TextureLoader.h"
-#include "Fluff2D/Renderer/Shader.h"
+#include "Vertex.h"
+#include "ModelPart.h"
+#include "Shader.h"
 
 class ModelMesh : public ModelPart
 {
@@ -16,15 +15,12 @@ public:
 	~ModelMesh();
 
 	int layerOrder = 0;
+	glm::vec4 color;
 
-	unsigned int textureID;
-	int textureWidth = 0;
-	int textureHeight = 0;
-	int textureNrChannels = 0;
-
-	//std::vector<Vertex> vertices;
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
+
+	bool flipped = false;
 
 	void loadFromImage(const char* filePath);
 	void clearMeshData();
@@ -32,11 +28,7 @@ public:
 	void update() override;
 	void renderMesh();
 
-	void generateMeshData();
 	void createBasicMesh();
-
-private:
-	unsigned int VAO = 0, VBO = 0, EBO = 0;
-	std::unique_ptr<Shader> shader;
+	void createBasicMesh(int layerY, int layerX, int layerW, int layerH, bool flip, int atlasWidth, int atlasHeight);
 };
 

@@ -12,5 +12,7 @@ public:
 	Vertex(glm::vec2 _pos, glm::vec2 _tex);
 
 	Vertex(float posX, float posY, float texX, float texY);
+
+	void setVertex(float posX, float posY, float texX, float texY);
 };
 

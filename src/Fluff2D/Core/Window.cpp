@@ -2,7 +2,6 @@
 
 Window::Window()
 {
-	init();
 }
 
 Window::~Window()
@@ -12,13 +11,16 @@ Window::~Window()
 
 void Window::update()
 {
+	glfwGetFramebufferSize(m_window, &windowWidth, &windowHeight);
+
 	Event::processInput(m_window);
 
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
 
-	//glfwSwapBuffers(m_window);
-	//glfwPollEvents();
+	//if doing transparent back, use this instead
+	//glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+	glClear(GL_COLOR_BUFFER_BIT);
 }
 
 GLFWwindow* Window::getWindow()
@@ -33,6 +35,9 @@ void Window::init()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	//for transparent back, delete later after testing
+	//glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, 1);
 
 	//other settings
 	//glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
@@ -57,6 +62,17 @@ void Window::init()
 	//does some transparency things idk
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	//might solve black border, maybe not
+	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	//glDisable(GL_MULTISAMPLE);
+	//glDisable(GL_DITHER);
+	//glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
+	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+	glEnable(GL_TEXTURE_2D);
 
 	//if 3D, prob not
 	//glEnable(GL_DEPTH_TEST);

@@ -10,7 +10,12 @@ class ModelPart
 {
 public:
 	std::string name;
+	glm::vec2 pos;
+	float rotation = 0.0f;
 
 	virtual void update();
+
+	void setPos(int posX, int posY);
+	void setPos(float posX, float posY);
 };
 

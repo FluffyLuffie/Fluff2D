@@ -1,11 +1,24 @@
 #include "Event.h"
 
-Event::Event()
+bool Event::keyPressed(int key)
 {
+	if (glfwGetKey(GLFWWin, key) == GLFW_PRESS)
+		return true;
+	return false;
 }
 
-Event::~Event()
+float Event::getScroll()
 {
+	float temp = scroll;
+	scroll = 0.0f;
+	return temp;
+}
+
+void Event::calculateDeltaTime()
+{
+	float currentTime = static_cast<float>(glfwGetTime());
+	deltaTime = currentTime - lastTime;
+	lastTime = currentTime;
 }
 
 void Event::framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -26,4 +39,5 @@ void Event::mouse_callback(GLFWwindow* window, double xPos, double yPos)
 
 void Event::scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
 {
+	scroll = (float)yOffset;
 }
