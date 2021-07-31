@@ -1,9 +1,23 @@
 #include "Event.h"
 
-bool Event::keyPressed(int key)
+bool Event::keyDown(int key)
 {
 	if (glfwGetKey(GLFWWin, key) == GLFW_PRESS)
 		return true;
+	return false;
+}
+
+bool Event::keyPressed(int key)
+{
+	if (keysCheckFrame.find(key) != keysCheckFrame.end())
+		return keysCheckFrame[key];
+	return false;
+}
+
+bool Event::keyReleased(int key)
+{
+	if (keysCheckFrame.find(key) != keysCheckFrame.end())
+		return !keysCheckFrame[key];
 	return false;
 }
 
@@ -21,16 +35,14 @@ void Event::calculateDeltaTime()
 	lastTime = currentTime;
 }
 
+void Event::resetKeys()
+{
+	keysCheckFrame.clear();
+}
+
 void Event::framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
-}
-
-void Event::processInput(GLFWwindow* window)
-{
-	//testing, do something else later, maybe a switch statement
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
 }
 
 void Event::mouse_callback(GLFWwindow* window, double xPos, double yPos)
@@ -40,4 +52,10 @@ void Event::mouse_callback(GLFWwindow* window, double xPos, double yPos)
 void Event::scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
 {
 	scroll = (float)yOffset;
+}
+
+void Event::key_callback(GLFWwindow* window, int key, int scanmode, int action, int mods)
+{
+	if (action == GLFW_PRESS || action == GLFW_RELEASE)
+		keysCheckFrame[key] = action;
 }

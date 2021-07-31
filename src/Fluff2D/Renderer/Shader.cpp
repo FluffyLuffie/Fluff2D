@@ -76,6 +76,9 @@ void Shader::setShader(const char* vertexPath, const char* fragmentPath)
 
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
+
+	//since it doesn't change, just call once here
+	glUseProgram(ID);
 }
 
 void Shader::use()
@@ -85,25 +88,40 @@ void Shader::use()
 
 void Shader::setBool(const std::string& name, bool value) const
 {
-	glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
+	glUniform1i(getUniformLocation(name), (int)value);
 }
 
 void Shader::setInt(const std::string& name, int value) const
 {
-	glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
+	glUniform1i(getUniformLocation(name), value);
 }
 
 void Shader::setFloat(const std::string& name, float value) const
 {
-	glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
+	glUniform1f(getUniformLocation(name), value);
 }
 
 void Shader::setMat4(const std::string& name, const glm::mat4& mat) const
 {
-	glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+	glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
+}
+
+void Shader::setVec3(const std::string& name, const glm::vec3& vec) const
+{
+	glUniform3fv(getUniformLocation(name), 1, &vec[0]);
 }
 
 void Shader::setVec4(const std::string& name, const glm::vec4& vec) const
 {
-	glUniform4fv(glGetUniformLocation(ID, name.c_str()), 1, &vec[0]);
+	glUniform4fv(getUniformLocation(name), 1, &vec[0]);
+}
+
+GLint Shader::getUniformLocation(const std::string& name) const
+{
+	if (uniformLocations.find(name) != uniformLocations.end())
+		return uniformLocations[name];
+	
+	GLint location = glGetUniformLocation(ID, name.c_str());
+	uniformLocations[name] = location;
+	return location;
 }

@@ -2,6 +2,9 @@
 
 #include "../Events/Event.h"
 
+#include "stb_image/stb_image.h"
+#include "glm/vec3.hpp"
+
 class Window
 {
 public:
@@ -16,6 +19,6 @@ public:
 
 	inline static int windowWidth, windowHeight;
 private:
-	GLFWwindow* m_window;
+	GLFWwindow* m_window = nullptr;
 };
 

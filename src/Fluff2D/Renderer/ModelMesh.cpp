@@ -31,26 +31,35 @@ void ModelMesh::clearMeshData()
 
 void ModelMesh::update()
 {
-	//std::cout << "modelMesh update" << std::endl;
+	//testing stuff
+	if (Event::keyDown(GLFW_KEY_RIGHT))
+		vertices[0].position.x += 4;
+	if (Event::keyDown(GLFW_KEY_LEFT))
+		vertices[0].position.x -= 4;
+	if (Event::keyDown(GLFW_KEY_UP))
+		vertices[0].position.y += 4;
+	if (Event::keyDown(GLFW_KEY_DOWN))
+		vertices[0].position.y -= 4;
+	if (Event::keyDown(GLFW_KEY_R))
+		vertices[0].position = glm::vec2(0.0f);
 
-	/*
-	//sends updated vertex position to GPU
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), &vertices[0]);
-	//testing, position 249 is half of 500
-	glBufferSubData(GL_ARRAY_BUFFER, 249, sizeof(texCoords), &texCoords[0]);
-
-	//sends updated indices to GPU
-	glBindBuffer(GL_ARRAY_BUFFER, EBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(indices), &indices[0]);
-	*/
-
-	//renderMesh();
+	//if (parent)
+	//	parent->deformEffect(transform);
 }
 
-void ModelMesh::renderMesh()
+void ModelMesh::renderInspector()
 {
-	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+	ImGui::Text(name.c_str());
+	if (ImGui::Button("Testing mesh generation"))
+		ImGui::OpenPopup("Auto Mesh Generator");
+
+	if (ImGui::BeginPopupModal("Auto Mesh Generator", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Not done yet, come back later");
+		if (ImGui::Button("Close"))
+			ImGui::CloseCurrentPopup();
+		ImGui::EndPopup();
+	}
 }
 
 //testing purpose only, don't use

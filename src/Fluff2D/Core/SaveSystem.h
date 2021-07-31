@@ -16,6 +16,9 @@ using rect_type = rectpack2D::output_rect_t<spaces_type>;
 class SaveSystem
 {
 public:
-	static void saveModel(const Model &model);
+	static void saveModel(std::shared_ptr<Model> model, int version);
+
+private:
+	static void partsOutput(std::ofstream* output, std::shared_ptr<ModelPartUI> modelPart);
 };
 

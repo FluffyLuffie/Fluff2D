@@ -1,5 +1,6 @@
 #define STBI_MSC_SECURE_CRT
 #define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "Application.h"
 
@@ -14,12 +15,6 @@ int main()
 	Application application;
 	application.init();
 
-	//testing
-	//application.addModelMesh("saves/textures/chibiFluffy.png");
-	//application.addModelMesh("saves/textures/fluffInvis.png");
-
-	double startTime = glfwGetTime();
-
 	//testing loading psd
 	//application.initializeModelFromPsd("saves/tempPsdTest/miniTest.psd");
 	application.initializeModelFromPsd("saves/tempPsdTest/testModel.psd");
@@ -27,12 +22,6 @@ int main()
 	//application.initializeModelFromPsd("saves/tempPsdTest/fluffy.psd");
 	//application.initializeModelFromPsd("saves/tempPsdTest/boxTest.psd");
 	//application.initializeModelFromPsd("saves/tempPsdTest/alya.psd");
-
-	std::cout << "Took " << glfwGetTime() - startTime << " seconds to load psd" << std::endl;
-
-	//application.model.printPartsList();
-	
-	application.saveModel();
 
 	while (application.isRunning)
 	{

@@ -7,18 +7,16 @@
 class ModelPartUI
 {
 public:
-	enum class PartType : int { image = 0, divider = 1, root = 2};
+	enum class PartType : char { image = 0, divider = 1};
 
 	ModelPartUI() {}
 	ModelPartUI(PartType _type);
 	~ModelPartUI() {}
 
 	std::string name = "";
-	PartType type = PartType::root;
+	PartType type = PartType::image;
 
-	ModelPartUI *parent;
-	std::vector<ModelPartUI> children;
-
-	void printList(int folderCount);
+	std::shared_ptr<ModelPartUI> parent;
+	std::vector<std::shared_ptr<ModelPartUI>> children;
 };
 

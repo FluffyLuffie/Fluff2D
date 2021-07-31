@@ -17,9 +17,7 @@ void TextureLoader::loadTexture(unsigned int* texture, const char* fileName, int
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else
-	{
-		std::cout << "Failed to load texture\n";
-	}
+		Log::logError("Failed to load texture");
 	stbi_image_free(data);
 }
 
@@ -27,18 +25,18 @@ void TextureLoader::loadTexture(unsigned int* texture, const char* fileName, int
 //Very high chance of breaking if you so something besides just plain raster layers and folders
 //Read this if you want to understand a fraction of the pain I went for you, and others if this becomes an open source project like I intended to
 //https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
-void TextureLoader::loadPsdFile(const char* fileName, Model *model)
+void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> model)
 {
 	//might move this to a class variable later
 	std::vector <LayerRect> layerRects;
 
-	std::cout << "Opening " << fileName << std::endl;
+	Log::logInfo("Opening %s", fileName);
 
 	//check if file successfully opened
 	std::ifstream pf (fileName, std::ios::binary);
 	if (!pf.is_open())
 	{
-		std::cout << "Error opening psd file" << std::endl;
+		Log::logError("Error opening psd file");
 		return;
 	}
 
@@ -50,7 +48,7 @@ void TextureLoader::loadPsdFile(const char* fileName, Model *model)
 	pf.read(buffer, 4);
 	if (std::strncmp(buffer, "8BPS", 4) != 0)
 	{
-		std::cout << "PSD file has incorrect signature" << std::endl;
+		Log::logError("PSD file has incorrect signature");
 		return;
 	}
 
@@ -58,7 +56,7 @@ void TextureLoader::loadPsdFile(const char* fileName, Model *model)
 	pf.read(buffer, 2);
 	if (buffer[0] != 0 || buffer[1] != 1)
 	{
-		std::cout << "PSD file is incorrect version" << std::endl;
+		Log::logError("PSD file is incorrect version");
 		return;
 	}
 
@@ -67,10 +65,9 @@ void TextureLoader::loadPsdFile(const char* fileName, Model *model)
 
 	//get width and height of psd file
 	pf.read(buffer, 4);
-	int psdHeight = (buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF);
+	model->psdDimension.y = (buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF);
 	pf.read(buffer, 4);
-	int psdWidth = (buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF);
-	std::cout << "PSD dimensions: " << psdWidth << "x" << psdHeight << std::endl;
+	model->psdDimension.x = (buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF);
 
 	//skip over junk
 	pf.seekg(4, std::ios::cur);
@@ -102,8 +99,9 @@ void TextureLoader::loadPsdFile(const char* fileName, Model *model)
 	layerRects.resize(layerCount);
 
 	//set up root part
-	model->rootPart.children.reserve(layerCount);
-	ModelPartUI* currentFolder = &model->rootPart;
+	//model->layerStructure.push_back(std::make_shared<ModelPartUI>());
+	//std::shared_ptr<ModelPartUI> currentFolder = model->layerStructure[0];
+	std::shared_ptr<ModelPartUI> currentFolder;
 
 	size_t totalLayerPixels = 0;
 
@@ -169,13 +167,21 @@ void TextureLoader::loadPsdFile(const char* fileName, Model *model)
 			pf.seekg(3, std::ios::cur);
 		}
 
+
 		//folder dividers are named like this idk
 		if (layerRects[layerNum].layerName.compare("</Layer set>") == 0)
 		{
-			currentFolder->children.emplace_back(ModelPartUI::PartType::divider);
-			currentFolder->children.back().parent = currentFolder;
-			currentFolder = &currentFolder->children.back();
-			currentFolder->children.reserve(layerCount);
+			if (!currentFolder)
+			{
+				model->layerStructure.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::divider));
+				currentFolder = model->layerStructure.back();
+			}
+			else
+			{
+				currentFolder->children.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::divider));
+				currentFolder->children.back()->parent = currentFolder;
+				currentFolder = currentFolder->children.back();
+			}
 
 			layerRects[layerNum].layerType = LayerRect::LayerType::divider;
 
@@ -218,8 +224,18 @@ void TextureLoader::loadPsdFile(const char* fileName, Model *model)
 			//if image layer
 			else
 			{
-				currentFolder->children.emplace_back(ModelPartUI::PartType::image);
-				currentFolder->children.back().name = layerRects[layerNum].layerName;
+				if (!currentFolder)
+				{
+					model->layerStructure.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image));
+					model->layerStructure.back()->name = layerRects[layerNum].layerName;
+				}
+				else
+				{
+					currentFolder->children.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image));
+					currentFolder->children.back()->name = layerRects[layerNum].layerName;
+				}
+				model->meshStructure.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image));
+				model->meshStructure.back()->name = layerRects[layerNum].layerName;
 
 				//skip a bunch of junk
 				pf.read(buffer, 4);
@@ -256,7 +272,11 @@ void TextureLoader::loadPsdFile(const char* fileName, Model *model)
 	std::vector <unsigned char> atlasBytes;
 	atlasBytes.resize(atlasWidth * atlasHeight * 4);
 
-	model->meshList.resize(rectangles.size());
+	for (int i = 0; i < rectangles.size(); i++)
+	{
+		model->modelMeshes.push_back(std::make_shared<ModelMesh>());
+		model->modelParts.push_back(model->modelMeshes.back());
+	}
 
 	//Channel Image Data
 
@@ -414,9 +434,12 @@ void TextureLoader::loadPsdFile(const char* fileName, Model *model)
 					pixelsRead = 0;
 				}
 			}
-			model->meshList[imageLayersRead].name = layerRects[layerNum].layerName;
-			model->meshList[imageLayersRead].setPos(layerRects[layerNum].x + (layerRects[layerNum].w - psdWidth) / 2.0f, -layerRects[layerNum].y + (-layerRects[layerNum].h + psdHeight) / 2.0f);
-			model->meshList[imageLayersRead].createBasicMesh(rectangles[imageLayersRead].y, rectangles[imageLayersRead].x, rectangles[imageLayersRead].w, rectangles[imageLayersRead].h, rectangles[imageLayersRead].flipped, atlasWidth, atlasHeight);
+
+			model->modelMeshes[imageLayersRead]->name = layerRects[layerNum].layerName;
+			model->modelMeshes[imageLayersRead]->setPos(layerRects[layerNum].x + (layerRects[layerNum].w - model->psdDimension.x) / 2.0f, -layerRects[layerNum].y + (-layerRects[layerNum].h + model->psdDimension.y) / 2.0f);
+			model->modelMeshes[imageLayersRead]->originalPos.x = model->modelMeshes[imageLayersRead]->pos.x;
+			model->modelMeshes[imageLayersRead]->originalPos.y = model->modelMeshes[imageLayersRead]->pos.y;
+			model->modelMeshes[imageLayersRead]->createBasicMesh(rectangles[imageLayersRead].y, rectangles[imageLayersRead].x, rectangles[imageLayersRead].w, rectangles[imageLayersRead].h, rectangles[imageLayersRead].flipped, atlasWidth, atlasHeight);
 
 			//assign a pool of tasks to threads
 			texPtr = &layerBytes[imageLayersRead][0];
@@ -444,14 +467,14 @@ void TextureLoader::loadPsdFile(const char* fileName, Model *model)
 			imageLayersRead++;
 			break;
 		default:
-			std::cout << "Compression method not supported: " << compression << std::endl;
+			Log::logError("Compression method not supported: %d", compression);
 			return;
 		}
 	}
 
 #pragma endregion
 
-	std::cout << "***End of psd file***\n" << std::endl;
+	Log::logInfo("Finished reading PSD");
 	pf.close();
 
 	pool.wait_until_empty();
@@ -460,7 +483,7 @@ void TextureLoader::loadPsdFile(const char* fileName, Model *model)
 	int imageLayer = 0;
 
 	//shove all layer textures into a single texture atlas
-	std::cout << "Generating texture atlas... ";;
+	Log::logInfo("Generating texture atlas");
 	//for each texture
 	for (int i = 0; i < layerRects.size(); i++)
 	{
@@ -493,16 +516,14 @@ void TextureLoader::loadPsdFile(const char* fileName, Model *model)
 			imageLayer++;
 		}
 	}
-	std::cout << "Done" << std::endl;
 
 	//remove alpha, testing purposes
 	//for (size_t i = 3; i < atlasBytes.size(); i += 4)
 	//	atlasBytes[i] = 255;
 
 	//create texture atlas
-	std::cout << "Creating atlas " << atlasWidth << "x" << atlasHeight << "...";;
 	stbi_write_png("saves/testExports/textureAtlas.png", atlasWidth, atlasHeight, 4, &(atlasBytes[0]), atlasWidth * 4);
-	std::cout << "Done" << std::endl;
+	Log::logInfo("Finished generating texture atlas (%d %d)", atlasWidth, atlasHeight);
 }
 
 std::vector<rect_type> TextureLoader::prepareTextureAtlas(std::vector<LayerRect>& layerRects, int texturePixelBuffer, int* atlasWidth, int* atlasHeight)
@@ -556,7 +577,7 @@ void TextureLoader::bleedPng(unsigned char* data, int width, int height)
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "FRAMEBUFFER NOT COMPLETE" << std::endl;
+		Log::logError("FRAMEBUFFER NOT COMPLETE");
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

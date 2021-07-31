@@ -7,7 +7,13 @@ in vec2 texCoord;
 uniform sampler2D ourTexture;
 uniform vec4 texColor;
 
+uniform vec3 uiColor;
+uniform bool drawPoints;
+
 void main()
 {
-	fragColor = texture(ourTexture, texCoord) * texColor;
+	if (!drawPoints)
+		fragColor = texture(ourTexture, texCoord) * texColor;
+	else
+		fragColor = vec4(uiColor, 1.0f);
 }

@@ -1,4 +1,5 @@
 #include "Window.h"
+#include "Settings.h"
 
 Window::Window()
 {
@@ -13,9 +14,7 @@ void Window::update()
 {
 	glfwGetFramebufferSize(m_window, &windowWidth, &windowHeight);
 
-	Event::processInput(m_window);
-
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClearColor(Settings::backgroundColor.r, Settings::backgroundColor.g, Settings::backgroundColor.b, 1.0f);
 
 	//if doing transparent back, use this instead
 	//glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -40,10 +39,10 @@ void Window::init()
 	//glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, 1);
 
 	//other settings
-	//glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
+	glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
 	//create a new window
-	m_window = glfwCreateWindow(800, 450, "Test Window", NULL, NULL);
+	m_window = glfwCreateWindow(800, 450, "Fluff2D", NULL, NULL);
 	if (m_window == NULL)
 	{
 		std::cout << "Failed to create GLFW window\n";
@@ -59,18 +58,16 @@ void Window::init()
 		return;
 	}
 
+	//window icon
+	GLFWimage data[1];
+	int junk = 0;
+	data[0].pixels = stbi_load("resources/icon.png", &data[0].width, &data[0].height, &junk, 0);
+	glfwSetWindowIcon(m_window, 1, data);
+	stbi_image_free(data[0].pixels);
+
 	//does some transparency things idk
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	//might solve black border, maybe not
-	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
-	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-	//glDisable(GL_MULTISAMPLE);
-	//glDisable(GL_DITHER);
-	//glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
-	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
 	glEnable(GL_TEXTURE_2D);
 
@@ -87,6 +84,9 @@ void Window::init()
 	//draw in lines, testing triangulation
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+	//testing drawing points
+	glEnable(GL_PROGRAM_POINT_SIZE);
+
 	//hope nothing exploded
-	std::cout << "Window creation successful\n";
+	Log::logInfo("Window creation successful");
 }

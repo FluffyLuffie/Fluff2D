@@ -16,7 +16,7 @@ public:
 	*/
 	static void bleedPng(unsigned char* image, int width, int height, int maxLoop)
 	{
-		const size_t N = width * height;
+		const int N = width * height;
 
 		std::vector<unsigned char> opaque(N);
 		std::vector<bool>   loose(N);
