@@ -1,36 +1,42 @@
 #pragma once
 
-#include <iostream>
-#include <string>
-#include <memory>
-#include <vector>
-
+#include "Vertex.h"
+#include "Shader.h"
+#include "../Core/Object.h"
 #include "../Core/Parameter.h"
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include "../Core/Log.h"
 
-class Deformer;
-
-class ModelPart
+class ModelPart : public Object
 {
 public:
-	std::string name = "";
-	glm::vec2 pos = glm::vec2(0.0f);
-	glm::mat4 transform = glm::mat4(1.0f);
+	enum class PartType : char { model = 0, image = 1, divider = 2, warpDeformer = 3, rotationDeformer = 4 };
 
-	float rotation = 0.0f;
+	PartType type = PartType::image;
 
-	std::shared_ptr<Deformer> parent;
+	std::shared_ptr<ModelPart> parent;
 	std::vector<std::shared_ptr<ModelPart>> children;
 
-	virtual void update();
+	glm::vec2 originalPos = glm::vec2(0.0f);
+	float originalRotation = 0.0f;
+
+	std::vector<Vertex> vertices;
+	std::vector<glm::vec2> originalVertexPositions;
+	std::vector<glm::vec2> prewarpedVertexPositions;
+	std::vector<unsigned int> indices;
+
+	void addVertex(float xCoord, float yCoord);
+	void addVertex(float xCoord, float yCoord, float xTexCoord, float yTexCoord);
+
+	void updateVertexData();
+
 	virtual void renderInspector() {}
 
-	void setPos(int posX, int posY);
-	void setPos(float posX, float posY);
+	//move functions that use these stuff into derived classes later
+	unsigned int getVao() { return vao; }
+	unsigned int getVbo() { return vbo; }
+	unsigned int getEbo() { return ebo; }
+
+protected:
+	unsigned int vao = 0, vbo = 0, ebo = 0;
 };
 

@@ -5,6 +5,8 @@
 #include <sstream>
 #include <vector>
 
+#include "Settings.h"
+#include "../UI/Localization.h"
 #include "../Renderer/Model.h"
 #include "../Renderer/LayerRect.h"
 
@@ -17,6 +19,8 @@ class SaveSystem
 {
 public:
 	static void saveModel(std::shared_ptr<Model> model, int version);
+	static void loadSettings();
+	static void saveSettings();
 
 private:
 	static void partsOutput(std::ofstream* output, std::shared_ptr<ModelPartUI> modelPart);

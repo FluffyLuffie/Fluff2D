@@ -44,12 +44,23 @@ void SaveSystem::saveModel(std::shared_ptr<Model> model, int version)
 		{
 			output << model->modelMeshes[i]->vertices[j].position.x;
 			output << model->modelMeshes[i]->vertices[j].position.y;
-			output << model->modelMeshes[i]->vertices[j].texCoord.x;
-			output << model->modelMeshes[i]->vertices[j].texCoord.y;
+			output << model->modelMeshes[i]->vertices[j].position.x;
+			output << model->modelMeshes[i]->vertices[j].position.y;
 		}
 	}
 
 	output.close();
+}
+
+void SaveSystem::loadSettings()
+{
+	//add reading from file
+
+	Localization::loadLanguage(Settings::selectedLanguage);
+}
+
+void SaveSystem::saveSettings()
+{
 }
 
 void SaveSystem::partsOutput(std::ofstream* output, std::shared_ptr<ModelPartUI> modelPart)

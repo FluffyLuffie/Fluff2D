@@ -68,6 +68,7 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	model->psdDimension.y = (buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF);
 	pf.read(buffer, 4);
 	model->psdDimension.x = (buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF);
+	model->updateCanvasCoord();
 
 	//skip over junk
 	pf.seekg(4, std::ios::cur);
@@ -226,16 +227,13 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			{
 				if (!currentFolder)
 				{
-					model->layerStructure.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image));
-					model->layerStructure.back()->name = layerRects[layerNum].layerName;
+					model->layerStructure.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image, layerRects[layerNum].layerName));
 				}
 				else
 				{
 					currentFolder->children.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image));
 					currentFolder->children.back()->name = layerRects[layerNum].layerName;
 				}
-				model->meshStructure.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image));
-				model->meshStructure.back()->name = layerRects[layerNum].layerName;
 
 				//skip a bunch of junk
 				pf.read(buffer, 4);
@@ -275,7 +273,9 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	for (int i = 0; i < rectangles.size(); i++)
 	{
 		model->modelMeshes.push_back(std::make_shared<ModelMesh>());
-		model->modelParts.push_back(model->modelMeshes.back());
+		model->modelMeshes.back()->parent = model;
+		model->children.push_back(model->modelMeshes.back());
+		model->children.back()->parent = model;
 	}
 
 	//Channel Image Data
@@ -439,7 +439,7 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			model->modelMeshes[imageLayersRead]->setPos(layerRects[layerNum].x + (layerRects[layerNum].w - model->psdDimension.x) / 2.0f, -layerRects[layerNum].y + (-layerRects[layerNum].h + model->psdDimension.y) / 2.0f);
 			model->modelMeshes[imageLayersRead]->originalPos.x = model->modelMeshes[imageLayersRead]->pos.x;
 			model->modelMeshes[imageLayersRead]->originalPos.y = model->modelMeshes[imageLayersRead]->pos.y;
-			model->modelMeshes[imageLayersRead]->createBasicMesh(rectangles[imageLayersRead].y, rectangles[imageLayersRead].x, rectangles[imageLayersRead].w, rectangles[imageLayersRead].h, rectangles[imageLayersRead].flipped, atlasWidth, atlasHeight);
+			model->modelMeshes[imageLayersRead]->createBasicMesh(rectangles[imageLayersRead].x, rectangles[imageLayersRead].y, rectangles[imageLayersRead].w, rectangles[imageLayersRead].h, rectangles[imageLayersRead].flipped, atlasWidth, atlasHeight);
 
 			//assign a pool of tasks to threads
 			texPtr = &layerBytes[imageLayersRead][0];
@@ -540,7 +540,7 @@ std::vector<rect_type> TextureLoader::prepareTextureAtlas(std::vector<LayerRect>
 	const auto max_side = 16384;
 	const auto discard_step = -4;
 	//change to enabled after testing
-	const auto runtime_flipping_mode = rectpack2D::flipping_option::ENABLED;
+	const auto runtime_flipping_mode = rectpack2D::flipping_option::DISABLED;
 
 	std::vector<rect_type> rectangles;
 

@@ -3,11 +3,11 @@
 #include <memory>
 
 #include "imgui_filebrowser/imfilebrowser.h"
+
+#include "SaveSystem.h"
 #include "Window.h"
-#include "../Events/Event.h"
 #include "../Renderer/Model.h"
 #include "../Renderer/ModelMesh.h"
-#include "SaveSystem.h"
 #include "../Renderer/TextureLoader.h"
 
 class Application
@@ -34,16 +34,13 @@ public:
 
 	bool isRunning = true;
 private:
-	unsigned int canvasVAO = 0, canvasVBO = 0, canvasEBO = 0;
-	glm::vec2 canvasCoords[4] = { glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f) };
-	unsigned int canvasIndices[8] = { 0, 1, 1, 2, 2, 3, 3, 0 };
+	ImVec2 oldMouseCoord = ImVec2();
 
 	ImGui::FileBrowser fileBrowser;
 
-	void checkRunning();
+	bool queueFontChange = false;
 
-	void setCanvasCoords();
-	void renderCanvas();
+	void checkRunning();
 	
 	//for docking
 	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
@@ -54,5 +51,8 @@ private:
 	std::vector<std::string> selectedParts;
 
 	void createModelTree(std::shared_ptr<ModelPartUI> currentPart);
+	void createModelTree(std::shared_ptr<ModelPart> currentPart);
+
+	void drawImGui();
 };
 

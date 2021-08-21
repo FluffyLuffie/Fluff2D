@@ -2,47 +2,55 @@
 
 bool Event::keyDown(int key)
 {
-	if (glfwGetKey(GLFWWin, key) == GLFW_PRESS)
+	if (!io->WantCaptureKeyboard && glfwGetKey(GLFWWin, key) == GLFW_PRESS)
 		return true;
 	return false;
 }
 
 bool Event::keyPressed(int key)
 {
-	if (keysCheckFrame.find(key) != keysCheckFrame.end())
+	if (!io->WantCaptureKeyboard && keysCheckFrame.find(key) != keysCheckFrame.end())
 		return keysCheckFrame[key];
 	return false;
 }
 
 bool Event::keyReleased(int key)
 {
-	if (keysCheckFrame.find(key) != keysCheckFrame.end())
+	if (!io->WantCaptureKeyboard && keysCheckFrame.find(key) != keysCheckFrame.end())
 		return !keysCheckFrame[key];
 	return false;
 }
 
 float Event::getScroll()
 {
-	float temp = scroll;
-	scroll = 0.0f;
-	return temp;
+	if (!io->WantCaptureMouse)
+		return io->MouseWheel;
+	return 0.0f;
 }
 
-void Event::calculateDeltaTime()
+void Event::update()
 {
+	//delta time
 	float currentTime = static_cast<float>(glfwGetTime());
 	deltaTime = currentTime - lastTime;
 	lastTime = currentTime;
-}
 
-void Event::resetKeys()
-{
+	//keys
 	keysCheckFrame.clear();
+
+	//check window resize
+	windowResized = false;
+	if (frameBufferResized)
+	{
+		frameBufferResized = false;
+		windowResized = true;
+	}
 }
 
 void Event::framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
+	frameBufferResized = true;
 }
 
 void Event::mouse_callback(GLFWwindow* window, double xPos, double yPos)
@@ -58,4 +66,6 @@ void Event::key_callback(GLFWwindow* window, int key, int scanmode, int action, 
 {
 	if (action == GLFW_PRESS || action == GLFW_RELEASE)
 		keysCheckFrame[key] = action;
+
+	mod = mods;
 }

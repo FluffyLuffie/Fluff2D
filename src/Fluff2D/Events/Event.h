@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <map>
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -12,13 +13,17 @@ class Event
 public:
 	inline static GLFWwindow* GLFWWin;
 	inline static float deltaTime = 0.0f;
+	inline static ImGuiIO *io;
+
+	inline static int mod = 0;
+
+	inline static bool windowResized = false;
 
 	static bool keyDown(int key);
 	static bool keyPressed(int key);
 	static bool keyReleased(int key);
 	static float getScroll();
-	static void calculateDeltaTime();
-	static void resetKeys();
+	static void update();
 
 	static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 	static void mouse_callback(GLFWwindow* window, double xPos, double yPos);
@@ -29,5 +34,6 @@ private:
 	inline static float scroll = 0.0f;
 	inline static float lastTime = 0.0f;
 	inline static std::map<int, bool> keysCheckFrame;
+	inline static bool frameBufferResized = false;
 };
 

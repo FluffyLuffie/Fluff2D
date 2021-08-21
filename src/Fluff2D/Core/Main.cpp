@@ -15,9 +15,9 @@ int main()
 	Application application;
 	application.init();
 
-	//testing loading psd
+	//framebuffer fails for some reason, open through the file system
 	//application.initializeModelFromPsd("saves/tempPsdTest/miniTest.psd");
-	application.initializeModelFromPsd("saves/tempPsdTest/testModel.psd");
+	//application.initializeModelFromPsd("saves/tempPsdTest/testModel.psd");
 	//application.initializeModelFromPsd("saves/tempPsdTest/edwardGraveheart.psd");
 	//application.initializeModelFromPsd("saves/tempPsdTest/fluffy.psd");
 	//application.initializeModelFromPsd("saves/tempPsdTest/boxTest.psd");

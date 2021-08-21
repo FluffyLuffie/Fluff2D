@@ -4,10 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "Vertex.h"
-#include "Deformer.h"
-#include "Shader.h"
-#include "../Core/Window.h"
+#include "ModelPart.h"
 #include "../UI/ModelPartUI.h"
 #include "../Core/Parameter.h"
 
@@ -20,20 +17,21 @@ public:
 	int layerOrder = 0;
 	glm::vec4 color = glm::vec4(1.0f);
 
-	glm::vec2 originalPos = glm::vec2(0.0f);
+	bool visible = true;
 
-	std::vector<Vertex> vertices;
-	std::vector<unsigned int> indices;
-
-	bool flipped = false;
-
-	void loadFromImage(const char* filePath);
 	void clearMeshData();
 
 	void update() override;
+	void render() override;
 	void renderInspector() override;
 
-	void createBasicMesh();
-	void createBasicMesh(int layerY, int layerX, int layerW, int layerH, bool flip, int atlasWidth, int atlasHeight);
+	void createBasicMesh(int layerX, int layerY, int layerW, int layerH, bool flip, int atlasWidth, int atlasHeight);
+
+	//testing, call after making basic mesh
+	void createBoxMesh(int boxCountX, int boxCountY, int atlasWidth, int atlasHeight);
+
+private:
+	int atlasPositionX = 0, atlasPositionY = 0, textureWidth = 0, textureHeight = 0;
+	bool flipped = false;
 };
 

@@ -1,9 +1,17 @@
 #pragma once
 
-#include "Deformer.h"
+#include <vector>
 
-class RotationDeformer : public Deformer
+#include "ModelPart.h"
+
+class RotationDeformer : public ModelPart
 {
-	void deformEffect(glm::mat4& transform) override;
+public:
+	RotationDeformer(const std::string& partName);
+	~RotationDeformer();
+
+	void update() override;
+	void render() override;
+	void renderInspector() override;
 };
 

@@ -7,10 +7,11 @@
 class ModelPartUI
 {
 public:
-	enum class PartType : char { image = 0, divider = 1};
+	enum class PartType : char { image = 0, divider = 1, warpDeformer = 2, rotationDeformer = 3};
 
 	ModelPartUI() {}
 	ModelPartUI(PartType _type);
+	ModelPartUI(PartType _type, const std::string &partName);
 	~ModelPartUI() {}
 
 	std::string name = "";

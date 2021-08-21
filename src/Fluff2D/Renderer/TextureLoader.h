@@ -5,6 +5,7 @@
 #include <sstream>
 #include <vector>
 #include <thread>
+
 #include <glad/glad.h>
 
 #include "Model.h"
