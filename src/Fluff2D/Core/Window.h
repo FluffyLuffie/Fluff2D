@@ -1,9 +1,14 @@
 #pragma once
 
-#include "../Events/Event.h"
+#include "Settings.h"
+
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 #include "stb_image/stb_image.h"
 #include "glm/vec3.hpp"
+
+#include "Log.h"
 
 class Window
 {

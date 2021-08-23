@@ -17,6 +17,8 @@ public:
 	int layerOrder = 0;
 	glm::vec4 color = glm::vec4(1.0f);
 
+	std::vector<std::string> maskedMeshes;
+
 	bool visible = true;
 
 	void clearMeshData();

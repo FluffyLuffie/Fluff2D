@@ -13,7 +13,11 @@ uniform bool drawPoints;
 void main()
 {
 	if (!drawPoints)
+	{
+		if (texture(ourTexture, texCoord).a == 0.0f)
+			discard;
 		fragColor = texture(ourTexture, texCoord) * texColor;
+	}
 	else
 		fragColor = vec4(uiColor, 1.0f);
 }

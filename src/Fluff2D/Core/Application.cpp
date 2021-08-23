@@ -28,56 +28,57 @@ void Application::update()
 
 	if (model)
 	{
-		if (Event::windowResized)
-			model->updateFrameBufferSize();
 		model->update();
 
 		Vertex* closestVertex = nullptr;
 		int selectedPartNum = -1;
-		if (selectedParts.size())
+		if (!Event::io->WantCaptureMouse)
 		{
-			//testing stuff, move somewhere else later
-			closestVertex = model->findClosestVertex(selectedParts, &selectedPartNum);
-			if (closestVertex)
+			if (selectedParts.size())
 			{
-				if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+				//testing stuff, move somewhere else later
+				closestVertex = model->findClosestVertex(selectedParts, &selectedPartNum);
+				if (closestVertex)
 				{
-					oldMouseCoord = ImGui::GetMousePos();
-					//if ctrl key pressed, add to selected vertices
-					if (GLFW_MOD_CONTROL == Event::mod)
+					if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 					{
-						model->selectedVertices[closestVertex] = selectedParts[selectedPartNum];
-						model->initialVerticesPos[closestVertex] = closestVertex->position;
-					}
-					else
-					{
-						//if clicked vertex is not in selected vertices, clear
-						if (model->selectedVertices.find(closestVertex) == model->selectedVertices.end())
+						oldMouseCoord = ImGui::GetMousePos();
+						//if ctrl key pressed, add to selected vertices
+						if (GLFW_MOD_CONTROL == Event::mod)
 						{
-							model->selectedVertices.clear();
-							model->initialVerticesPos.clear();
 							model->selectedVertices[closestVertex] = selectedParts[selectedPartNum];
 							model->initialVerticesPos[closestVertex] = closestVertex->position;
 						}
+						else
+						{
+							//if clicked vertex is not in selected vertices, clear
+							if (model->selectedVertices.find(closestVertex) == model->selectedVertices.end())
+							{
+								model->selectedVertices.clear();
+								model->initialVerticesPos.clear();
+								model->selectedVertices[closestVertex] = selectedParts[selectedPartNum];
+								model->initialVerticesPos[closestVertex] = closestVertex->position;
+							}
+						}
 					}
 				}
+				//if clicked on nothing, clear
+				else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+				{
+					model->selectedVertices.clear();
+					model->initialVerticesPos.clear();
+				}
 			}
-			//if clicked on nothing, clear
-			else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-			{
-				model->selectedVertices.clear();
-				model->initialVerticesPos.clear();
-			}
-		}
 
-		//move vertices
-		if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != Event::mod)
-		{
-			model->moveSelectedVertices(oldMouseCoord);
-		}
-		else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
-		{
-			model->updateOriginalVertexPositions();
+			//move vertices
+			if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != Event::mod)
+			{
+				model->moveSelectedVertices(oldMouseCoord);
+			}
+			else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+			{
+				model->updateOriginalVertexPositions();
+			}
 		}
 
 		model->render();
@@ -261,11 +262,10 @@ void Application::createModelTree(std::shared_ptr<ModelPart> currentPart)
 	if (alreadySelected)
 		nodeFlags |= ImGuiTreeNodeFlags_Selected;
 
-	switch (currentPart->type)
+	if (currentPart->type == ModelPart::PartType::mesh)
 	{
-	case ModelPart::PartType::image:
 		nodeFlags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-		ImGui::TreeNodeEx(currentPart->name.c_str(), nodeFlags);
+		ImGui::TreeNodeEx(("[M] " + currentPart->name).c_str(), nodeFlags);
 
 		if (ImGui::IsItemClicked())
 		{
@@ -282,11 +282,15 @@ void Application::createModelTree(std::shared_ptr<ModelPart> currentPart)
 			//might implement some way to keep selected vertices if mesh is still selected
 			model->selectedVertices.clear();
 			model->initialVerticesPos.clear();
-			break;
-			//for now, treat all of them the same
-	case ModelPart::PartType::warpDeformer:
-	case ModelPart::PartType::rotationDeformer:
-		nodeOpen = ImGui::TreeNodeEx(currentPart->name.c_str(), nodeFlags);
+		}
+	}
+	else
+	{
+		if (currentPart->type == ModelPart::PartType::warpDeformer)
+			nodeOpen = ImGui::TreeNodeEx(("[W] " + currentPart->name).c_str(), nodeFlags);
+		else
+			nodeOpen = ImGui::TreeNodeEx(("[R] " + currentPart->name).c_str(), nodeFlags);
+
 		if (ImGui::IsItemClicked())
 		{
 			if (!Event::keyDown(GLFW_KEY_LEFT_CONTROL) && !ImGui::IsItemToggledOpen())
@@ -309,10 +313,6 @@ void Application::createModelTree(std::shared_ptr<ModelPart> currentPart)
 				createModelTree(currentPart->children[i]);
 			}
 			ImGui::TreePop();
-		}
-		break;
-	default:
-		break;
 		}
 	}
 }
@@ -375,7 +375,7 @@ void Application::drawImGui()
 		bool meshGeneratorValid = true;
 		for (int i = 0; i < selectedParts.size(); i++)
 		{
-			if (model->partMap[selectedParts[i]]->type != ModelPart::PartType::image)
+			if (model->partMap[selectedParts[i]]->type != ModelPart::PartType::mesh)
 				meshGeneratorValid = false;
 		}
 
@@ -395,7 +395,7 @@ void Application::drawImGui()
 			{
 				for (int i = 0; i < selectedParts.size(); i++)
 				{
-					if (model->partMap[selectedParts[i]]->type == ModelPart::PartType::image)
+					if (model->partMap[selectedParts[i]]->type == ModelPart::PartType::mesh)
 					{
 						model->generateTestBoxMesh(selectedParts[i], boxCount[0], boxCount[1]);
 					}
@@ -416,60 +416,72 @@ void Application::drawImGui()
 	ImGui::End();
 
 	//general
-	ImGui::Begin("General");
-	int selected = static_cast<int>(Settings::selectedLanguage);
-	//***THIS DOES ABSOLUTELY NOTHING RIGHT NOW***
-	//hard coded in language names, not possible to turn enum names into strings with C++
-	//for now, no need to load new font since Meiryo has both English and Japanese
-	//might need to change language and load new font after rendering to not mess stuff up
-	//i can't figure out how to change language at runtime by reading a file, if you want you can hard code in all the menu dialogues
-	if (ImGui::Combo("Language", &selected, u8"English\0日本語"))
+	if (ImGui::Begin("General"))
 	{
-		Settings::selectedLanguage = static_cast<Localization::Language>(selected);
-		Localization::loadLanguage(Settings::selectedLanguage);
-	}
-	ImGui::SameLine();
-	ImGui::HelpMarker("***THIS DOES ABSOLUTELY NOTHING RIGHT NOW***\nI can't figure out how to support multilingual stuff, only English for now.");
-	ImGui::Separator();
-
-	ImGui::SliderInt("Font Size", &Settings::fontSize, 5, 100);
-	if (ImGui::Button("Update Font"))
-		queueFontChange = true;
-	ImGui::Separator();
-
-	ImGui::ColorEdit3("Background", (float*)&Settings::backgroundColor);
-	ImGui::SliderInt("Canvas Line Width", &Settings::canvasLineWidth, 1, 20);
-	ImGui::ColorEdit3("Canvas Border Color", (float*)&Settings::canvasBorderColor);
-	ImGui::Separator();
-
-	ImGui::SliderInt("Mesh Point Size", &Settings::meshPointSize, 1, 20);
-	ImGui::ColorEdit3("Mesh Point Color", (float*)&Settings::meshPointColor);
-	ImGui::ColorEdit3("Mesh Point Heighlight Color", (float*)&Settings::meshPointHighlightColor);
-	ImGui::ColorEdit3("Mesh Point Selected Color", (float*)&Settings::meshPointSelectedColor);
-	ImGui::Separator();
-
-	ImGui::SliderInt("Mesh Point Border Size", &Settings::meshPointBorderSize, 1, 10);
-	ImGui::ColorEdit3("Mesh Point Border Color", (float*)&Settings::meshPointBorderColor);
-	ImGui::Separator();
-
-	ImGui::SliderInt("Mesh Line Width", &Settings::meshLineWidth, 1, 20);
-	ImGui::ColorEdit3("Mesh Line Color", (float*)&Settings::meshLineColor);
-	ImGui::Separator();
-
-	ImGui::SliderFloat("Vertex Detection Distance", &Settings::vertexDetectionDistance, 1.0f, 80.0f);
-	ImGui::Separator();
-
-	//might change or delete this later
-	if (model)
-	{
-		ImGui::DragFloat2("Model Position", &model->pos.x);
+		int selected = static_cast<int>(Settings::selectedLanguage);
+		//***THIS DOES ABSOLUTELY NOTHING RIGHT NOW***
+		//hard coded in language names, not possible to turn enum names into strings with C++
+		//for now, no need to load new font since Meiryo has both English and Japanese
+		//might need to change language and load new font after rendering to not mess stuff up
+		//i can't figure out how to change language at runtime by reading a file, if you want you can hard code in all the menu dialogues
+		if (ImGui::Combo("Language", &selected, u8"English\0日本語"))
+		{
+			Settings::selectedLanguage = static_cast<Localization::Language>(selected);
+				Localization::loadLanguage(Settings::selectedLanguage);
+		}
+		ImGui::SameLine();
+		ImGui::HelpMarker("***THIS DOES ABSOLUTELY NOTHING RIGHT NOW***\nI can't figure out how to support multilingual stuff, only English for now.");
 		ImGui::Separator();
+
+		ImGui::SliderInt("Font Size", &Settings::fontSize, 5, 100);
+		if (ImGui::Button("Update Font"))
+			queueFontChange = true;
+		ImGui::Separator();
+
+		if (model)
+		{
+			if (ImGui::Checkbox("Use fbo", &model->useFbo) && !model->useFbo)
+				glBindTexture(GL_TEXTURE_2D, model->textureID);
+			ImGui::Separator();
+		}
+
+		ImGui::ColorEdit3("Background", (float*)&Settings::backgroundColor);
+		ImGui::Checkbox("Transparent Background", &Settings::transparentBackground);
+		ImGui::Separator();
+
+		ImGui::SliderInt("Canvas Line Width", &Settings::canvasLineWidth, 1, 20);
+		ImGui::ColorEdit3("Canvas Border Color", (float*)&Settings::canvasBorderColor);
+		ImGui::Separator();
+
+		ImGui::SliderInt("Mesh Point Size", &Settings::meshPointSize, 1, 20);
+		ImGui::ColorEdit3("Mesh Point Color", (float*)&Settings::meshPointColor);
+		ImGui::ColorEdit3("Mesh Point Heighlight Color", (float*)&Settings::meshPointHighlightColor);
+		ImGui::ColorEdit3("Mesh Point Selected Color", (float*)&Settings::meshPointSelectedColor);
+		ImGui::Separator();
+
+		ImGui::SliderInt("Mesh Point Border Size", &Settings::meshPointBorderSize, 1, 10);
+		ImGui::ColorEdit3("Mesh Point Border Color", (float*)&Settings::meshPointBorderColor);
+		ImGui::Separator();
+
+		ImGui::SliderInt("Mesh Line Width", &Settings::meshLineWidth, 1, 20);
+		ImGui::ColorEdit3("Mesh Line Color", (float*)&Settings::meshLineColor);
+		ImGui::Separator();
+
+		ImGui::SliderFloat("Vertex Detection Distance", &Settings::vertexDetectionDistance, 1.0f, 80.0f);
+		ImGui::Separator();
+
+		//might change or delete this later
+		if (model)
+		{
+			ImGui::DragFloat2("Model Position", &model->pos.x);
+			ImGui::Separator();
+		}
+
+		ImGui::Text("Application average %.3f ms/frame (%d FPS)", 1000.0f / ImGui::GetIO().Framerate, (int)round(ImGui::GetIO().Framerate));
+
+		//ImGui::Text(u8"%s", Localization::getTranslation("test"));
+		//ImGui::Text(u8"Japanese: テスト");
 	}
-
-	ImGui::Text("Application average %.3f ms/frame (%d FPS)", 1000.0f / ImGui::GetIO().Framerate, (int)round(ImGui::GetIO().Framerate));
-
-	//ImGui::Text(u8"%s", Localization::getTranslation("test"));
-	//ImGui::Text(u8"Japanese: テスト");
 	ImGui::End();
 
 	//testing model parts
@@ -484,8 +496,7 @@ void Application::drawImGui()
 	ImGui::End();
 
 	//the deformer and mesh structure of the model
-	ImGui::Begin("Meshes");
-	if (model)
+	if (ImGui::Begin("Meshes") && model)
 	{
 		//128 max char length, change if you want
 		static char nameBuf[128] = "";
@@ -581,12 +592,16 @@ void Application::drawImGui()
 	ImGui::End();
 
 	//details of selected things
-	ImGui::Begin("Inspector");
-	if (model)
+	if (ImGui::Begin("Inspector") && model)
 	{
 		if (selectedParts.size() == 1 && (model->partMap.find(selectedParts[0]) != model->partMap.end()))
 		{
 			model->partMap[selectedParts[0]]->renderInspector();
+
+			if (model->partMap[selectedParts[0]]->type == ModelPart::PartType::mesh)
+			{
+				model->showMeshMaskingMenu(selectedParts[0]);
+			}
 		}
 		else
 		{
@@ -597,8 +612,7 @@ void Application::drawImGui()
 	ImGui::End();
 
 	//view and edit parameters
-	ImGui::Begin("Parameters");
-	if (model)
+	if (ImGui::Begin("Parameters") && model)
 	{
 		if (ImGui::Button("Reset Values"))
 		{
@@ -634,6 +648,4 @@ void Application::drawImGui()
 	ImGui::End();
 
 	Log::draw("Log");
-
-	//ImGui::ShowDemoWindow();
 }

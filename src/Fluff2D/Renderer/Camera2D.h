@@ -5,7 +5,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "../Renderer/Shader.h"
-#include "../Core/Window.h"
+#include "../Events/Event.h"
 
 class Camera2D
 {

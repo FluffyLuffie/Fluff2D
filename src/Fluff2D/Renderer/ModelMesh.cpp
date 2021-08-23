@@ -31,11 +31,6 @@ void ModelMesh::update()
 	//assume parent always exists
 	transform = parent->transform * localTransform;
 
-	for (int i = 0; i < children.size(); i++)
-	{
-		children[i]->update();
-	}
-
 	//testing stuff
 	if (Event::keyDown(GLFW_KEY_RIGHT))
 		prewarpedVertexPositions[0].x += 4;

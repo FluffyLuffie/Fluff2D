@@ -9,9 +9,9 @@
 class ModelPart : public Object
 {
 public:
-	enum class PartType : char { model = 0, image = 1, divider = 2, warpDeformer = 3, rotationDeformer = 4 };
+	enum class PartType : char { model = 0, mesh = 1, divider = 2, warpDeformer = 3, rotationDeformer = 4 };
 
-	PartType type = PartType::image;
+	PartType type = PartType::mesh;
 
 	std::shared_ptr<ModelPart> parent;
 	std::vector<std::shared_ptr<ModelPart>> children;

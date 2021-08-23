@@ -106,10 +106,9 @@ void Model::reset()
 void Model::updatePartMap()
 {
 	partMap.clear();
+	meshMap.clear();
 	for (int i = 0; i < children.size(); i++)
-	{
 		updatePartMapRecursive(children[i]);
-	}
 }
 
 void Model::renderMeshVertice(const std::string &meshName)
@@ -122,7 +121,7 @@ void Model::renderMeshVertice(const std::string &meshName)
 
 	switch (partMap[meshName]->type)
 	{
-	case ModelPart::PartType::image:
+	case ModelPart::PartType::mesh:
 		meshShader.setVec3("uiColor", Settings::meshLineColor);
 		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(partMap[meshName]->indices.size()), GL_UNSIGNED_INT, 0);
 
@@ -182,7 +181,7 @@ void Model::moveSelectedVertices(const ImVec2& originalMouseCoord)
 
 void Model::updateOriginalVertexPositions()
 {
-	for (auto const& [vert, meshNum] : selectedVertices)
+	for (auto const& [vert, partName] : selectedVertices)
 	{
 		initialVerticesPos[vert] = vert->position;
 	}
@@ -366,9 +365,43 @@ void Model::updateCanvasCoord()
 	glEnableVertexAttribArray(0);
 }
 
+void Model::showMeshMaskingMenu(const std::string& meshName)
+{
+	ImGui::Separator();
+
+	ImGui::Text("Masking");
+
+	for (int i = static_cast<int>(modelMeshes.size()) - 1; i >= 0; i--)
+	{
+		//don't include self in list
+		if (modelMeshes[i]->name != meshName)
+		{
+			ImGuiTreeNodeFlags nodeFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
+
+			bool alreadySelected = alreadySelected = std::find(meshMap[meshName]->maskedMeshes.begin(), meshMap[meshName]->maskedMeshes.end(), modelMeshes[i]->name) != meshMap[meshName]->maskedMeshes.end();
+			if (alreadySelected)
+				nodeFlags |= ImGuiTreeNodeFlags_Selected;
+
+			ImGui::TreeNodeEx(modelMeshes[i]->name.c_str(), nodeFlags);
+			if (ImGui::IsItemClicked())
+			{
+				if (alreadySelected)
+					meshMap[meshName]->maskedMeshes.erase(remove(meshMap[meshName]->maskedMeshes.begin(), meshMap[meshName]->maskedMeshes.end(), modelMeshes[i]->name), meshMap[meshName]->maskedMeshes.end());
+				else
+					meshMap[meshName]->maskedMeshes.push_back(modelMeshes[i]->name);
+			}
+		}
+	}
+}
+
 void Model::updatePartMapRecursive(std::shared_ptr<ModelPart> part)
 {
 	partMap[part->name] = part;
+
+	//also update mesh map
+	if (part->type == ModelPart::PartType::mesh)
+		meshMap[part->name] = std::dynamic_pointer_cast<ModelMesh>(part);
+
 	for (int i = 0; i < part->children.size(); i++)
 	{
 		updatePartMapRecursive(part->children[i]);
@@ -391,10 +424,31 @@ void Model::updateFrameBufferSize()
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		Log::logError("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+}
+
+void Model::prepareMask(int meshNum)
+{
+	glClear(GL_STENCIL_BUFFER_BIT);
+	glBlendFuncSeparate(GL_ZERO, GL_ZERO, GL_ZERO, GL_ZERO);
+	glColorMask(false, false, false, false);
+	glStencilFunc(GL_ALWAYS, 1, 0xff);
+	glStencilMask(0xff);
+
+	for (int j = 0; j < modelMeshes[meshNum]->maskedMeshes.size(); j++)
+	{
+		meshShader.setMat4("transform", meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->transform);
+		meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->render();
+	}
 }
 
 void Model::update()
 {
+	meshShader.setMat4("projection", Camera2D::projection);
+
+	if (Event::windowResized)
+		updateFrameBufferSize();
+
 	if (Event::keyDown(GLFW_KEY_R))
 		reset();
 
@@ -410,36 +464,99 @@ void Model::update()
 
 void Model::render()
 {
-	//might only need to call once when loading texture since it doesn't change
-	glBindTexture(GL_TEXTURE_2D, textureID);
+	//fbo transparency stuff is a bit weird, fix later
+	if (useFbo)
+	{
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
+		glBindTexture(GL_TEXTURE_2D, textureID);
 
-	meshShader.setMat4("projection", Camera2D::projection);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+	}
 
-	//render each mesh offscreen
+	//prepare color channels for transparency
+	if (Settings::transparentBackground)
+	{
+		for (int i = 0; i < modelMeshes.size(); i++)
+		{
+			//stencil buffer masking
+			if (modelMeshes[i]->maskedMeshes.size())
+				prepareMask(i);
+
+			meshShader.setMat4("transform", modelMeshes[i]->transform);
+			meshShader.setVec4("texColor", modelMeshes[i]->color);
+
+			//render masked mesh to screen
+			if (modelMeshes[i]->maskedMeshes.size())
+			{
+				glColorMask(true, true, true, false);
+				glStencilFunc(GL_EQUAL, 1, 0xff);
+				glStencilMask(0x00);
+				glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ZERO);
+			}
+			else
+			{
+				glColorMask(true, true, true, false);
+				glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ZERO);
+			}
+			modelMeshes[i]->render();
+
+			glStencilMask(0xff);
+			glStencilFunc(GL_ALWAYS, 0, 0xff);
+		}
+	}
+
 	for (int i = 0; i < modelMeshes.size(); i++)
 	{
+		//stencil buffer masking
+		if (modelMeshes[i]->maskedMeshes.size())
+			prepareMask(i);
+
 		meshShader.setMat4("transform", modelMeshes[i]->transform);
 		meshShader.setVec4("texColor", modelMeshes[i]->color);
 
+		//render masked mesh to screen
+		if (modelMeshes[i]->maskedMeshes.size())
+		{
+			glColorMask(true, true, true, false);
+			glStencilFunc(GL_EQUAL, 1, 0xff);
+			glStencilMask(0x00);
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ZERO);
+		}
+		else
+		{
+			glColorMask(true, true, true, true);
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		}
 		modelMeshes[i]->render();
+
+		glStencilMask(0xff);
+		glStencilFunc(GL_ALWAYS, 0, 0xff);
 	}
 
-	//render to screen
-	screenShader.use();
-	updateVertexData();
+	//if the last mesh is masked to something, the alpha mask is turned off so don't forget to turn it back on
+	glColorMask(true, true, true, true);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+	if (useFbo)
+	{
+		//render to screen
+		screenShader.use();
+		updateVertexData();
 
-	//return back to using normal shader
-	meshShader.use();
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+
+		glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ZERO); 
+		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+
+		glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ZERO);
+		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+
+		//return back to using normal shader
+		meshShader.use();
+	}
 
 	//render the canvas rect
 	meshShader.setBool("drawPoints", true);

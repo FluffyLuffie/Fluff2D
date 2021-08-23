@@ -27,10 +27,14 @@ public:
 	unsigned int textureID = 0;
 	Shader meshShader, screenShader;
 
+	bool useFbo = false;
+
 	std::vector<std::shared_ptr<ModelPartUI>> layerStructure;
 
 	std::unordered_map<std::string, std::shared_ptr<ModelPart>> partMap;
 	std::vector<std::shared_ptr<ModelMesh>> modelMeshes;
+	std::unordered_map<std::string, std::shared_ptr<ModelMesh>> meshMap;
+
 
 	std::vector<std::string> paramNames;
 	std::unordered_map<std::string, std::shared_ptr<Parameter>> paramMap;
@@ -66,7 +70,8 @@ public:
 	Vertex* findClosestVertex(const std::vector<std::string> &selectedParts, int *partNum);
 
 	void updateCanvasCoord();
-	void updateFrameBufferSize();
+
+	void showMeshMaskingMenu(const std::string &meshName);
 
 private:
 	void updatePartMapRecursive(std::shared_ptr<ModelPart> part);
@@ -77,5 +82,8 @@ private:
 	glm::vec2 canvasCoords[4] = { glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f) };
 	unsigned int canvasIndices[8] = { 0, 1, 1, 2, 2, 3, 3, 0 };
 
+	void updateFrameBufferSize();
+
+	void prepareMask(int meshNum);
 };
 

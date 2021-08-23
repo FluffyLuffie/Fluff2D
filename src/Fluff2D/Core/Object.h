@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-#include "../Core/Window.h"
+#include "../Events/Event.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

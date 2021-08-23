@@ -3,10 +3,7 @@
 #include <iostream>
 #include <map>
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
-#include "../Core/Log.h"
+#include "../Core/Window.h"
 
 class Event
 {

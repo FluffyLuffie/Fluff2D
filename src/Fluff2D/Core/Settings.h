@@ -17,6 +17,7 @@ public:
 	inline static std::string fontFile = "C:/Windows/Fonts/Meiryob.ttc";
 
 	inline static glm::vec3 backgroundColor = glm::vec3(0.75f);
+	inline static bool transparentBackground = false;
 
 	inline static int canvasLineWidth = 1;
 	inline static glm::vec3 canvasBorderColor = glm::vec3(0.0f);

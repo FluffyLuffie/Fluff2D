@@ -51,6 +51,8 @@ void Event::framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
 	frameBufferResized = true;
+	Window::windowWidth = width;
+	Window::windowHeight = height;
 }
 
 void Event::mouse_callback(GLFWwindow* window, double xPos, double yPos)

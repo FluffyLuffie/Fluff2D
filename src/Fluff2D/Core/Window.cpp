@@ -1,5 +1,5 @@
 #include "Window.h"
-#include "Settings.h"
+
 
 Window::Window()
 {
@@ -12,12 +12,10 @@ Window::~Window()
 
 void Window::update()
 {
-	glfwGetFramebufferSize(m_window, &windowWidth, &windowHeight);
-
-	glClearColor(Settings::backgroundColor.r, Settings::backgroundColor.g, Settings::backgroundColor.b, 1.0f);
-
-	//if doing transparent back, use this instead
-	//glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	if (Settings::transparentBackground)
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	else
+		glClearColor(Settings::backgroundColor.r, Settings::backgroundColor.g, Settings::backgroundColor.b, 1.0f);
 
 	glClear(GL_COLOR_BUFFER_BIT);
 }
@@ -36,7 +34,7 @@ void Window::init()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	//for transparent back, delete later after testing
-	//glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, 1);
+	glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, 1);
 
 	//other settings
 	glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
@@ -50,6 +48,7 @@ void Window::init()
 		return;
 	}
 	glfwMakeContextCurrent(m_window);
+	glfwGetFramebufferSize(m_window, &windowWidth, &windowHeight);
 
 	//glad thing
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -65,12 +64,12 @@ void Window::init()
 	glfwSetWindowIcon(m_window, 1, data);
 	stbi_image_free(data[0].pixels);
 
-	//does some transparency things idk
 	glEnable(GL_BLEND);
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
-	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 	glEnable(GL_TEXTURE_2D);
+
+	glEnable(GL_STENCIL_TEST);
+	glStencilFunc(GL_NOTEQUAL, 1, 0xff);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	//if 3D, prob not
 	//glEnable(GL_DEPTH_TEST);
