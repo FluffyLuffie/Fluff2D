@@ -27,8 +27,6 @@ public:
 	unsigned int textureID = 0;
 	Shader meshShader, screenShader;
 
-	bool useFbo = false;
-
 	std::vector<std::shared_ptr<ModelPartUI>> layerStructure;
 
 	std::unordered_map<std::string, std::shared_ptr<ModelPart>> partMap;

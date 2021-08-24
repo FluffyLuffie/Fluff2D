@@ -440,15 +440,18 @@ void Application::drawImGui()
 
 		if (model)
 		{
-			if (ImGui::Checkbox("Use fbo", &model->useFbo) && !model->useFbo)
+			if (ImGui::Checkbox("Use fbo", &Settings::useFbo) && !Settings::useFbo)
 				glBindTexture(GL_TEXTURE_2D, model->textureID);
 			ImGui::Separator();
 		}
 
 		ImGui::ColorEdit3("Background", (float*)&Settings::backgroundColor);
 		ImGui::Checkbox("Transparent Background", &Settings::transparentBackground);
+		ImGui::SameLine();
+		ImGui::HelpMarker("If you want to capture transparency in recording softwares (like OBS),\nmake sure to also enable \"Use fbo\" in the settings above.\n\nAlso click something like \"Enable Transparency\" inside the recording software for this window.");
 		ImGui::Separator();
 
+		ImGui::Checkbox("Show Canvas", &Settings::showCanvas);
 		ImGui::SliderInt("Canvas Line Width", &Settings::canvasLineWidth, 1, 20);
 		ImGui::ColorEdit3("Canvas Border Color", (float*)&Settings::canvasBorderColor);
 		ImGui::Separator();

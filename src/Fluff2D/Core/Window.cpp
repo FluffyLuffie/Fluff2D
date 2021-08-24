@@ -12,12 +12,15 @@ Window::~Window()
 
 void Window::update()
 {
-	if (Settings::transparentBackground)
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	else
-		glClearColor(Settings::backgroundColor.r, Settings::backgroundColor.g, Settings::backgroundColor.b, 1.0f);
+	if (!Settings::useFbo)
+	{
+		if (Settings::transparentBackground)
+			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		else
+			glClearColor(Settings::backgroundColor.r, Settings::backgroundColor.g, Settings::backgroundColor.b, 1.0f);
 
-	glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT);
+	}
 }
 
 GLFWwindow* Window::getWindow()

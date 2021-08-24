@@ -464,20 +464,20 @@ void Model::update()
 
 void Model::render()
 {
-	//fbo transparency stuff is a bit weird, fix later
-	if (useFbo)
+	if (Settings::useFbo)
 	{
-		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
-
+		//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
 		glBindTexture(GL_TEXTURE_2D, textureID);
-
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
 
+	//no longer needed, solved with shader and framebuffer
+	/*
 	//prepare color channels for transparency
-	if (Settings::transparentBackground)
+	if (Settings::transparentColorCorrection)
 	{
 		for (int i = 0; i < modelMeshes.size(); i++)
 		{
@@ -488,7 +488,7 @@ void Model::render()
 			meshShader.setMat4("transform", modelMeshes[i]->transform);
 			meshShader.setVec4("texColor", modelMeshes[i]->color);
 
-			//render masked mesh to screen
+			//render colors to invisible background
 			if (modelMeshes[i]->maskedMeshes.size())
 			{
 				glColorMask(true, true, true, false);
@@ -499,15 +499,19 @@ void Model::render()
 			else
 			{
 				glColorMask(true, true, true, false);
-				glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ZERO);
+				glBlendFuncSeparate(GL_ONE_MINUS_DST_COLOR, GL_SRC_COLOR, GL_ZERO, GL_ZERO);
 			}
 			modelMeshes[i]->render();
 
 			glStencilMask(0xff);
 			glStencilFunc(GL_ALWAYS, 0, 0xff);
 		}
+		glColorMask(false, false, false, true);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	}
+	*/
 
+	//render each mesh
 	for (int i = 0; i < modelMeshes.size(); i++)
 	{
 		//stencil buffer masking
@@ -517,7 +521,7 @@ void Model::render()
 		meshShader.setMat4("transform", modelMeshes[i]->transform);
 		meshShader.setVec4("texColor", modelMeshes[i]->color);
 
-		//render masked mesh to screen
+		//render masked mesh
 		if (modelMeshes[i]->maskedMeshes.size())
 		{
 			glColorMask(true, true, true, false);
@@ -525,6 +529,7 @@ void Model::render()
 			glStencilMask(0x00);
 			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ZERO);
 		}
+		//render non masked mesh
 		else
 		{
 			glColorMask(true, true, true, true);
@@ -536,22 +541,28 @@ void Model::render()
 		glStencilFunc(GL_ALWAYS, 0, 0xff);
 	}
 
-	//if the last mesh is masked to something, the alpha mask is turned off so don't forget to turn it back on
 	glColorMask(true, true, true, true);
 
-	if (useFbo)
+	//render from framebuffer to screen
+	if (Settings::useFbo)
 	{
-		//render to screen
+		//might make one giant shader that does everything if performance boost
 		screenShader.use();
+
 		updateVertexData();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 
-		glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ZERO); 
-		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+		if(Settings::transparentBackground)
+			glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+		else
+		{
+			glClearColor(Settings::backgroundColor.r, Settings::backgroundColor.g, Settings::backgroundColor.b, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		}
 
-		glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ZERO);
 		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
 
 		//return back to using normal shader
@@ -559,11 +570,14 @@ void Model::render()
 	}
 
 	//render the canvas rect
-	meshShader.setBool("drawPoints", true);
-	glBindVertexArray(canvasVao);
-	meshShader.setMat4("transform", transform);
-	meshShader.setVec3("uiColor", Settings::canvasBorderColor);
-	glLineWidth(static_cast<GLfloat>(Settings::canvasLineWidth));
-	glDrawElements(GL_LINES, static_cast<GLsizei>(8), GL_UNSIGNED_INT, 0);
-	meshShader.setBool("drawPoints", false);
+	if (Settings::showCanvas)
+	{
+		meshShader.setBool("drawPoints", true);
+		glBindVertexArray(canvasVao);
+		meshShader.setMat4("transform", transform);
+		meshShader.setVec3("uiColor", Settings::canvasBorderColor);
+		glLineWidth(static_cast<GLfloat>(Settings::canvasLineWidth));
+		glDrawElements(GL_LINES, static_cast<GLsizei>(8), GL_UNSIGNED_INT, 0);
+	}
+		meshShader.setBool("drawPoints", false);
 }
