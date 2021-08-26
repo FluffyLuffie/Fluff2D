@@ -145,11 +145,11 @@ void Model::renderSelectedVertices()
 	meshShader.setVec3("uiColor", Settings::meshPointSelectedColor);
 	meshShader.setFloat("pointSize", static_cast<float>(Settings::meshPointSize));
 
+	glBindVertexArray(vao);
+
 	//might group all the vertices into a single draw call if it becomes slow, just testing for now
 	for (auto const & [vert, partName]: selectedVertices)
 	{
-		glBindVertexArray(vao);
-
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex), vert, GL_DYNAMIC_DRAW);
 
@@ -429,9 +429,14 @@ void Model::updateFrameBufferSize()
 
 void Model::prepareMask(int meshNum)
 {
+	//set alpha to 0
+	meshShader.setMat4("transform", modelMeshes[meshNum]->transform);
+	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_ZERO);
+	modelMeshes[meshNum]->render();
+
+	//stencil buffer and calculate transparency
 	glClear(GL_STENCIL_BUFFER_BIT);
-	glBlendFuncSeparate(GL_ZERO, GL_ZERO, GL_ZERO, GL_ZERO);
-	glColorMask(false, false, false, false);
+	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	glStencilFunc(GL_ALWAYS, 1, 0xff);
 	glStencilMask(0xff);
 
@@ -440,6 +445,11 @@ void Model::prepareMask(int meshNum)
 		meshShader.setMat4("transform", meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->transform);
 		meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->render();
 	}
+
+	//set alpha to multiple
+	meshShader.setMat4("transform", modelMeshes[meshNum]->transform);
+	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_DST_ALPHA, GL_ZERO);
+	modelMeshes[meshNum]->render();
 }
 
 void Model::update()
@@ -524,15 +534,13 @@ void Model::render()
 		//render masked mesh
 		if (modelMeshes[i]->maskedMeshes.size())
 		{
-			glColorMask(true, true, true, false);
 			glStencilFunc(GL_EQUAL, 1, 0xff);
 			glStencilMask(0x00);
-			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ZERO);
+			glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ONE);
 		}
 		//render non masked mesh
 		else
 		{
-			glColorMask(true, true, true, true);
 			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 		}
 		modelMeshes[i]->render();
@@ -541,7 +549,31 @@ void Model::render()
 		glStencilFunc(GL_ALWAYS, 0, 0xff);
 	}
 
-	glColorMask(true, true, true, true);
+	//fix transparency stuff
+	if (Settings::transparentBackground || Settings::useFbo)
+	{
+		glColorMask(false, false, false, true);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glColorMask(true, true, true, true);
+		for (int i = 0; i < modelMeshes.size(); i++)
+		{
+			if (!modelMeshes[i]->maskedMeshes.size())
+			{
+				meshShader.setMat4("transform", modelMeshes[i]->transform);
+				meshShader.setVec4("texColor", modelMeshes[i]->color);
+				glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+				modelMeshes[i]->render();
+			}
+		}
+	}
+	else if (!Settings::useFbo)
+	{
+		glColorMask(false, false, false, true);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glColorMask(true, true, true, true);
+	}
 
 	//render from framebuffer to screen
 	if (Settings::useFbo)
@@ -560,14 +592,19 @@ void Model::render()
 		{
 			glClearColor(Settings::backgroundColor.r, Settings::backgroundColor.g, Settings::backgroundColor.b, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
-			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
 		}
+		screenShader.setBool("colorCorrection", Settings::colorCorrection);
+		screenShader.setBool("effect", Settings::effect);
+		screenShader.setFloat("timer", static_cast<float>(glfwGetTime()) * 4.0f);
 
 		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
 
 		//return back to using normal shader
 		meshShader.use();
 	}
+
+	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
 
 	//render the canvas rect
 	if (Settings::showCanvas)

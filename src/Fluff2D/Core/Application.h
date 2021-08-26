@@ -38,7 +38,9 @@ private:
 
 	ImGui::FileBrowser fileBrowser;
 
+	bool drawMenu = true;
 	bool queueFontChange = false;
+	bool draggingVertices = false;
 
 	void checkRunning();
 	

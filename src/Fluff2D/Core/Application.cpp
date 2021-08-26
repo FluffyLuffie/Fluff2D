@@ -13,18 +13,24 @@ Application::~Application()
 
 void Application::update()
 {
-	glfwPollEvents();
 	Event::update();
+	glfwPollEvents();
 
 	window.update();
 	Camera2D::update();
 
-	//create imgui frame
-	ImGui_ImplGlfw_NewFrame();
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui::NewFrame();
+	if (Event::keyPressed(GLFW_KEY_ESCAPE))
+		drawMenu ^= true;
 
-	drawImGui();
+	//create imgui frame
+	if (drawMenu)
+	{
+		ImGui_ImplGlfw_NewFrame();
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui::NewFrame();
+
+		drawImGui();
+	}
 
 	if (model)
 	{
@@ -73,11 +79,16 @@ void Application::update()
 			//move vertices
 			if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != Event::mod)
 			{
-				model->moveSelectedVertices(oldMouseCoord);
+				if (model->selectedVertices.size())
+				{
+					model->moveSelectedVertices(oldMouseCoord);
+					draggingVertices = true;
+				}
 			}
-			else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+			else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && draggingVertices)
 			{
 				model->updateOriginalVertexPositions();
+				draggingVertices = false;
 			}
 		}
 
@@ -105,18 +116,21 @@ void Application::update()
 	}
 
 	//end ImGui frame
-	ImGui::EndFrame();
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-	//load new font
-	if (queueFontChange)
+	if (drawMenu)
 	{
-		queueFontChange = false;
-		ImGuiIO& io = ImGui::GetIO();
-		io.Fonts->Clear();
-		io.Fonts->AddFontFromFileTTF(Settings::fontFile.c_str(), static_cast<float>(Settings::fontSize), NULL, io.Fonts->GetGlyphRangesJapanese());
-		ImGui_ImplOpenGL3_CreateFontsTexture();
+		ImGui::EndFrame();
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+		//load new font
+		if (queueFontChange)
+		{
+			queueFontChange = false;
+			ImGuiIO& io = ImGui::GetIO();
+			io.Fonts->Clear();
+			io.Fonts->AddFontFromFileTTF(Settings::fontFile.c_str(), static_cast<float>(Settings::fontSize), NULL, io.Fonts->GetGlyphRangesJapanese());
+			ImGui_ImplOpenGL3_CreateFontsTexture();
+		}
 	}
 
 	glfwSwapBuffers(window.getWindow());
@@ -440,15 +454,22 @@ void Application::drawImGui()
 
 		if (model)
 		{
-			if (ImGui::Checkbox("Use fbo", &Settings::useFbo) && !Settings::useFbo)
+			if (ImGui::Checkbox("Use FBO", &Settings::useFbo) && !Settings::useFbo)
 				glBindTexture(GL_TEXTURE_2D, model->textureID);
+			if (Settings::useFbo)
+			{
+				ImGui::Checkbox("Color Correction", &Settings::colorCorrection);
+				ImGui::SameLine();
+				ImGui::HelpMarker("It looks weird in this window with transparent background,\nbut fixes itself in the recording software.");
+				ImGui::Checkbox("Effect", &Settings::effect);
+			}
 			ImGui::Separator();
 		}
 
 		ImGui::ColorEdit3("Background", (float*)&Settings::backgroundColor);
 		ImGui::Checkbox("Transparent Background", &Settings::transparentBackground);
 		ImGui::SameLine();
-		ImGui::HelpMarker("If you want to capture transparency in recording softwares (like OBS),\nmake sure to also enable \"Use fbo\" in the settings above.\n\nAlso click something like \"Enable Transparency\" inside the recording software for this window.");
+		ImGui::HelpMarker("If you want to capture transparency in recording softwares (like OBS),\nmake sure to also enable something like \"Enable Transparency\" inside the recording software.\nTransparent and edge colors will be darkened unless you also enable FBO and color correction.");
 		ImGui::Separator();
 
 		ImGui::Checkbox("Show Canvas", &Settings::showCanvas);
@@ -473,12 +494,8 @@ void Application::drawImGui()
 		ImGui::SliderFloat("Vertex Detection Distance", &Settings::vertexDetectionDistance, 1.0f, 80.0f);
 		ImGui::Separator();
 
-		//might change or delete this later
-		if (model)
-		{
-			ImGui::DragFloat2("Model Position", &model->pos.x);
-			ImGui::Separator();
-		}
+		ImGui::DragFloat2("Camera Position", &Camera2D::pos.x);
+		ImGui::Separator();
 
 		ImGui::Text("Application average %.3f ms/frame (%d FPS)", 1000.0f / ImGui::GetIO().Framerate, (int)round(ImGui::GetIO().Framerate));
 

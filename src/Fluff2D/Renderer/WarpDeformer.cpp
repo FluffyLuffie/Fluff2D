@@ -7,6 +7,11 @@ WarpDeformer::WarpDeformer(const std::string& partName, int countX, int countY, 
 	boxCountX = countX;
 	boxCountY = countY;
 
+	warpWidth = width;
+	warpHeight = height;
+	boxWidth = width / countX;
+	boxHeight = height / countY;
+
 	pos = glm::vec2(left + width / 2, bottom + height / 2);
 
 	//increase bounding box
@@ -72,8 +77,8 @@ void WarpDeformer::update()
 		for (int j = 0; j < children[i]->vertices.size(); j++)
 		{
 			glm::vec2 vertexLocalPos = children[i]->localTransform * glm::vec4(children[i]->prewarpedVertexPositions[j].x, children[i]->prewarpedVertexPositions[j].y, 0.0f, 1.0f);
-			int boxX = static_cast<int>((vertexLocalPos.x - originalVertexPositions[0].x) / (originalVertexPositions[originalVertexPositions.size() - 1].x - originalVertexPositions[0].x) * boxCountX);
-			int boxY = static_cast<int>((vertexLocalPos.y - originalVertexPositions[0].y) / (originalVertexPositions[originalVertexPositions.size() - 1].y - originalVertexPositions[0].y) * boxCountY);
+			int boxX = static_cast<int>((vertexLocalPos.x - originalVertexPositions[0].x) / warpWidth * boxCountX);
+			int boxY = static_cast<int>((vertexLocalPos.y - originalVertexPositions[0].y) / warpHeight * boxCountY);
 
 			boxX = std::clamp(boxX, 0, boxCountX - 1);
 			boxY = std::clamp(boxY, 0, boxCountY - 1);
@@ -84,13 +89,31 @@ void WarpDeformer::update()
 			int p3 = (boxY + 1) * (boxCountX + 1) + boxX + 1;
 			int p4 = (boxY + 1) * (boxCountX + 1) + boxX;
 
-			float xRatio = (vertexLocalPos.x - originalVertexPositions[p1].x) / (originalVertexPositions[p2].x - originalVertexPositions[p1].x);
-			float yRatio = (vertexLocalPos.y - originalVertexPositions[p1].y) / (originalVertexPositions[p4].y - originalVertexPositions[p1].y);
+			float xRatio = (vertexLocalPos.x - originalVertexPositions[p1].x) / boxWidth;
+			float yRatio = (vertexLocalPos.y - originalVertexPositions[p1].y) / boxHeight;
 
-			float initialX = vertices[p1].position.x + xRatio * (vertices[p2].position.x - vertices[p1].position.x);
-			float initialY = vertices[p1].position.y + yRatio * (vertices[p4].position.y - vertices[p1].position.y);
+			float xClamped = std::clamp(xRatio, 0.0f, 1.0f);
+			float yClamped = std::clamp(yRatio, 0.0f, 1.0f);
 
-			children[i]->vertices[j].position = glm::inverse(children[i]->localTransform) * glm::vec4(initialX + (vertices[p4].position.x + xRatio * (vertices[p3].position.x - vertices[p4].position.x) - initialX) * yRatio, initialY + (vertices[p2].position.y + yRatio * (vertices[p3].position.y - vertices[p2].position.y) - initialY) * xRatio, 0.0f, 1.0f);
+			//offsets are reversed for some reason idk how matrices work
+			float xOffset = 0.0f, yOffset = 0.0f;
+			if (xRatio > 1.0f)
+				xOffset = (xRatio - 1.0f) * boxWidth;
+			else if (xRatio < 0.0f)
+				xOffset = xRatio * boxWidth;
+			if (yRatio > 1.0f)
+				yOffset = (yRatio - 1.0f) * boxHeight;
+			else if (yRatio < 0.0f)
+				yOffset = yRatio * boxHeight;
+
+			float initialX = vertices[p1].position.x + xClamped * (vertices[p2].position.x - vertices[p1].position.x);
+			float initialY = vertices[p1].position.y + yClamped * (vertices[p4].position.y - vertices[p1].position.y);
+
+			//set vertex position
+			children[i]->vertices[j].position = glm::inverse(children[i]->localTransform) * glm::vec4(initialX + xOffset + (vertices[p4].position.x + xClamped * (vertices[p3].position.x - vertices[p4].position.x) - initialX) * yClamped, initialY + yOffset + (vertices[p2].position.y + yClamped * (vertices[p3].position.y - vertices[p2].position.y) - initialY) * xClamped, 0.0f, 1.0f);
+
+			//set pre warped position
+			//children[i]->prewarpedVertexPositions[j].x += 0.05f;
 		}
 	}
 }
