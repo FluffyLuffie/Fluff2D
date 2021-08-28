@@ -25,7 +25,7 @@ public:
 	glm::mat4 projection = glm::mat4(1.0f);
 
 	unsigned int textureID = 0;
-	Shader meshShader, screenShader;
+	Shader shader;
 
 	std::vector<std::shared_ptr<ModelPartUI>> layerStructure;
 
@@ -74,7 +74,8 @@ public:
 private:
 	void updatePartMapRecursive(std::shared_ptr<ModelPart> part);
 
-	unsigned int fbo = 0, texColorBuffer = 0, rbo = 0;
+	unsigned int modelFbo = 0, modelTexColorBuffer = 0, modelRbo = 0;
+	unsigned int maskFbo = 0, maskTexColorBuffer = 0, maskRbo = 0;
 
 	unsigned int canvasVao = 0, canvasVbo = 0, canvasEbo = 0;
 	glm::vec2 canvasCoords[4] = { glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f) };
@@ -82,6 +83,6 @@ private:
 
 	void updateFrameBufferSize();
 
-	void prepareMask(int meshNum);
+	void renderMaskedMesh(int meshNum);
 };
 

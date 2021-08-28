@@ -16,8 +16,8 @@ public:
 	inline static int fontSize = 15;
 	inline static std::string fontFile = "C:/Windows/Fonts/Meiryob.ttc";
 
-	inline static bool useFbo = false;
-	inline static bool colorCorrection = false;
+	inline static bool useFbo = true;
+	inline static bool colorCorrection = true;
 	inline static bool effect = false;
 
 	inline static glm::vec3 backgroundColor = glm::vec3(0.75f);

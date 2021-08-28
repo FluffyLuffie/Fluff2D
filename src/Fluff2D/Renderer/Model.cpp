@@ -4,9 +4,10 @@ Model::Model()
 {
 	type = ModelPart::PartType::model;
 
-	meshShader.setShader("saves/shaders/meshShader.vs", "saves/shaders/meshShader.fs");
-	screenShader.setShader("saves/shaders/screenShader.vs", "saves/shaders/screenShader.fs");
-	meshShader.use();
+	shader.setShader("resources/shaders/shader.vs", "resources/shaders/shader.fs");
+	shader.use();
+
+	shader.setInt("mode", 0);
 
 	//set rendered models quad
 	vertices.reserve(4);
@@ -46,9 +47,14 @@ Model::Model()
 	glEnableVertexAttribArray(1);
 
 	//framebuffer stuff
-	glGenFramebuffers(1, &fbo);
-	glGenRenderbuffers(1, &rbo);
-	glGenTextures(1, &texColorBuffer);
+	glGenFramebuffers(1, &modelFbo);
+	glGenRenderbuffers(1, &modelRbo);
+	glGenTextures(1, &modelTexColorBuffer);
+
+	glGenFramebuffers(1, &maskFbo);
+	glGenRenderbuffers(1, &maskRbo);
+	glGenTextures(1, &maskTexColorBuffer);
+
 	updateFrameBufferSize();
 }
 
@@ -117,33 +123,33 @@ void Model::renderMeshVertice(const std::string &meshName)
 
 	partMap[meshName]->updateVertexData();
 
-	meshShader.setMat4("transform", partMap[meshName]->transform);
+	shader.setMat4("transform", partMap[meshName]->transform);
 
 	switch (partMap[meshName]->type)
 	{
 	case ModelPart::PartType::mesh:
-		meshShader.setVec3("uiColor", Settings::meshLineColor);
+		shader.setVec3("uiColor", Settings::meshLineColor);
 		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(partMap[meshName]->indices.size()), GL_UNSIGNED_INT, 0);
 
-		meshShader.setFloat("pointSize", static_cast<float>(Settings::meshPointBorderSize * 2 + Settings::meshPointSize));
-		meshShader.setVec3("uiColor", Settings::meshPointBorderColor);
+		shader.setFloat("pointSize", static_cast<float>(Settings::meshPointBorderSize * 2 + Settings::meshPointSize));
+		shader.setVec3("uiColor", Settings::meshPointBorderColor);
 		glDrawElements(GL_POINTS, static_cast<GLsizei>(partMap[meshName]->indices.size()), GL_UNSIGNED_INT, 0);
-		meshShader.setFloat("pointSize", static_cast<float>(Settings::meshPointSize));
-		meshShader.setVec3("uiColor", Settings::meshPointColor);
+		shader.setFloat("pointSize", static_cast<float>(Settings::meshPointSize));
+		shader.setVec3("uiColor", Settings::meshPointColor);
 		glDrawElements(GL_POINTS, static_cast<GLsizei>(partMap[meshName]->indices.size()), GL_UNSIGNED_INT, 0);
 		break;
 	case ModelPart::PartType::warpDeformer:
-		meshShader.setVec3("uiColor", Settings::warpDeformerColor);
+		shader.setVec3("uiColor", Settings::warpDeformerColor);
 		glDrawElements(GL_LINES, static_cast<GLsizei>(partMap[meshName]->indices.size()), GL_UNSIGNED_INT, 0);
-		meshShader.setFloat("pointSize", static_cast<float>(Settings::meshPointSize));
+		shader.setFloat("pointSize", static_cast<float>(Settings::meshPointSize));
 		glDrawElements(GL_POINTS, static_cast<GLsizei>(partMap[meshName]->indices.size()), GL_UNSIGNED_INT, 0);
 	}
 }
 
 void Model::renderSelectedVertices()
 {
-	meshShader.setVec3("uiColor", Settings::meshPointSelectedColor);
-	meshShader.setFloat("pointSize", static_cast<float>(Settings::meshPointSize));
+	shader.setVec3("uiColor", Settings::meshPointSelectedColor);
+	shader.setFloat("pointSize", static_cast<float>(Settings::meshPointSize));
 
 	glBindVertexArray(vao);
 
@@ -159,7 +165,7 @@ void Model::renderSelectedVertices()
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 		glEnableVertexAttribArray(0);
 
-		meshShader.setMat4("transform", partMap[partName]->transform);
+		shader.setMat4("transform", partMap[partName]->transform);
 
 		glDrawElements(GL_POINTS, GLsizei(1), GL_UNSIGNED_INT, 0);
 	}
@@ -189,7 +195,7 @@ void Model::updateOriginalVertexPositions()
 
 void Model::renderClosestVertex(Vertex* closestVert, const std::string& partName)
 {
-	meshShader.setVec3("uiColor", Settings::meshPointHighlightColor);
+	shader.setVec3("uiColor", Settings::meshPointHighlightColor);
 
 	glBindVertexArray(vao);
 
@@ -202,7 +208,7 @@ void Model::renderClosestVertex(Vertex* closestVert, const std::string& partName
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	meshShader.setMat4("transform", partMap[partName]->transform);
+	shader.setMat4("transform", partMap[partName]->transform);
 
 	glDrawElements(GL_POINTS, GLsizei(1), GL_UNSIGNED_INT, 0);
 }
@@ -386,9 +392,15 @@ void Model::showMeshMaskingMenu(const std::string& meshName)
 			if (ImGui::IsItemClicked())
 			{
 				if (alreadySelected)
+				{
 					meshMap[meshName]->maskedMeshes.erase(remove(meshMap[meshName]->maskedMeshes.begin(), meshMap[meshName]->maskedMeshes.end(), modelMeshes[i]->name), meshMap[meshName]->maskedMeshes.end());
+					meshMap[modelMeshes[i]->name]->maskedCount--;
+				}
 				else
+				{
 					meshMap[meshName]->maskedMeshes.push_back(modelMeshes[i]->name);
+					meshMap[modelMeshes[i]->name]->maskedCount++;
+				}
 			}
 		}
 	}
@@ -410,51 +422,80 @@ void Model::updatePartMapRecursive(std::shared_ptr<ModelPart> part)
 
 void Model::updateFrameBufferSize()
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
+	glBindTexture(GL_TEXTURE_2D, modelTexColorBuffer);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Window::windowWidth, Window::windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, modelTexColorBuffer, 0);
 
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, modelRbo);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Window::windowWidth, Window::windowHeight);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, modelRbo);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		Log::logError("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
+		Log::logError("ERROR::FRAMEBUFFER:: Model framebuffer is not complete!");
+
+	glBindFramebuffer(GL_FRAMEBUFFER, maskFbo);
+	glBindTexture(GL_TEXTURE_2D, maskTexColorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Window::windowWidth, Window::windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, maskTexColorBuffer, 0);
+
+	glBindRenderbuffer(GL_RENDERBUFFER, maskRbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Window::windowWidth, Window::windowHeight);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, maskRbo);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		Log::logError("ERROR::FRAMEBUFFER:: Mask framebuffer is not complete!");
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 }
 
-void Model::prepareMask(int meshNum)
+void Model::renderMaskedMesh(int meshNum)
 {
-	//set alpha to 0
-	meshShader.setMat4("transform", modelMeshes[meshNum]->transform);
-	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_ZERO);
+	//uses fbo for every mesh with masked parts, don't use too much
+	glBindFramebuffer(GL_FRAMEBUFFER, maskFbo);
+
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	//draw parent mesh
+	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
 	modelMeshes[meshNum]->render();
 
-	//stencil buffer and calculate transparency
-	glClear(GL_STENCIL_BUFFER_BIT);
-	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-	glStencilFunc(GL_ALWAYS, 1, 0xff);
-	glStencilMask(0xff);
-
+	//might need to reverse order or something idk
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
 	for (int j = 0; j < modelMeshes[meshNum]->maskedMeshes.size(); j++)
 	{
-		meshShader.setMat4("transform", meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->transform);
+		shader.setMat4("transform", meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->transform);
+		shader.setVec4("texColor", meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->color);
 		meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->render();
 	}
 
-	//set alpha to multiple
-	meshShader.setMat4("transform", modelMeshes[meshNum]->transform);
-	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_DST_ALPHA, GL_ZERO);
-	modelMeshes[meshNum]->render();
+	if (Settings::useFbo)
+		glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
+	else
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, maskTexColorBuffer);
+
+	shader.setMat4("projection", glm::mat4(1.0f));
+	shader.setMat4("transform", glm::mat4(1.0f));
+	shader.setVec4("texColor", glm::vec4(1.0f));
+
+	updateVertexData();
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+
+	shader.setMat4("projection", Camera2D::projection);
+	glBindTexture(GL_TEXTURE_2D, textureID);
 }
 
 void Model::update()
 {
-	meshShader.setMat4("projection", Camera2D::projection);
+	shader.setMat4("projection", Camera2D::projection);
 
 	if (Event::windowResized)
 		updateFrameBufferSize();
@@ -478,96 +519,36 @@ void Model::render()
 	{
 		//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
 		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
 
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
-
-	//no longer needed, solved with shader and framebuffer
-	/*
-	//prepare color channels for transparency
-	if (Settings::transparentColorCorrection)
-	{
-		for (int i = 0; i < modelMeshes.size(); i++)
-		{
-			//stencil buffer masking
-			if (modelMeshes[i]->maskedMeshes.size())
-				prepareMask(i);
-
-			meshShader.setMat4("transform", modelMeshes[i]->transform);
-			meshShader.setVec4("texColor", modelMeshes[i]->color);
-
-			//render colors to invisible background
-			if (modelMeshes[i]->maskedMeshes.size())
-			{
-				glColorMask(true, true, true, false);
-				glStencilFunc(GL_EQUAL, 1, 0xff);
-				glStencilMask(0x00);
-				glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ZERO);
-			}
-			else
-			{
-				glColorMask(true, true, true, false);
-				glBlendFuncSeparate(GL_ONE_MINUS_DST_COLOR, GL_SRC_COLOR, GL_ZERO, GL_ZERO);
-			}
-			modelMeshes[i]->render();
-
-			glStencilMask(0xff);
-			glStencilFunc(GL_ALWAYS, 0, 0xff);
-		}
-		glColorMask(false, false, false, true);
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	}
-	*/
 
 	//render each mesh
+	shader.setInt("mode", 0);
 	for (int i = 0; i < modelMeshes.size(); i++)
 	{
-		//stencil buffer masking
-		if (modelMeshes[i]->maskedMeshes.size())
-			prepareMask(i);
+		shader.setMat4("transform", modelMeshes[i]->transform);
+		shader.setVec4("texColor", modelMeshes[i]->color);
 
-		meshShader.setMat4("transform", modelMeshes[i]->transform);
-		meshShader.setVec4("texColor", modelMeshes[i]->color);
-
-		//render masked mesh
-		if (modelMeshes[i]->maskedMeshes.size())
+		//don't render meshes that are being masked by others
+		if (modelMeshes[i]->maskedCount == 0)
 		{
-			glStencilFunc(GL_EQUAL, 1, 0xff);
-			glStencilMask(0x00);
-			glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ONE);
-		}
-		//render non masked mesh
-		else
-		{
-			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-		}
-		modelMeshes[i]->render();
-
-		glStencilMask(0xff);
-		glStencilFunc(GL_ALWAYS, 0, 0xff);
-	}
-
-	//fix transparency stuff
-	if (Settings::transparentBackground || Settings::useFbo)
-	{
-		glColorMask(false, false, false, true);
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glColorMask(true, true, true, true);
-		for (int i = 0; i < modelMeshes.size(); i++)
-		{
-			if (!modelMeshes[i]->maskedMeshes.size())
+			//if masking others
+			if (modelMeshes[i]->maskedMeshes.size())
+				renderMaskedMesh(i);
+			//if not maskign others
+			else
 			{
-				meshShader.setMat4("transform", modelMeshes[i]->transform);
-				meshShader.setVec4("texColor", modelMeshes[i]->color);
-				glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+				glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 				modelMeshes[i]->render();
 			}
 		}
 	}
-	else if (!Settings::useFbo)
+
+	//fix transparency stuff
+	if (!Settings::transparentBackground && !Settings::useFbo)
 	{
 		glColorMask(false, false, false, true);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -578,13 +559,14 @@ void Model::render()
 	//render from framebuffer to screen
 	if (Settings::useFbo)
 	{
-		//might make one giant shader that does everything if performance boost
-		screenShader.use();
-
 		updateVertexData();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+		glBindTexture(GL_TEXTURE_2D, modelTexColorBuffer);
+
+		shader.setMat4("projection", glm::mat4(1.0f));
+		shader.setMat4("transform", glm::mat4(1.0f));
+		shader.setVec4("texColor", glm::vec4(1.0f));
 
 		if(Settings::transparentBackground)
 			glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
@@ -594,14 +576,20 @@ void Model::render()
 			glClear(GL_COLOR_BUFFER_BIT);
 			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
 		}
-		screenShader.setBool("colorCorrection", Settings::colorCorrection);
-		screenShader.setBool("effect", Settings::effect);
-		screenShader.setFloat("timer", static_cast<float>(glfwGetTime()) * 4.0f);
+		if (Settings::colorCorrection && !Settings::effect)
+			shader.setInt("mode", 2);
+		else if (!Settings::colorCorrection && Settings::effect)
+		{
+			shader.setInt("mode", 3);
+			shader.setFloat("timer", static_cast<float>(glfwGetTime()) * 4.0f);
+		}
+		else if (Settings::colorCorrection && Settings::effect)
+		{
+			shader.setInt("mode", 4);
+			shader.setFloat("timer", static_cast<float>(glfwGetTime()) * 4.0f);
+		}
 
 		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
-
-		//return back to using normal shader
-		meshShader.use();
 	}
 
 	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
@@ -609,12 +597,12 @@ void Model::render()
 	//render the canvas rect
 	if (Settings::showCanvas)
 	{
-		meshShader.setBool("drawPoints", true);
+		shader.setMat4("projection", Camera2D::projection);
+		shader.setInt("mode", 1);
 		glBindVertexArray(canvasVao);
-		meshShader.setMat4("transform", transform);
-		meshShader.setVec3("uiColor", Settings::canvasBorderColor);
+		shader.setMat4("transform", transform);
+		shader.setVec3("uiColor", Settings::canvasBorderColor);
 		glLineWidth(static_cast<GLfloat>(Settings::canvasLineWidth));
 		glDrawElements(GL_LINES, static_cast<GLsizei>(8), GL_UNSIGNED_INT, 0);
 	}
-		meshShader.setBool("drawPoints", false);
 }

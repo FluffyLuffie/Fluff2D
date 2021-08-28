@@ -63,7 +63,7 @@ void Window::init()
 	//window icon
 	GLFWimage data[1];
 	int junk = 0;
-	data[0].pixels = stbi_load("resources/icon.png", &data[0].width, &data[0].height, &junk, 0);
+	data[0].pixels = stbi_load("resources/textures/icon.png", &data[0].width, &data[0].height, &junk, 0);
 	glfwSetWindowIcon(m_window, 1, data);
 	stbi_image_free(data[0].pixels);
 
@@ -73,6 +73,8 @@ void Window::init()
 	glEnable(GL_STENCIL_TEST);
 	glStencilFunc(GL_NOTEQUAL, 1, 0xff);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glStencilMask(0xff);
+	glStencilFunc(GL_ALWAYS, 0, 0xff);
 
 	//if 3D, prob not
 	//glEnable(GL_DEPTH_TEST);

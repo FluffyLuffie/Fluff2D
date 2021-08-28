@@ -98,7 +98,7 @@ void Application::update()
 		if (selectedParts.size())
 		{
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			model->meshShader.setBool("drawPoints", true);
+			model->shader.setInt("mode", 1);
 
 			for (int i = 0; i < selectedParts.size(); i++)
 			{
@@ -111,7 +111,7 @@ void Application::update()
 				model->renderClosestVertex(closestVertex, selectedParts[selectedPartNum]);
 
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			model->meshShader.setBool("drawPoints", false);
+			model->shader.setInt("mode", 0);
 		}
 	}
 

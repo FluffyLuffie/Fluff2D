@@ -18,6 +18,7 @@ public:
 	glm::vec4 color = glm::vec4(1.0f);
 
 	std::vector<std::string> maskedMeshes;
+	int maskedCount = 0;
 
 	bool visible = true;
 
