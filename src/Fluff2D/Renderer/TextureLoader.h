@@ -13,7 +13,8 @@
 #include "../UI/ModelPartUI.h"
 #include "../Core/Window.h"
 
-#include "stb_image/stb_image_write.h"
+//include uncomment after testing
+//#include "stb_image/stb_image_write.h"
 #include "rectpack2D/finders_interface.h"
 #include "alpha-bleeding/alphaBleeding.h"
 #include "threadPool/ThreadPool.h"
@@ -29,7 +30,6 @@ public:
 
 private:
 	static std::vector<rect_type> prepareTextureAtlas(std::vector <LayerRect>& layerRects, int texturePixelBuffer, int *atlasWidth, int *atlasHeight);
-	static void bleedPng(unsigned char* data, int width, int height);
 
 	static int nextPower2(int num);
 };

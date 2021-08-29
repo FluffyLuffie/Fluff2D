@@ -1,11 +1,10 @@
-#version 420 core
+#version 450 core
 
 out vec4 fragColor;
 
 in vec2 texCoord;
 
 uniform sampler2D atlasTex;
-uniform sampler2D maskTex;
 uniform sampler2D modelTex;
 
 uniform vec4 texColor;
@@ -40,7 +39,7 @@ void main()
 			fragColor = vec4(uiColor, 1.0f);
 			break;
 		case(2):
-			fragColor = texture(maskTex, texCoord) * texColor;
+			fragColor = texture(modelTex, texCoord + vec2(0.5f, 0.0f)) * texColor;
 			break;
 		case(3):
 			fragColor = texture(modelTex, texCoord) * texColor;

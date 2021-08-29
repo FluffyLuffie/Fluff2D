@@ -12,15 +12,12 @@ Window::~Window()
 
 void Window::update()
 {
-	if (!Settings::useFbo)
-	{
-		if (Settings::transparentBackground)
-			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		else
-			glClearColor(Settings::backgroundColor.r, Settings::backgroundColor.g, Settings::backgroundColor.b, 1.0f);
+	if (Settings::transparentBackground)
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	else
+		glClearColor(Settings::backgroundColor.r, Settings::backgroundColor.g, Settings::backgroundColor.b, 1.0f);
 
-		glClear(GL_COLOR_BUFFER_BIT);
-	}
+	glClear(GL_COLOR_BUFFER_BIT);
 }
 
 GLFWwindow* Window::getWindow()
@@ -33,7 +30,7 @@ void Window::init()
 	//setup glfw
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	//for transparent back, delete later after testing
@@ -51,7 +48,7 @@ void Window::init()
 		return;
 	}
 	glfwMakeContextCurrent(m_window);
-	glfwGetFramebufferSize(m_window, &windowWidth, &windowHeight);
+	glfwGetFramebufferSize(m_window, &width, &height);
 
 	//glad thing
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -69,12 +66,6 @@ void Window::init()
 
 	glEnable(GL_BLEND);
 	glEnable(GL_TEXTURE_2D);
-
-	glEnable(GL_STENCIL_TEST);
-	glStencilFunc(GL_NOTEQUAL, 1, 0xff);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	glStencilMask(0xff);
-	glStencilFunc(GL_ALWAYS, 0, 0xff);
 
 	//if 3D, prob not
 	//glEnable(GL_DEPTH_TEST);

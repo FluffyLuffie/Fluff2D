@@ -22,7 +22,7 @@ public:
 
 	GLFWwindow* getWindow();
 
-	inline static int windowWidth, windowHeight;
+	inline static int width, height;
 private:
 	GLFWwindow* m_window = nullptr;
 };

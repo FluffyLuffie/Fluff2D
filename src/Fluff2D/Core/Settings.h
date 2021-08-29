@@ -16,7 +16,6 @@ public:
 	inline static int fontSize = 15;
 	inline static std::string fontFile = "C:/Windows/Fonts/Meiryob.ttc";
 
-	inline static bool useFbo = true;
 	inline static bool colorCorrection = true;
 	inline static bool effect = false;
 

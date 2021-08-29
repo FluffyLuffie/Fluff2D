@@ -422,6 +422,9 @@ void Application::drawImGui()
 				ImGui::CloseCurrentPopup();
 			ImGui::EndPopup();
 		}
+
+		if (model && ImGui::Button("Test Button"))
+			model->fboToPng = true;
 	}
 	ImGui::End();
 
@@ -454,14 +457,10 @@ void Application::drawImGui()
 
 		if (model)
 		{
-			ImGui::Checkbox("Use FBO", &Settings::useFbo);
-			if (Settings::useFbo)
-			{
-				ImGui::Checkbox("Color Correction", &Settings::colorCorrection);
-				ImGui::SameLine();
-				ImGui::HelpMarker("It looks weird in this window with transparent background,\nbut fixes itself in the recording software.");
-				ImGui::Checkbox("Effect", &Settings::effect);
-			}
+			ImGui::Checkbox("Color Correction", &Settings::colorCorrection);
+			ImGui::SameLine();
+			ImGui::HelpMarker("It looks weird in this window with transparent background,\nbut fixes itself in the recording software.");
+			ImGui::Checkbox("Effect", &Settings::effect);
 			ImGui::Separator();
 		}
 

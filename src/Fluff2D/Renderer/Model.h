@@ -13,6 +13,9 @@
 #include "../Core/Settings.h"
 #include "Camera2D.h"
 
+//remove after testing
+#include "stb_image/stb_image_write.h"
+
 class Model : public ModelPart
 {
 public:
@@ -41,6 +44,8 @@ public:
 	std::unordered_map<Vertex*, glm::vec2> initialVerticesPos;
 
 	int atlasWidth = 0, atlasHeight = 0, atlasNrChannels = 0;
+
+	bool fboToPng = false;
 
 	void update() override;
 	void render() override;
@@ -77,11 +82,14 @@ private:
 	void updatePartMapRecursive(std::shared_ptr<ModelPart> part);
 
 	unsigned int modelFbo = 0, modelTexColorBuffer = 0, modelRbo = 0;
-	unsigned int maskFbo = 0, maskTexColorBuffer = 0, maskRbo = 0;
+	unsigned int maskVao = 0, maskVbo = 0, maskEbo = 0;
+
+	Vertex maskVertices[4] = { Vertex(-1.0f, 1.0f, 0.5f, 1.0f), Vertex(1.0f, 1.0f, 1.0f, 1.0f) , Vertex(1.0f, -1.0f, 1.0f, 0.0f) , Vertex(-1.0f, -1.0f, 0.5f, 0.0f) };
 
 	unsigned int canvasVao = 0, canvasVbo = 0, canvasEbo = 0;
 	glm::vec2 canvasCoords[4] = { glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f) };
-	unsigned int canvasIndices[8] = { 0, 1, 1, 2, 2, 3, 3, 0 };
+
+	unsigned int rectLineIndices[8] = { 0, 1, 1, 2, 2, 3, 3, 0 };
 
 	void updateFrameBufferSize();
 
