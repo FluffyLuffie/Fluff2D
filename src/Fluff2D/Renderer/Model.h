@@ -71,6 +71,8 @@ public:
 
 	void showMeshMaskingMenu(const std::string &meshName);
 
+	void bindUniformTextures();
+
 private:
 	void updatePartMapRecursive(std::shared_ptr<ModelPart> part);
 

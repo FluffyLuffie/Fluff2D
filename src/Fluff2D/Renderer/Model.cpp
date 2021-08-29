@@ -7,6 +7,9 @@ Model::Model()
 	shader.setShader("resources/shaders/shader.vs", "resources/shaders/shader.fs");
 	shader.use();
 
+	shader.setInt("atlasTex", 0);
+	shader.setInt("maskTex", 1);
+	shader.setInt("modelTex", 2);
 	shader.setInt("mode", 0);
 
 	//set rendered models quad
@@ -60,6 +63,8 @@ Model::Model()
 
 Model::~Model() 
 {
+	glDeleteTextures(1, &textureID);
+
 	glDeleteVertexArrays(1, &vao);
 	glDeleteBuffers(1, &vbo);
 	glDeleteBuffers(1, &ebo);
@@ -67,6 +72,14 @@ Model::~Model()
 	glDeleteVertexArrays(1, &canvasVao);
 	glDeleteBuffers(1, &canvasVbo);
 	glDeleteBuffers(1, &canvasEbo);
+
+	glDeleteFramebuffers(1, &modelFbo);
+	glDeleteRenderbuffers(1, &modelRbo);
+	glDeleteTextures(1, &modelTexColorBuffer);
+
+	glDeleteFramebuffers(1, &maskFbo);
+	glDeleteRenderbuffers(1, &maskRbo);
+	glDeleteTextures(1, &maskTexColorBuffer);
 }
 
 void Model::generateDefaltParams()
@@ -406,6 +419,18 @@ void Model::showMeshMaskingMenu(const std::string& meshName)
 	}
 }
 
+void Model::bindUniformTextures()
+{
+	shader.use();
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, maskTexColorBuffer);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, modelTexColorBuffer);
+}
+
 void Model::updatePartMapRecursive(std::shared_ptr<ModelPart> part)
 {
 	partMap[part->name] = part;
@@ -452,6 +477,8 @@ void Model::updateFrameBufferSize()
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	bindUniformTextures();
 }
 
 void Model::renderMaskedMesh(int meshNum)
@@ -479,18 +506,18 @@ void Model::renderMaskedMesh(int meshNum)
 		glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
 	else
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glBindTexture(GL_TEXTURE_2D, maskTexColorBuffer);
 
 	shader.setMat4("projection", glm::mat4(1.0f));
 	shader.setMat4("transform", glm::mat4(1.0f));
 	shader.setVec4("texColor", glm::vec4(1.0f));
 
+	shader.setInt("mode", 2);
 	updateVertexData();
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+	shader.setInt("mode", 0);
 
 	shader.setMat4("projection", Camera2D::projection);
-	glBindTexture(GL_TEXTURE_2D, textureID);
 }
 
 void Model::update()
@@ -517,8 +544,6 @@ void Model::render()
 {
 	if (Settings::useFbo)
 	{
-		//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
-		glBindTexture(GL_TEXTURE_2D, textureID);
 		glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
 
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -562,7 +587,6 @@ void Model::render()
 		updateVertexData();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glBindTexture(GL_TEXTURE_2D, modelTexColorBuffer);
 
 		shader.setMat4("projection", glm::mat4(1.0f));
 		shader.setMat4("transform", glm::mat4(1.0f));
@@ -576,18 +600,16 @@ void Model::render()
 			glClear(GL_COLOR_BUFFER_BIT);
 			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
 		}
-		if (Settings::colorCorrection && !Settings::effect)
-			shader.setInt("mode", 2);
-		else if (!Settings::colorCorrection && Settings::effect)
+
+		int fboRenderMode = 5;
+		if (!Settings::colorCorrection)
+			fboRenderMode = 3;
+		if (Settings::effect)
 		{
-			shader.setInt("mode", 3);
-			shader.setFloat("timer", static_cast<float>(glfwGetTime()) * 4.0f);
+			fboRenderMode++;
+			shader.setFloat("timer", static_cast<float>(glfwGetTime()));
 		}
-		else if (Settings::colorCorrection && Settings::effect)
-		{
-			shader.setInt("mode", 4);
-			shader.setFloat("timer", static_cast<float>(glfwGetTime()) * 4.0f);
-		}
+		shader.setInt("mode", fboRenderMode);
 
 		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
 	}

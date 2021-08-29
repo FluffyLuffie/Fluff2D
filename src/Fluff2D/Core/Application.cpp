@@ -111,7 +111,6 @@ void Application::update()
 				model->renderClosestVertex(closestVertex, selectedParts[selectedPartNum]);
 
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			model->shader.setInt("mode", 0);
 		}
 	}
 
@@ -147,6 +146,7 @@ void Application::initializeModelFromPsd(const char* fileName)
 	TextureLoader::loadTexture(&model->textureID, "saves/testExports/textureAtlas.png", &model->atlasWidth, &model->atlasHeight, &model->atlasNrChannels);
 	model->generateDefaltParams();
 	model->updatePartMap();
+	model->bindUniformTextures();
 
 	Log::logInfo("Took %f seconds to load PSD", glfwGetTime() - startTime);
 }
@@ -454,8 +454,7 @@ void Application::drawImGui()
 
 		if (model)
 		{
-			if (ImGui::Checkbox("Use FBO", &Settings::useFbo) && !Settings::useFbo)
-				glBindTexture(GL_TEXTURE_2D, model->textureID);
+			ImGui::Checkbox("Use FBO", &Settings::useFbo);
 			if (Settings::useFbo)
 			{
 				ImGui::Checkbox("Color Correction", &Settings::colorCorrection);
