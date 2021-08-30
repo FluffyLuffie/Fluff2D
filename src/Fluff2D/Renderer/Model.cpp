@@ -554,6 +554,7 @@ void Model::render()
 	//clear left rect
 	shader.setMat4("projection", glm::mat4(1.0f));
 	shader.setMat4("transform", glm::mat4(1.0f));
+	updateVertexData();
 	glBindVertexArray(vao);
 	glBlendFunc(GL_ZERO, GL_ZERO);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
