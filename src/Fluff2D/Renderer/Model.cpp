@@ -145,6 +145,9 @@ void Model::updatePartMap()
 
 void Model::renderMeshVertice(const std::string &meshName)
 {
+	if (partMap.find(meshName) == partMap.end())
+		return;
+
 	glLineWidth(static_cast<GLfloat>(Settings::meshLineWidth));
 
 	partMap[meshName]->updateVertexData();
@@ -252,29 +255,49 @@ void Model::generateTestBoxMesh(std::string partName, int boxSizeX, int boxSizeY
 
 bool Model::checkNameExists(const std::string& name)
 {
-	if (partMap.find(name) != partMap.end())
-		Log::logError("Name overlap, input something else");
 	return partMap.find(name) != partMap.end();
 }
 
 bool Model::checkSameParent(const std::vector<std::string>& selectedParts)
 {
+	std::shared_ptr<ModelPart> commonParent;
 	for (int i = 0; i < selectedParts.size(); i++)
-		if (partMap[selectedParts[i]]->parent != partMap[selectedParts[0]]->parent)
+	{
+		if (partMap.find(selectedParts[i]) == partMap.end())
+			continue;
+		else if (!commonParent)
+			commonParent = partMap[selectedParts[i]]->parent;
+		else if(commonParent != partMap[selectedParts[i]]->parent)
 			return false;
+	}
 	return true;
 }
 
 //add check if folder was selected too
 void Model::addWarpDeformer(std::string name, const std::vector<std::string>& selectedParts, int countX, int countY)
 {
-	std::shared_ptr<ModelPart> parentPart= partMap[selectedParts[0]]->parent;
+	std::shared_ptr<ModelPart> parentPart;
 	std::shared_ptr<ModelPart> newDeformer;
+
+	//find parent
+	for (int i = 0; i < selectedParts.size(); i++)
+	{
+		if (partMap.find(selectedParts[i]) != partMap.end())
+		{
+			parentPart = partMap[selectedParts[i]]->parent;
+			break;
+		}
+	}
+
+	if (!parentPart)
+		return;
 
 	//figure out box size
 	float top = -FLT_MAX, bottom = FLT_MAX, left = FLT_MAX, right = -FLT_MAX;
 	for (int i = 0; i < selectedParts.size(); i++)
 	{
+		if (partMap.find(selectedParts[i]) == partMap.end())
+			continue;
 		for (int j = 0; j < partMap[selectedParts[i]]->vertices.size(); j++)
 		{
 			glm::vec2 worldCoord = partMap[selectedParts[i]]->transform * glm::vec4(partMap[selectedParts[i]]->vertices[j].position.x, partMap[selectedParts[i]]->vertices[j].position.y, 0.0f, 1.0f);
@@ -301,6 +324,8 @@ void Model::addWarpDeformer(std::string name, const std::vector<std::string>& se
 	//move parts to new parent
 	for (int i = 0; i < selectedParts.size(); i++)
 	{
+		if (partMap.find(selectedParts[i]) == partMap.end())
+			continue;
 		newDeformer->children.push_back(partMap[selectedParts[i]]);
 
 		partMap[selectedParts[i]]->parent->children.erase(
@@ -319,8 +344,21 @@ void Model::addWarpDeformer(std::string name, const std::vector<std::string>& se
 
 void Model::addRotationDeformer(std::string name, const std::vector<std::string>& selectedParts)
 {
-	std::shared_ptr<ModelPart> parentPart = partMap[selectedParts[0]]->parent;
+	std::shared_ptr<ModelPart> parentPart;
 	std::shared_ptr<ModelPart> newDeformer;
+
+	//find parent
+	for (int i = 0; i < selectedParts.size(); i++)
+	{
+		if (partMap.find(selectedParts[i]) != partMap.end())
+		{
+			parentPart = partMap[selectedParts[i]]->parent;
+			break;
+		}
+	}
+
+	if (!parentPart)
+		return;
 
 	parentPart->children.push_back(std::make_shared<RotationDeformer>(name));
 
@@ -330,6 +368,9 @@ void Model::addRotationDeformer(std::string name, const std::vector<std::string>
 	//move parts to new parent
 	for (int i = 0; i < selectedParts.size(); i++)
 	{
+		if (partMap.find(selectedParts[i]) == partMap.end())
+			continue;
+
 		newDeformer->children.push_back(partMap[selectedParts[i]]);
 
 		partMap[selectedParts[i]]->parent->children.erase(
@@ -362,6 +403,9 @@ Vertex* Model::findClosestVertex(const std::vector<std::string>& selectedParts, 
 	float mouseY = ImGui::GetMousePos().y;
 
 	for (int i = 0; i < selectedParts.size(); i++)
+	{
+		if (partMap.find(selectedParts[i]) == partMap.end())
+			continue;
 		for (int v = 0; v < partMap[selectedParts[i]]->vertices.size(); v++)
 		{
 			auto vert = Camera2D::projection * partMap[selectedParts[i]]->transform * glm::vec4(partMap[selectedParts[i]]->vertices[v].position.x, partMap[selectedParts[i]]->vertices[v].position.y, 0.0f, 1.0f);
@@ -373,6 +417,7 @@ Vertex* Model::findClosestVertex(const std::vector<std::string>& selectedParts, 
 				closestDistance = pixelDistance;
 			}
 		}
+	}
 
 	return closestVertex;
 }
@@ -484,7 +529,6 @@ void Model::renderMaskedMesh(int meshNum)
 	glViewport(Window::width, 0, Window::width, Window::height);
 
 	//draw parent mesh
-	shader.setMat4("projection", Camera2D::projection);
 	shader.setMat4("transform", modelMeshes[meshNum]->transform);
 	shader.setVec4("texColor", modelMeshes[meshNum]->color);
 	glBlendFunc(GL_ONE, GL_ZERO);
@@ -508,7 +552,7 @@ void Model::renderMaskedMesh(int meshNum)
 
 	//shift back left
 	glViewport(0, 0, Window::width, Window::height);
-	shader.setInt("mode", 3);
+	shader.setInt("mode", 2);
 	glBindVertexArray(maskVao);
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
@@ -606,9 +650,9 @@ void Model::render()
 	else
 		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
 
-	int fboRenderMode = 5;
+	int fboRenderMode = 4;
 	if (!Settings::colorCorrection)
-		fboRenderMode = 3;
+		fboRenderMode = 2;
 	if (Settings::effect)
 	{
 		fboRenderMode++;

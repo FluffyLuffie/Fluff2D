@@ -19,19 +19,6 @@ void Application::update()
 	window.update();
 	Camera2D::update();
 
-	if (Event::keyPressed(GLFW_KEY_ESCAPE))
-		drawMenu ^= true;
-
-	//create imgui frame
-	if (drawMenu)
-	{
-		ImGui_ImplGlfw_NewFrame();
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui::NewFrame();
-
-		drawImGui();
-	}
-
 	if (model)
 	{
 		model->update();
@@ -114,9 +101,18 @@ void Application::update()
 		}
 	}
 
-	//end ImGui frame
+	if (Event::keyPressed(GLFW_KEY_ESCAPE))
+		drawMenu ^= true;
+
+	//create imgui frame
 	if (drawMenu)
 	{
+		ImGui_ImplGlfw_NewFrame();
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui::NewFrame();
+
+		drawImGui();
+
 		ImGui::EndFrame();
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -139,16 +135,17 @@ void Application::update()
 
 void Application::initializeModelFromPsd(const char* fileName)
 {
-	double startTime = glfwGetTime();
+	selectedParts.clear();
 
+	double startTime = glfwGetTime();
 	model = std::make_shared<Model>();
 	TextureLoader::loadPsdFile(fileName, model);
 	TextureLoader::loadTexture(&model->textureID, "saves/testExports/textureAtlas.png", &model->atlasWidth, &model->atlasHeight, &model->atlasNrChannels);
+	Log::logInfo("Took %f seconds to load PSD", glfwGetTime() - startTime);
+
 	model->generateDefaltParams();
 	model->updatePartMap();
 	model->bindUniformTextures();
-
-	Log::logInfo("Took %f seconds to load PSD", glfwGetTime() - startTime);
 }
 
 void Application::saveModel()
@@ -193,6 +190,7 @@ void Application::init()
 	Log::clear();
 
 	SaveSystem::loadSettings();
+	glPointSize(static_cast<GLfloat>(Settings::meshPointSize));
 }
 
 void Application::checkRunning()
@@ -389,6 +387,8 @@ void Application::drawImGui()
 		bool meshGeneratorValid = true;
 		for (int i = 0; i < selectedParts.size(); i++)
 		{
+			if (model->partMap.find(selectedParts[i]) == model->partMap.end())
+				continue;
 			if (model->partMap[selectedParts[i]]->type != ModelPart::PartType::mesh)
 				meshGeneratorValid = false;
 		}
@@ -409,6 +409,8 @@ void Application::drawImGui()
 			{
 				for (int i = 0; i < selectedParts.size(); i++)
 				{
+					if (model->partMap.find(selectedParts[i]) == model->partMap.end())
+						continue;
 					if (model->partMap[selectedParts[i]]->type == ModelPart::PartType::mesh)
 					{
 						model->generateTestBoxMesh(selectedParts[i], boxCount[0], boxCount[1]);
@@ -450,7 +452,7 @@ void Application::drawImGui()
 		ImGui::HelpMarker("***THIS DOES ABSOLUTELY NOTHING RIGHT NOW***\nI can't figure out how to support multilingual stuff, only English for now.");
 		ImGui::Separator();
 
-		ImGui::SliderInt("Font Size", &Settings::fontSize, 5, 100);
+		ImGui::DragInt("Font Size", &Settings::fontSize);
 		if (ImGui::Button("Update Font"))
 			queueFontChange = true;
 		ImGui::Separator();
@@ -471,21 +473,21 @@ void Application::drawImGui()
 		ImGui::Separator();
 
 		ImGui::Checkbox("Show Canvas", &Settings::showCanvas);
-		ImGui::SliderInt("Canvas Line Width", &Settings::canvasLineWidth, 1, 20);
+		ImGui::DragInt("Canvas Line Width", &Settings::canvasLineWidth);
 		ImGui::ColorEdit3("Canvas Border Color", (float*)&Settings::canvasBorderColor);
 		ImGui::Separator();
 
-		ImGui::SliderInt("Mesh Point Size", &Settings::meshPointSize, 1, 20);
+		ImGui::DragInt("Mesh Point Size", &Settings::meshPointSize);
 		ImGui::ColorEdit3("Mesh Point Color", (float*)&Settings::meshPointColor);
 		ImGui::ColorEdit3("Mesh Point Heighlight Color", (float*)&Settings::meshPointHighlightColor);
 		ImGui::ColorEdit3("Mesh Point Selected Color", (float*)&Settings::meshPointSelectedColor);
 		ImGui::Separator();
 
-		ImGui::SliderInt("Mesh Point Border Size", &Settings::meshPointBorderSize, 1, 10);
+		ImGui::DragInt("Mesh Point Border Size", &Settings::meshPointBorderSize);
 		ImGui::ColorEdit3("Mesh Point Border Color", (float*)&Settings::meshPointBorderColor);
 		ImGui::Separator();
 
-		ImGui::SliderInt("Mesh Line Width", &Settings::meshLineWidth, 1, 20);
+		ImGui::DragInt("Mesh Line Width", &Settings::meshLineWidth);
 		ImGui::ColorEdit3("Mesh Line Color", (float*)&Settings::meshLineColor);
 		ImGui::Separator();
 

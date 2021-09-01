@@ -39,18 +39,15 @@ void main()
 			fragColor = vec4(uiColor, 1.0f);
 			break;
 		case(2):
-			fragColor = texture(modelTex, texCoord + vec2(0.5f, 0.0f)) * texColor;
-			break;
-		case(3):
 			fragColor = texture(modelTex, texCoord) * texColor;
 			break;
-		case(4):
+		case(3):
 			fragColor = applyEffect(texture(modelTex, texCoord) * texColor);
 			break;
-		case(5):
+		case(4):
 			fragColor = divideAlpha(texture(modelTex, texCoord) * texColor);
 			break;
-		case(6):
+		case(5):
 			fragColor = applyEffect(divideAlpha(texture(modelTex, texCoord) * texColor));
 			break;
 		default:
