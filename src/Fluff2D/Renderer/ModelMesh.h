@@ -21,6 +21,7 @@ public:
 	int maskedCount = 0;
 
 	bool visible = true;
+	int renderOrder = 0;
 
 	void clearMeshData();
 

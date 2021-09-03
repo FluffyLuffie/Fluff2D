@@ -157,6 +157,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Fluff2D\Renderer\RenderGroup.cpp" />
     <ClCompile Include="src\Fluff2D\Renderer\Camera2D.cpp" />
     <ClCompile Include="dependencies\include\imgui\imgui.cpp" />
     <ClCompile Include="dependencies\include\imgui\imgui_demo.cpp" />
@@ -188,6 +189,7 @@
     <ClCompile Include="src\Fluff2D\Renderer\Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Fluff2D\Renderer\RenderGroup.h" />
     <ClInclude Include="src\Fluff2D\Renderer\Camera2D.h" />
     <ClInclude Include="dependencies\include\imgui\imconfig.h" />
     <ClInclude Include="dependencies\include\imgui\imgui.h" />

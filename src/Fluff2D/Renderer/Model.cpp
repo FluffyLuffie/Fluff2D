@@ -534,7 +534,10 @@ void Model::renderMaskedMesh(int meshNum)
 	glBlendFunc(GL_ONE, GL_ZERO);
 	modelMeshes[meshNum]->render();
 
-	//might need to reverse order or something idk
+	std::sort(modelMeshes[meshNum]->maskedMeshes.begin(), modelMeshes[meshNum]->maskedMeshes.end(), [this](const std::string& s1, const std::string s2)
+	{
+			return meshMap[s1]->renderOrder < meshMap[s2]->renderOrder;
+	});
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
 	for (int j = 0; j < modelMeshes[meshNum]->maskedMeshes.size(); j++)
 	{
@@ -588,6 +591,12 @@ void Model::update()
 	{
 		children[i]->update();
 	}
+
+	renderOrderMap.clear();
+	for (int i = 0; i < modelMeshes.size(); i++)
+	{
+		renderOrderMap.insert(std::pair<int, int>(modelMeshes[i]->renderOrder, i));
+	}
 }
 
 void Model::render()
@@ -605,22 +614,22 @@ void Model::render()
 
 	//render each mesh
 	shader.setMat4("projection", Camera2D::projection);
-	for (int i = 0; i < modelMeshes.size(); i++)
+	for (auto const &[meshRenderOrder, meshIndex] : renderOrderMap)
 	{
 		//don't render meshes that are being masked by others
-		if (modelMeshes[i]->maskedCount == 0)
+		if (modelMeshes[meshIndex]->maskedCount == 0)
 		{
 			//if masking others
-			if (modelMeshes[i]->maskedMeshes.size())
-				renderMaskedMesh(i);
+			if (modelMeshes[meshIndex]->maskedMeshes.size())
+				renderMaskedMesh(meshIndex);
 			//if not masking others
 			else
 			{
-				shader.setMat4("transform", modelMeshes[i]->transform);
-				shader.setVec4("texColor", modelMeshes[i]->color);
+				shader.setMat4("transform", modelMeshes[meshIndex]->transform);
+				shader.setVec4("texColor", modelMeshes[meshIndex]->color);
 
 				glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-				modelMeshes[i]->render();
+				modelMeshes[meshIndex]->render();
 			}
 		}
 	}

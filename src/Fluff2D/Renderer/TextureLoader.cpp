@@ -274,6 +274,7 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	{
 		model->modelMeshes.push_back(std::make_shared<ModelMesh>());
 		model->modelMeshes.back()->parent = model;
+		model->modelMeshes.back()->renderOrder = i * 10;
 		model->children.push_back(model->modelMeshes.back());
 		model->children.back()->parent = model;
 	}

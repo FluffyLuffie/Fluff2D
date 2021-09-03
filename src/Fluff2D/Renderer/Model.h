@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <algorithm>
 
-#include "ModelMesh.h"
+#include "RenderGroup.h"
 #include "WarpDeformer.h"
 #include "RotationDeformer.h"
 #include "LayerRect.h"
@@ -35,7 +35,6 @@ public:
 	std::unordered_map<std::string, std::shared_ptr<ModelPart>> partMap;
 	std::vector<std::shared_ptr<ModelMesh>> modelMeshes;
 	std::unordered_map<std::string, std::shared_ptr<ModelMesh>> meshMap;
-
 
 	std::vector<std::string> paramNames;
 	std::unordered_map<std::string, std::shared_ptr<Parameter>> paramMap;
@@ -90,6 +89,8 @@ private:
 	glm::vec2 canvasCoords[4] = { glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f) };
 
 	unsigned int rectLineIndices[8] = { 0, 1, 1, 2, 2, 3, 3, 0 };
+
+	std::multimap<int, int> renderOrderMap;
 
 	void updateFrameBufferSize();
 

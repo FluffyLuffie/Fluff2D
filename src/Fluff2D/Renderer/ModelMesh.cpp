@@ -56,6 +56,8 @@ void ModelMesh::renderInspector()
 {
 	ImGui::Text(name.c_str());
 
+	ImGui::DragInt("Render Order", &renderOrder);
+
 	ImGui::Text("Masking: %d", maskedMeshes.size());
 	ImGui::Text("Masked: %d", maskedCount);
 	ImGui::Separator();
