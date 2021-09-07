@@ -14,34 +14,38 @@ ModelMesh::~ModelMesh()
 	glDeleteBuffers(1, &ebo);
 }
 
-void ModelMesh::clearMeshData()
-{
-	vertices.clear();
-	originalVertexPositions.clear();
-	prewarpedVertexPositions.clear();
-	indices.clear();
-}
-
 void ModelMesh::update()
 {
 	localTransform = glm::mat4(1.0f);
 	localTransform = glm::translate(localTransform, glm::vec3(pos.x, pos.y, 0.0f));
 	localTransform = glm::rotate(localTransform, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+	localTransform = glm::scale(localTransform, glm::vec3(scale, 1.0f));
 
 	//assume parent always exists
 	transform = parent->transform * localTransform;
 
 	//testing stuff
 	if (Event::keyDown(GLFW_KEY_RIGHT))
-		prewarpedVertexPositions[0].x += 4;
+		localVertexPositions[0].x += 4;
 	if (Event::keyDown(GLFW_KEY_LEFT))
-		prewarpedVertexPositions[0].x -= 4;
+		localVertexPositions[0].x -= 4;
 	if (Event::keyDown(GLFW_KEY_UP))
-		prewarpedVertexPositions[0].y += 4;
+		localVertexPositions[0].y += 4;
 	if (Event::keyDown(GLFW_KEY_DOWN))
-		prewarpedVertexPositions[0].y -= 4;
+		localVertexPositions[0].y -= 4;
 	if (Event::keyDown(GLFW_KEY_R))
-		vertices[0].position = glm::vec2(0.0f);
+		localVertexPositions[0] = glm::vec2(0.0f);
+
+	if (parent->type == ModelPart::PartType::warpDeformer)
+		for (int i = 0; i < localVertexPositions.size(); i++)
+			prewarpedVertexPositions[i] = localTransform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
+}
+
+void ModelMesh::secondUpdate()
+{
+	if (parent->type != ModelPart::PartType::warpDeformer)
+		for (int i = 0; i < localVertexPositions.size(); i++)
+			vertices[i].position = transform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
 }
 
 void ModelMesh::render()
@@ -67,6 +71,7 @@ void ModelMesh::renderInspector()
 
 	ImGui::DragFloat2("Position", (float*)&pos);
 	ImGui::DragFloat("Rotation", &rotation);
+	ImGui::DragFloat2("Scale", &scale.x, 0.01f);
 	ImGui::Separator();
 	ImGui::ColorEdit4("Mesh Color", &color[0]);
 	ImGui::Separator();
@@ -95,6 +100,7 @@ void ModelMesh::createBasicMesh(int layerX, int layerY, int layerW, int layerH, 
 	clearMeshData();
 
 	vertices.reserve(5);
+	localVertexPositions.reserve(5);
 	originalVertexPositions.reserve(5);
 	prewarpedVertexPositions.reserve(5);
 
@@ -141,12 +147,14 @@ void ModelMesh::createBoxMesh(int boxCountX, int boxCountY, int atlasWidth, int 
 
 	//create vertices for boxes
 	vertices.reserve((boxCountX + 1) * (boxCountY + 1));
+	localVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1));
 	originalVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1));
 	prewarpedVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1));
 	for (int y = 0; y <= boxCountY; y++)
 	{
 		for (int x = 0; x <= boxCountX; x++)
 		{
+			//add flipped method later
 			if (flipped)
 				addVertex(textureWidth * (-0.5f + 1.0f / boxCountX * x), textureHeight * (-0.5f + 1.0f / boxCountY * y), (atlasPositionX + ((float)textureWidth) * x / boxCountX) / atlasWidth, (atlasHeight - atlasPositionY - textureHeight + ((float)textureHeight) * y / boxCountY) / atlasHeight);
 			else

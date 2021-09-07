@@ -12,8 +12,10 @@ public:
 	~WarpDeformer();
 
 	void update() override;
+	void secondUpdate() override;
 	void render() override;
 	void renderInspector() override;
+
 private:
 	int boxCountX = 1, boxCountY = 1;
 	float warpWidth = 0.0f, warpHeight = 0.0f, boxWidth = 0.0f, boxHeight = 0.0f;

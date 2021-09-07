@@ -1,25 +1,26 @@
 #include "WarpDeformer.h"
 
-WarpDeformer::WarpDeformer(const std::string& partName, int countX, int countY, float left, float bottom, float width, float height)
+WarpDeformer::WarpDeformer(const std::string& partName, int countX, int countY, float centerX, float centerY, float width, float height)
 {
 	type = ModelPart::PartType::warpDeformer;
 	name = partName;
 	boxCountX = countX;
 	boxCountY = countY;
 
-	warpWidth = width;
-	warpHeight = height;
-	boxWidth = width / countX;
-	boxHeight = height / countY;
-
-	pos = glm::vec2(left + width / 2, bottom + height / 2);
+	pos = glm::vec2(centerX, centerY);
 
 	//increase bounding box
 	width *= borderBuffer;
 	height *= borderBuffer;
 
+	warpWidth = width;
+	warpHeight = height;
+	boxWidth = width / countX;
+	boxHeight = height / countY;
+
 	//create vertices for boxes
 	vertices.reserve((boxCountX + 1) * (boxCountY + 1));
+	localVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1));
 	originalVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1));
 	prewarpedVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1));
 	for (int y = 0; y <= boxCountY; y++)
@@ -71,14 +72,26 @@ void WarpDeformer::update()
 
 	transform = parent->transform * localTransform;
 
+	if (parent->type == ModelPart::PartType::warpDeformer)
+		for (int i = 0; i < localVertexPositions.size(); i++)
+			prewarpedVertexPositions[i] = localTransform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
+
+	for (int i = 0; i < children.size(); i++)
+		children[i]->update();
+}
+
+void WarpDeformer::secondUpdate()
+{
+	if (parent->type != ModelPart::PartType::warpDeformer)
+		for (int i = 0; i < localVertexPositions.size(); i++)
+			vertices[i].position = transform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
+
 	for (int i = 0; i < children.size(); i++)
 	{
-		children[i]->update();
 		for (int j = 0; j < children[i]->vertices.size(); j++)
 		{
-			glm::vec2 vertexLocalPos = children[i]->localTransform * glm::vec4(children[i]->prewarpedVertexPositions[j].x, children[i]->prewarpedVertexPositions[j].y, 0.0f, 1.0f);
-			int boxX = static_cast<int>((vertexLocalPos.x - originalVertexPositions[0].x) / warpWidth * boxCountX);
-			int boxY = static_cast<int>((vertexLocalPos.y - originalVertexPositions[0].y) / warpHeight * boxCountY);
+			int boxX = static_cast<int>((children[i]->prewarpedVertexPositions[j].x - originalVertexPositions[0].x) / warpWidth * boxCountX);
+			int boxY = static_cast<int>((children[i]->prewarpedVertexPositions[j].y - originalVertexPositions[0].y) / warpHeight * boxCountY);
 
 			boxX = std::clamp(boxX, 0, boxCountX - 1);
 			boxY = std::clamp(boxY, 0, boxCountY - 1);
@@ -89,8 +102,8 @@ void WarpDeformer::update()
 			int p3 = (boxY + 1) * (boxCountX + 1) + boxX + 1;
 			int p4 = (boxY + 1) * (boxCountX + 1) + boxX;
 
-			float xRatio = (vertexLocalPos.x - originalVertexPositions[p1].x) / boxWidth;
-			float yRatio = (vertexLocalPos.y - originalVertexPositions[p1].y) / boxHeight;
+			float xRatio = (children[i]->prewarpedVertexPositions[j].x - originalVertexPositions[p1].x) / boxWidth;
+			float yRatio = (children[i]->prewarpedVertexPositions[j].y - originalVertexPositions[p1].y) / boxHeight;
 
 			float xClamped = std::clamp(xRatio, 0.0f, 1.0f);
 			float yClamped = std::clamp(yRatio, 0.0f, 1.0f);
@@ -110,11 +123,13 @@ void WarpDeformer::update()
 			float initialY = vertices[p1].position.y + yClamped * (vertices[p4].position.y - vertices[p1].position.y);
 
 			//set vertex position
-			children[i]->vertices[j].position = glm::inverse(children[i]->localTransform) * glm::vec4(initialX + xOffset + (vertices[p4].position.x + xClamped * (vertices[p3].position.x - vertices[p4].position.x) - initialX) * yClamped, initialY + yOffset + (vertices[p2].position.y + yClamped * (vertices[p3].position.y - vertices[p2].position.y) - initialY) * xClamped, 0.0f, 1.0f);
+			children[i]->vertices[j].position = glm::vec4(initialX + xOffset + (vertices[p4].position.x + xClamped * (vertices[p3].position.x - vertices[p4].position.x) - initialX) * yClamped, initialY + yOffset + (vertices[p2].position.y + yClamped * (vertices[p3].position.y - vertices[p2].position.y) - initialY) * xClamped, 0.0f, 1.0f);
 
 			//set pre warped position
 			//children[i]->prewarpedVertexPositions[j].x += 0.05f;
 		}
+
+		children[i]->secondUpdate();
 	}
 }
 

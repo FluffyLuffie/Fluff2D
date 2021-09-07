@@ -16,6 +16,17 @@
 //remove after testing
 #include "stb_image/stb_image_write.h"
 
+struct VertexSpecifier
+{
+	std::string partName;
+	int index;
+
+	VertexSpecifier(std::string name, int i) { partName = name, index = i; }
+	~VertexSpecifier() {}
+
+	friend bool operator == (const VertexSpecifier& v1, const VertexSpecifier& v2) { return v1.partName == v2.partName && v1.index == v2.index; }
+};
+
 class Model : public ModelPart
 {
 public:
@@ -39,8 +50,8 @@ public:
 	std::vector<std::string> paramNames;
 	std::unordered_map<std::string, std::shared_ptr<Parameter>> paramMap;
 
-	std::map<Vertex*, std::string> selectedVertices;
-	std::unordered_map<Vertex*, glm::vec2> initialVerticesPos;
+	std::vector<VertexSpecifier> selectedVertices;
+	std::unordered_map<VertexSpecifier*, glm::vec2> initialVerticesPos;
 
 	int atlasWidth = 0, atlasHeight = 0, atlasNrChannels = 0;
 
@@ -57,7 +68,7 @@ public:
 	void renderSelectedVertices();
 	void moveSelectedVertices(const ImVec2 &originalMouseCoord);
 	void updateOriginalVertexPositions();
-	void renderClosestVertex(Vertex* closestVert, const std::string &partName);
+	void renderClosestVertex(const std::string &partName, int vertexIndex);
 
 	void generateTestBoxMesh(std::string partName, int boxSizeX, int boxSizeY);
 
@@ -69,7 +80,7 @@ public:
 	void resetParams();
 	void updatePartMap();
 
-	Vertex* findClosestVertex(const std::vector<std::string> &selectedParts, int *partNum);
+	int findClosestVertex(const std::vector<std::string> &selectedParts, int *partNum);
 
 	void updateCanvasCoord();
 

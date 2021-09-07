@@ -20,7 +20,7 @@ void Camera2D::update()
 	if (Event::keyDown(GLFW_KEY_D))
 		pos.x += Event::deltaTime * 500 / scale;
 
-	//testing rotation, test later
+	//testing rotation, might just delete
 	if (Event::keyDown(GLFW_KEY_Q))
 		rotation += 100 * Event::deltaTime;
 	if (Event::keyDown(GLFW_KEY_E))

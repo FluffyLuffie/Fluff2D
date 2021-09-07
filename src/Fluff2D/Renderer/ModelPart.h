@@ -20,13 +20,17 @@ public:
 	float originalRotation = 0.0f;
 
 	std::vector<Vertex> vertices;
+	std::vector<glm::vec2> localVertexPositions;
 	std::vector<glm::vec2> originalVertexPositions;
 	std::vector<glm::vec2> prewarpedVertexPositions;
 	std::vector<unsigned int> indices;
 
+	virtual void render() {}
+
 	void addVertex(float xCoord, float yCoord);
 	void addVertex(float xCoord, float yCoord, float xTexCoord, float yTexCoord);
 
+	void clearMeshData();
 	void updateVertexData();
 
 	virtual void renderInspector() {}

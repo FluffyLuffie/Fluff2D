@@ -23,8 +23,8 @@ bool Event::keyReleased(int key)
 
 float Event::getScroll()
 {
-	if (!io->WantCaptureMouse)
-		return io->MouseWheel;
+	if (!io->WantCaptureMouse && !io->WantCaptureKeyboard)
+		return scroll;
 	return 0.0f;
 }
 
@@ -37,6 +37,8 @@ void Event::update()
 
 	//keys
 	keysCheckFrame.clear();
+
+	scroll = 0.0f;
 
 	//check window resize
 	windowResized = false;

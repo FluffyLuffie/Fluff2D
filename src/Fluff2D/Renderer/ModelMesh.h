@@ -23,9 +23,8 @@ public:
 	bool visible = true;
 	int renderOrder = 0;
 
-	void clearMeshData();
-
 	void update() override;
+	void secondUpdate() override;
 	void render() override;
 	void renderInspector() override;
 

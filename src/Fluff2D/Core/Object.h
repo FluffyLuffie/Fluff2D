@@ -18,12 +18,13 @@ public:
 
 	glm::vec2 pos = glm::vec2(0.0f);
 	float rotation = 0.0f;
+	glm::vec2 scale = glm::vec2(1.0f);
 
 	glm::mat4 transform = glm::mat4(1.0f);
 	glm::mat4 localTransform = glm::mat4(1.0f);
 
 	virtual void update() {}
-	virtual void render() {}
+	virtual void secondUpdate() {}
 
 	void setPos(int posX, int posY);
 	void setPos(float posX, float posY);

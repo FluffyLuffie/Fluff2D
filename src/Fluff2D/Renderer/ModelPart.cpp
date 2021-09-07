@@ -3,6 +3,7 @@
 void ModelPart::addVertex(float xCoord, float yCoord)
 {
 	vertices.emplace_back(xCoord, yCoord);
+	localVertexPositions.emplace_back(xCoord, yCoord);
 	originalVertexPositions.emplace_back(xCoord, yCoord);
 	prewarpedVertexPositions.emplace_back(xCoord, yCoord);
 }
@@ -10,8 +11,18 @@ void ModelPart::addVertex(float xCoord, float yCoord)
 void ModelPart::addVertex(float xCoord, float yCoord, float xTexCoord, float yTexCoord)
 {
 	vertices.emplace_back(xCoord, yCoord, xTexCoord, yTexCoord);
+	localVertexPositions.emplace_back(xCoord, yCoord);
 	originalVertexPositions.emplace_back(xCoord, yCoord);
 	prewarpedVertexPositions.emplace_back(xCoord, yCoord);
+}
+
+void ModelPart::clearMeshData()
+{
+	vertices.clear();
+	localVertexPositions.clear();
+	originalVertexPositions.clear();
+	prewarpedVertexPositions.clear();
+	indices.clear();
 }
 
 void ModelPart::updateVertexData()

@@ -5,13 +5,12 @@ layout (location = 1) in vec2 aTexCoord;
 
 out vec2 texCoord;
 
-uniform mat4 transform;
 uniform mat4 projection;
 uniform float pointSize;
 
 void main()
 {
-	gl_Position = projection * transform * vec4(aPos, 0.0f, 1.0f);
+	gl_Position = projection * vec4(aPos, 0.0f, 1.0f);
 	texCoord = aTexCoord;
 	
 	gl_PointSize = pointSize;

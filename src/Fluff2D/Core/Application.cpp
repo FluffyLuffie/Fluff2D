@@ -23,15 +23,15 @@ void Application::update()
 	{
 		model->update();
 
-		Vertex* closestVertex = nullptr;
+		int closestVertexIndex = -1;
 		int selectedPartNum = -1;
 		if (!Event::io->WantCaptureMouse)
 		{
 			if (selectedParts.size())
 			{
 				//testing stuff, move somewhere else later
-				closestVertex = model->findClosestVertex(selectedParts, &selectedPartNum);
-				if (closestVertex)
+				closestVertexIndex = model->findClosestVertex(selectedParts, &selectedPartNum);
+				if (closestVertexIndex != -1)
 				{
 					if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 					{
@@ -39,20 +39,21 @@ void Application::update()
 						//if ctrl key pressed, add to selected vertices
 						if (GLFW_MOD_CONTROL == Event::mod)
 						{
-							model->selectedVertices[closestVertex] = selectedParts[selectedPartNum];
-							model->initialVerticesPos[closestVertex] = closestVertex->position;
+							model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
+							model->initialVerticesPos[&model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex))] = model->partMap[selectedParts[selectedPartNum]]->vertices[closestVertexIndex].position;
 						}
 						else
 						{
 							//if clicked vertex is not in selected vertices, clear
-							if (model->selectedVertices.find(closestVertex) == model->selectedVertices.end())
+							if (std::find(model->selectedVertices.begin(), model->selectedVertices.end(), VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex)) == model->selectedVertices.end())
 							{
 								model->selectedVertices.clear();
 								model->initialVerticesPos.clear();
-								model->selectedVertices[closestVertex] = selectedParts[selectedPartNum];
-								model->initialVerticesPos[closestVertex] = closestVertex->position;
+								model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
+								model->initialVerticesPos[&model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex))] = model->partMap[selectedParts[selectedPartNum]]->vertices[closestVertexIndex].position;
 							}
 						}
+						model->updateOriginalVertexPositions();
 					}
 				}
 				//if clicked on nothing, clear
@@ -74,7 +75,7 @@ void Application::update()
 			}
 			else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && draggingVertices)
 			{
-				model->updateOriginalVertexPositions();
+				//model->updateOriginalVertexPositions();
 				draggingVertices = false;
 			}
 		}
@@ -94,8 +95,8 @@ void Application::update()
 
 			model->renderSelectedVertices();
 
-			if (closestVertex)
-				model->renderClosestVertex(closestVertex, selectedParts[selectedPartNum]);
+			if (closestVertexIndex != -1)
+				model->renderClosestVertex(selectedParts[selectedPartNum], closestVertexIndex);
 
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
@@ -112,6 +113,9 @@ void Application::update()
 		ImGui::NewFrame();
 
 		drawImGui();
+
+		//testing
+		//ImGui::ShowDemoWindow();
 
 		ImGui::EndFrame();
 		ImGui::Render();
@@ -211,58 +215,64 @@ void Application::createModelTree(std::shared_ptr<ModelPartUI> currentPart)
 
 	switch (currentPart->type)
 	{
-	case ModelPartUI::PartType::image:
-		nodeFlags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-		ImGui::TreeNodeEx(currentPart->name.c_str(), nodeFlags);
+		case ModelPartUI::PartType::image:
+			nodeFlags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+			ImGui::TreeNodeEx(currentPart->name.c_str(), nodeFlags);
 
-		if (ImGui::IsItemClicked())
-		{
-			if (!Event::keyDown(GLFW_KEY_LEFT_CONTROL))
+			if (ImGui::IsItemClicked())
 			{
-				selectedParts.clear();
-				alreadySelected = false;
-			}
-			if (alreadySelected)
-				selectedParts.erase(remove(selectedParts.begin(), selectedParts.end(), currentPart->name), selectedParts.end());
-			else
-				selectedParts.push_back(currentPart->name);
-
-			//might implement some way to keep selected vertices if mesh is still selected
-			model->selectedVertices.clear();
-			model->initialVerticesPos.clear();
-			break;
-	//for now, treat all of them the same
-	case ModelPartUI::PartType::divider:
-	case ModelPartUI::PartType::warpDeformer:
-	case ModelPartUI::PartType::rotationDeformer:
-		nodeOpen = ImGui::TreeNodeEx(currentPart->name.c_str(), nodeFlags);
-		if (ImGui::IsItemClicked())
-		{
-			if (!Event::keyDown(GLFW_KEY_LEFT_CONTROL) && !ImGui::IsItemToggledOpen())
-			{
-				selectedParts.clear();
-				alreadySelected = false;
-			}
-			if (!ImGui::IsItemToggledOpen())
-			{
+				if (!Event::keyDown(GLFW_KEY_LEFT_CONTROL))
+				{
+					selectedParts.clear();
+					alreadySelected = false;
+				}
 				if (alreadySelected)
 					selectedParts.erase(remove(selectedParts.begin(), selectedParts.end(), currentPart->name), selectedParts.end());
 				else
 					selectedParts.push_back(currentPart->name);
+
+				//might implement some way to keep selected vertices if mesh is still selected
+				model->selectedVertices.clear();
+				model->initialVerticesPos.clear();
 			}
-		}
-		if (nodeOpen)
-		{
-			for (int i = static_cast<int>(currentPart->children.size() - 1); i >= 0; i--)
+			break;
+		//for now, treat all of them the same
+		case ModelPartUI::PartType::divider:
+		case ModelPartUI::PartType::warpDeformer:
+		case ModelPartUI::PartType::rotationDeformer:
+			nodeOpen = ImGui::TreeNodeEx(currentPart->name.c_str(), nodeFlags);
+			if (ImGui::IsItemClicked())
 			{
-				createModelTree(currentPart->children[i]);
+				if (!Event::keyDown(GLFW_KEY_LEFT_CONTROL) && !ImGui::IsItemToggledOpen())
+				{
+					selectedParts.clear();
+					model->selectedVertices.clear();
+					model->initialVerticesPos.clear();
+					alreadySelected = false;
+				}
+				if (!ImGui::IsItemToggledOpen())
+				{
+					if (alreadySelected)
+						selectedParts.erase(remove(selectedParts.begin(), selectedParts.end(), currentPart->name), selectedParts.end());
+					else
+						selectedParts.push_back(currentPart->name);
+				}
+
+				model->selectedVertices.clear();
+				model->initialVerticesPos.clear();
 			}
-			ImGui::TreePop();
-		}
-		break;
-	default:
-		break;
-		}
+
+			if (nodeOpen)
+			{
+				for (int i = static_cast<int>(currentPart->children.size() - 1); i >= 0; i--)
+				{
+					createModelTree(currentPart->children[i]);
+				}
+				ImGui::TreePop();
+			}
+			break;
+		default:
+			break;
 	}
 }
 
@@ -305,18 +315,19 @@ void Application::createModelTree(std::shared_ptr<ModelPart> currentPart)
 
 		if (ImGui::IsItemClicked())
 		{
-			if (!Event::keyDown(GLFW_KEY_LEFT_CONTROL) && !ImGui::IsItemToggledOpen())
+			if (!Event::keyDown(GLFW_KEY_LEFT_CONTROL))
 			{
 				selectedParts.clear();
 				alreadySelected = false;
 			}
-			if (!ImGui::IsItemToggledOpen())
-			{
-				if (alreadySelected)
-					selectedParts.erase(remove(selectedParts.begin(), selectedParts.end(), currentPart->name), selectedParts.end());
-				else
-					selectedParts.push_back(currentPart->name);
-			}
+			if (alreadySelected)
+				selectedParts.erase(remove(selectedParts.begin(), selectedParts.end(), currentPart->name), selectedParts.end());
+			else
+				selectedParts.push_back(currentPart->name);
+
+			//might implement some way to keep selected vertices if mesh is still selected
+			model->selectedVertices.clear();
+			model->initialVerticesPos.clear();
 		}
 		if (nodeOpen)
 		{
@@ -505,7 +516,7 @@ void Application::drawImGui()
 	ImGui::End();
 
 	//testing model parts
-	ImGui::Begin("Model Parts");
+	ImGui::Begin("Model Parts", NULL, ImGuiWindowFlags_MenuBar);
 	if (model)
 	{
 		for (int i = static_cast<int>(model->layerStructure.size() - 1); i >= 0; i--)
@@ -516,33 +527,33 @@ void Application::drawImGui()
 	ImGui::End();
 
 	//the deformer and mesh structure of the model
-	if (ImGui::Begin("Meshes") && model)
+	if (ImGui::Begin("Meshes", NULL, ImGuiWindowFlags_MenuBar) && model)
 	{
 		//128 max char length, change if you want
 		static char nameBuf[128] = "";
 		static ModelPart::PartType deformerType;
+		bool openDeformerMenu = false;
 
-		if (ImGui::Button("Warp"))
+		if (ImGui::BeginMenuBar())
 		{
-			if (selectedParts.size() && model->checkSameParent(selectedParts))
+			if (ImGui::Button("Warp"))
 			{
-				ImGui::OpenPopup("New Deformer");
+				openDeformerMenu = true;
 				deformerType = ModelPart::PartType::warpDeformer;
-				//might make default name
-				nameBuf[0] = '\0';
 			}
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Rotation"))
-		{
-			if (selectedParts.size() && model->checkSameParent(selectedParts))
+			if (ImGui::Button("Rotation"))
 			{
-				ImGui::OpenPopup("New Deformer");
+				openDeformerMenu = true;
 				deformerType = ModelPart::PartType::rotationDeformer;
-				nameBuf[0] = '\0';
 			}
+			ImGui::EndMenuBar();
 		}
-		ImGui::Separator();
+
+		if (openDeformerMenu && selectedParts.size() && model->checkSameParent(selectedParts))
+		{
+			nameBuf[0] = '\0';
+			ImGui::OpenPopup("New Deformer");
+		}
 
 		if (ImGui::BeginPopupModal("New Deformer", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 		{
@@ -632,8 +643,22 @@ void Application::drawImGui()
 	ImGui::End();
 
 	//view and edit parameters
-	if (ImGui::Begin("Parameters") && model)
+	if (ImGui::Begin("Parameters", NULL, ImGuiWindowFlags_MenuBar) && model)
 	{
+		if (ImGui::BeginMenuBar())
+		{
+			if (ImGui::BeginMenu("Add Keyvalues"))
+			{
+				ImGui::MenuItem("Add 2 Keyvalues");
+				ImGui::MenuItem("Add 3 Keyvalues");
+				ImGui::MenuItem("Add Manual Keyvalues");
+				ImGui::MenuItem("Delete Keyvalues");
+				ImGui::EndMenu();
+			}
+			ImGui::Button("Test");
+			ImGui::EndMenuBar();
+		}
+
 		if (ImGui::Button("Reset Values"))
 		{
 			Log::logInfo("Resetted param values");

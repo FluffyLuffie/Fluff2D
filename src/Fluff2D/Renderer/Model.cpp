@@ -152,8 +152,6 @@ void Model::renderMeshVertice(const std::string &meshName)
 
 	partMap[meshName]->updateVertexData();
 
-	shader.setMat4("transform", partMap[meshName]->transform);
-
 	switch (partMap[meshName]->type)
 	{
 	case ModelPart::PartType::mesh:
@@ -183,18 +181,16 @@ void Model::renderSelectedVertices()
 	glBindVertexArray(vao);
 
 	//might group all the vertices into a single draw call if it becomes slow, just testing for now
-	for (auto const & [vert, partName]: selectedVertices)
+	for (int i = 0; i < selectedVertices.size(); i++)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex), vert, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex), &partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index], GL_DYNAMIC_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW);
 
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 		glEnableVertexAttribArray(0);
-
-		shader.setMat4("transform", partMap[partName]->transform);
 
 		glDrawElements(GL_POINTS, GLsizei(1), GL_UNSIGNED_INT, 0);
 	}
@@ -204,40 +200,39 @@ void Model::moveSelectedVertices(const ImVec2& originalMouseCoord)
 {
 	ImVec2 mouseCoord = ImGui::GetMousePos();
 
-	for (auto const& [vert, partName] : selectedVertices)
+	for (int i = 0; i < selectedVertices.size(); i++)
 	{
-		auto mousePos = glm::inverse(partMap[partName]->transform) * glm::inverse(Camera2D::projection) * glm::vec4(mouseCoord.x * 2.0f / Window::width - 1.0f, mouseCoord.y * -2.0f / Window::height + 1.0f, 0.0f, 1.0f);
-		auto originalMousePos = glm::inverse(partMap[partName]->transform) * glm::inverse(Camera2D::projection) * glm::vec4(originalMouseCoord.x * 2.0f / Window::width - 1.0f, originalMouseCoord.y * -2.0f / Window::height + 1.0f, 0.0f, 1.0f);
+		auto mousePos = glm::inverse(partMap[selectedVertices[i].partName]->transform) * glm::inverse(Camera2D::projection) * glm::vec4(mouseCoord.x * 2.0f / Window::width - 1.0f, mouseCoord.y * -2.0f / Window::height + 1.0f, 0.0f, 1.0f);
+		auto originalMousePos = glm::inverse(Camera2D::projection) * glm::vec4(originalMouseCoord.x * 2.0f / Window::width - 1.0f, originalMouseCoord.y * -2.0f / Window::height + 1.0f, 0.0f, 1.0f);
 
-		vert->position.x = initialVerticesPos[vert].x + mousePos.x - originalMousePos.x;
-		vert->position.y = initialVerticesPos[vert].y + mousePos.y - originalMousePos.y;
+		partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index].x = initialVerticesPos[&selectedVertices[i]].x + mousePos.x - originalMousePos.x;
+		partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index].y = initialVerticesPos[&selectedVertices[i]].y + mousePos.y - originalMousePos.y;
 	}
 }
 
 void Model::updateOriginalVertexPositions()
 {
-	for (auto const& [vert, partName] : selectedVertices)
+	initialVerticesPos.clear();
+	for (int i = 0; i < selectedVertices.size(); i++)
 	{
-		initialVerticesPos[vert] = vert->position;
+		initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index].position;
 	}
 }
 
-void Model::renderClosestVertex(Vertex* closestVert, const std::string& partName)
+void Model::renderClosestVertex(const std::string& partName, int vertexIndex)
 {
 	shader.setVec3("uiColor", Settings::meshPointHighlightColor);
 
 	glBindVertexArray(vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex), closestVert, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex), &partMap[partName]->vertices[vertexIndex], GL_DYNAMIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int), 0, GL_DYNAMIC_DRAW);
 
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 	glEnableVertexAttribArray(0);
-
-	shader.setMat4("transform", partMap[partName]->transform);
 
 	glDrawElements(GL_POINTS, GLsizei(1), GL_UNSIGNED_INT, 0);
 }
@@ -294,27 +289,48 @@ void Model::addWarpDeformer(std::string name, const std::vector<std::string>& se
 
 	//figure out box size
 	float top = -FLT_MAX, bottom = FLT_MAX, left = FLT_MAX, right = -FLT_MAX;
-	for (int i = 0; i < selectedParts.size(); i++)
+	glm::vec2 localCoord;
+
+	if (parentPart->type != ModelPart::PartType::warpDeformer)
 	{
-		if (partMap.find(selectedParts[i]) == partMap.end())
-			continue;
-		for (int j = 0; j < partMap[selectedParts[i]]->vertices.size(); j++)
+		for (int i = 0; i < selectedParts.size(); i++)
 		{
-			glm::vec2 worldCoord = partMap[selectedParts[i]]->transform * glm::vec4(partMap[selectedParts[i]]->vertices[j].position.x, partMap[selectedParts[i]]->vertices[j].position.y, 0.0f, 1.0f);
-
-			if (worldCoord.y > top)
-				top = worldCoord.y;
-			if (worldCoord.y < bottom)
-				bottom = worldCoord.y;
-			if (worldCoord.x < left)
-				left = worldCoord.x;
-			if (worldCoord.x > right)
-				right = worldCoord.x;
+			if (partMap.find(selectedParts[i]) == partMap.end())
+				continue;
+			for (int j = 0; j < partMap[selectedParts[i]]->vertices.size(); j++)
+			{
+				if (partMap[selectedParts[i]]->vertices[j].position.y > top)
+					top = partMap[selectedParts[i]]->vertices[j].position.y;
+				if (partMap[selectedParts[i]]->vertices[j].position.y < bottom)
+					bottom = partMap[selectedParts[i]]->vertices[j].position.y;
+				if (partMap[selectedParts[i]]->vertices[j].position.x < left)
+					left = partMap[selectedParts[i]]->vertices[j].position.x;
+				if (partMap[selectedParts[i]]->vertices[j].position.x > right)
+					right = partMap[selectedParts[i]]->vertices[j].position.x;
+			}
 		}
+		localCoord = glm::inverse(parentPart->transform) * glm::vec4(left + (right - left) / 2.0f, bottom + (top - bottom) / 2.0f, 0.0f, 1.0f);
 	}
-
-
-	glm::vec2 localCoord = glm::inverse(parentPart->transform) * glm::vec4(left, bottom, 0.0f, 1.0f);
+	else
+	{
+		for (int i = 0; i < selectedParts.size(); i++)
+		{
+			if (partMap.find(selectedParts[i]) == partMap.end())
+				continue;
+			for (int j = 0; j < partMap[selectedParts[i]]->prewarpedVertexPositions.size(); j++)
+			{
+				if (partMap[selectedParts[i]]->prewarpedVertexPositions[j].y > top)
+					top = partMap[selectedParts[i]]->prewarpedVertexPositions[j].y;
+				if (partMap[selectedParts[i]]->prewarpedVertexPositions[j].y < bottom)
+					bottom = partMap[selectedParts[i]]->prewarpedVertexPositions[j].y;
+				if (partMap[selectedParts[i]]->prewarpedVertexPositions[j].x < left)
+					left = partMap[selectedParts[i]]->prewarpedVertexPositions[j].x;
+				if (partMap[selectedParts[i]]->prewarpedVertexPositions[j].x > right)
+					right = partMap[selectedParts[i]]->prewarpedVertexPositions[j].x;
+			}
+		}
+		localCoord = glm::vec4(left + (right - left) / 2.0f, bottom + (top - bottom) / 2.0f, 0.0f, 1.0f);
+	}
 
 	parentPart->children.push_back(std::make_shared<WarpDeformer>(name, countX, countY, localCoord.x, localCoord.y, right - left, top - bottom));
 
@@ -394,10 +410,11 @@ void Model::resetParams()
 	}
 }
 
-Vertex* Model::findClosestVertex(const std::vector<std::string>& selectedParts, int* partNum)
+int Model::findClosestVertex(const std::vector<std::string>& selectedParts, int* partNum)
 {
+	int closestVertexIndex = -1;
+
 	float closestDistance = FLT_MAX;
-	Vertex* closestVertex = nullptr;
 
 	float mouseX = ImGui::GetMousePos().x;
 	float mouseY = ImGui::GetMousePos().y;
@@ -408,18 +425,18 @@ Vertex* Model::findClosestVertex(const std::vector<std::string>& selectedParts, 
 			continue;
 		for (int v = 0; v < partMap[selectedParts[i]]->vertices.size(); v++)
 		{
-			auto vert = Camera2D::projection * partMap[selectedParts[i]]->transform * glm::vec4(partMap[selectedParts[i]]->vertices[v].position.x, partMap[selectedParts[i]]->vertices[v].position.y, 0.0f, 1.0f);
+			auto vert = Camera2D::projection * glm::vec4(partMap[selectedParts[i]]->vertices[v].position.x, partMap[selectedParts[i]]->vertices[v].position.y, 0.0f, 1.0f);
 			float pixelDistance = static_cast<float>(pow(mouseX - (vert.x + 1.0f) * Window::width / 2, 2) + pow(mouseY - (vert.y - 1.0f) * Window::height / -2, 2));
 			if (pixelDistance <= Settings::vertexDetectionDistance * Settings::vertexDetectionDistance && closestDistance > pixelDistance)
 			{
 				*partNum = i;
-				closestVertex = &partMap[selectedParts[i]]->vertices[v];
+				closestVertexIndex = v;
 				closestDistance = pixelDistance;
 			}
 		}
 	}
 
-	return closestVertex;
+	return closestVertexIndex;
 }
 
 void Model::updateCanvasCoord()
@@ -529,7 +546,6 @@ void Model::renderMaskedMesh(int meshNum)
 	glViewport(Window::width, 0, Window::width, Window::height);
 
 	//draw parent mesh
-	shader.setMat4("transform", modelMeshes[meshNum]->transform);
 	shader.setVec4("texColor", modelMeshes[meshNum]->color);
 	glBlendFunc(GL_ONE, GL_ZERO);
 	modelMeshes[meshNum]->render();
@@ -541,7 +557,6 @@ void Model::renderMaskedMesh(int meshNum)
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
 	for (int j = 0; j < modelMeshes[meshNum]->maskedMeshes.size(); j++)
 	{
-		shader.setMat4("transform", meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->transform);
 		shader.setVec4("texColor", meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->color);
 		meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->render();
 	}
@@ -550,7 +565,6 @@ void Model::renderMaskedMesh(int meshNum)
 	glTextureBarrier();
 
 	shader.setMat4("projection", glm::mat4(1.0f));
-	shader.setMat4("transform", glm::mat4(1.0f));
 	shader.setVec4("texColor", glm::vec4(1.0f));
 
 	//shift back left
@@ -564,7 +578,6 @@ void Model::renderMaskedMesh(int meshNum)
 	//shift back to right side to clear the mesh
 	glViewport(Window::width, 0, Window::width, Window::height);
 	shader.setMat4("projection", Camera2D::projection);
-	shader.setMat4("transform", modelMeshes[meshNum]->transform);
 	glBlendFunc(GL_ZERO, GL_ZERO);
 	modelMeshes[meshNum]->render();
 
@@ -592,6 +605,11 @@ void Model::update()
 		children[i]->update();
 	}
 
+	for (int i = 0; i < children.size(); i++)
+	{
+		children[i]->secondUpdate();
+	}
+
 	renderOrderMap.clear();
 	for (int i = 0; i < modelMeshes.size(); i++)
 	{
@@ -606,7 +624,6 @@ void Model::render()
 
 	//clear left rect
 	shader.setMat4("projection", glm::mat4(1.0f));
-	shader.setMat4("transform", glm::mat4(1.0f));
 	updateVertexData();
 	glBindVertexArray(vao);
 	glBlendFunc(GL_ZERO, GL_ZERO);
@@ -625,7 +642,6 @@ void Model::render()
 			//if not masking others
 			else
 			{
-				shader.setMat4("transform", modelMeshes[meshIndex]->transform);
 				shader.setVec4("texColor", modelMeshes[meshIndex]->color);
 
 				glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
@@ -651,7 +667,6 @@ void Model::render()
 	updateVertexData();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	shader.setMat4("projection", glm::mat4(1.0f));
-	shader.setMat4("transform", glm::mat4(1.0f));
 	shader.setVec4("texColor", glm::vec4(1.0f));
 
 	if (Settings::transparentBackground)
@@ -678,7 +693,6 @@ void Model::render()
 		shader.setMat4("projection", Camera2D::projection);
 		shader.setInt("mode", 1);
 		glBindVertexArray(canvasVao);
-		shader.setMat4("transform", transform);
 		shader.setVec3("uiColor", Settings::canvasBorderColor);
 		glLineWidth(static_cast<GLfloat>(Settings::canvasLineWidth));
 		glDrawElements(GL_LINES, static_cast<GLsizei>(8), GL_UNSIGNED_INT, 0);
