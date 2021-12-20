@@ -5,7 +5,7 @@
 class Parameter
 {
 public:
-	float value = 0.0f, defaultValue = 0.0f, maxValue = 30.0f, minValue = -30.0f;
+	float value = 0.0f, defaultValue = 0.0f, maxValue, minValue;
 	std::vector<float> keyValues;
 
 	Parameter() {}

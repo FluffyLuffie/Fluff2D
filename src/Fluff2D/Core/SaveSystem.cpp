@@ -21,7 +21,7 @@ void SaveSystem::saveModel(std::shared_ptr<Model> model, int version)
 	output << static_cast<int>(model->layerStructure.size());
 	for (int i = 0; i < model->layerStructure.size(); i++)
 	{
-		partsOutput(&output, model->layerStructure[i]);
+		//partsOutput(&output, model->layerStructure[i]);
 	}
 
 	//save parameter stuff

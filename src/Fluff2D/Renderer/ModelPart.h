@@ -19,6 +19,9 @@ public:
 	glm::vec2 originalPos = glm::vec2(0.0f);
 	float originalRotation = 0.0f;
 
+	std::vector<std::string> paramNames;
+	std::unordered_map<std::string, std::shared_ptr<Parameter>> paramMap;
+
 	std::vector<Vertex> vertices;
 	std::vector<glm::vec2> localVertexPositions;
 	std::vector<glm::vec2> originalVertexPositions;

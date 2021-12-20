@@ -437,7 +437,7 @@ void Application::drawImGui()
 		}
 
 		if (model && ImGui::Button("Test Button"))
-			model->fboToPng = true;
+			model->screenshot = true;
 	}
 	ImGui::End();
 

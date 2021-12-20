@@ -13,8 +13,6 @@
 #include "../UI/ModelPartUI.h"
 #include "../Core/Window.h"
 
-//include uncomment after testing
-//#include "stb_image/stb_image_write.h"
 #include "rectpack2D/finders_interface.h"
 #include "alpha-bleeding/alphaBleeding.h"
 #include "threadPool/ThreadPool.h"

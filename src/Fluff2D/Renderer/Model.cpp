@@ -650,19 +650,6 @@ void Model::render()
 		}
 	}
 
-	if (fboToPng)
-	{
-		fboToPng = false;
-
-		std::vector<unsigned char> data;
-		data.resize(Window::width * 2 * Window::height * 4);
-
-		glReadPixels(0, 0, Window::width * 2, Window::height, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
-
-		stbi_flip_vertically_on_write(true);
-		stbi_write_png("saves/testExports/testFbo.png", Window::width * 2, Window::height, 4, &data[0], Window::width * 8);
-	}
-
 	//render from framebuffer to screen
 	updateVertexData();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -685,6 +672,19 @@ void Model::render()
 	shader.setInt("mode", fboRenderMode);
 
 	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+
+	if (screenshot)
+	{
+		screenshot = false;
+
+		std::vector<unsigned char> data;
+		data.resize(Window::width * Window::height * 4);
+
+		glReadPixels(0, 0, Window::width, Window::height, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
+
+		stbi_flip_vertically_on_write(true);
+		stbi_write_png("saves/testExports/testFbo.png", Window::width, Window::height, 4, &data[0], Window::width * 4);
+	}
 
 	//render the canvas rect
 	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);

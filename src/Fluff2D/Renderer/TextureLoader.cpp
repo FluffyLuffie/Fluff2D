@@ -99,9 +99,6 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	int layerCount = std::abs(((buffer[0] & 0xFF) << 8) | (buffer[1] & 0xFF));
 	layerRects.resize(layerCount);
 
-	//set up root part
-	//model->layerStructure.push_back(std::make_shared<ModelPartUI>());
-	//std::shared_ptr<ModelPartUI> currentFolder = model->layerStructure[0];
 	std::shared_ptr<ModelPartUI> currentFolder;
 
 	size_t totalLayerPixels = 0;

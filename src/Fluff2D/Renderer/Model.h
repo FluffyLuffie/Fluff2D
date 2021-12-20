@@ -3,7 +3,6 @@
 #include <iostream>
 #include <memory>
 #include <vector>
-#include <unordered_map>
 #include <algorithm>
 
 #include "RenderGroup.h"
@@ -13,7 +12,6 @@
 #include "../Core/Settings.h"
 #include "Camera2D.h"
 
-//remove after testing
 #include "stb_image/stb_image_write.h"
 
 struct VertexSpecifier
@@ -42,20 +40,18 @@ public:
 	Shader shader;
 
 	std::vector<std::shared_ptr<ModelPartUI>> layerStructure;
+	std::vector<std::shared_ptr<ModelPartUI>> modelStructure;
 
 	std::unordered_map<std::string, std::shared_ptr<ModelPart>> partMap;
 	std::vector<std::shared_ptr<ModelMesh>> modelMeshes;
 	std::unordered_map<std::string, std::shared_ptr<ModelMesh>> meshMap;
-
-	std::vector<std::string> paramNames;
-	std::unordered_map<std::string, std::shared_ptr<Parameter>> paramMap;
 
 	std::vector<VertexSpecifier> selectedVertices;
 	std::unordered_map<VertexSpecifier*, glm::vec2> initialVerticesPos;
 
 	int atlasWidth = 0, atlasHeight = 0, atlasNrChannels = 0;
 
-	bool fboToPng = false;
+	bool screenshot = false;
 
 	void update() override;
 	void render() override;
