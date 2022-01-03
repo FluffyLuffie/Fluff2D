@@ -251,18 +251,8 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 
 	//testing new texturePixelBuffer stuff
 	int atlasWidth = 0, atlasHeight = 0, tempAtlasWidth = 1, tempAtlasHeight = 1;
-	int texturePixelBuffer = nextPower2(static_cast<int>(sqrt(totalLayerPixels))) / 128;
-	auto rectangles = prepareTextureAtlas(layerRects, texturePixelBuffer, &tempAtlasWidth, &tempAtlasHeight);
-
-	//loop until new buffer size doesn't change max atlas size
-	while (std::max(tempAtlasWidth, tempAtlasHeight) != std::max(atlasWidth, atlasHeight))
-	{
-		rectangles = prepareTextureAtlas(layerRects, texturePixelBuffer, &tempAtlasWidth, &tempAtlasHeight);
-
-		texturePixelBuffer = std::max(tempAtlasWidth, tempAtlasHeight) / 100;
-
-		rectangles = prepareTextureAtlas(layerRects, texturePixelBuffer, &atlasWidth, &atlasHeight);
-	}
+	int texturePixelBuffer = std::max(nextPower2(static_cast<int>(sqrt(totalLayerPixels))) / 128, 10);
+	auto rectangles = prepareTextureAtlas(layerRects, texturePixelBuffer, &atlasWidth, &atlasHeight);
 
 	std::vector <unsigned char> atlasBytes;
 	atlasBytes.resize(atlasWidth * atlasHeight * 4);

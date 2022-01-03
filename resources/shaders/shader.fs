@@ -50,6 +50,17 @@ void main()
 		case(5):
 			fragColor = applyEffect(divideAlpha(texture(modelTex, texCoord) * texColor));
 			break;
+		case(6):
+			vec4 v = texture(atlasTex, texCoord) * texColor;
+			fragColor = v / v.a;
+			break;
+		case(7):
+			vec4 v2 = texture(atlasTex, texCoord) * texColor;
+			if (v2.a <= 0.0f){
+				discard;
+			}
+			fragColor = v2;
+			break;
 		default:
 			break;
 	}

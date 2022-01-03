@@ -13,8 +13,8 @@ Model::Model()
 	//set rendered models quad
 	vertices.reserve(4);
 	vertices.emplace_back(-1.0f, 1.0f, 0.0f, 1.0f);
-	vertices.emplace_back(1.0f, 1.0f, 0.5f, 1.0f);
-	vertices.emplace_back(1.0f, -1.0f, 0.5f, 0.0f);
+	vertices.emplace_back(1.0f, 1.0f, 1.0f, 1.0f);
+	vertices.emplace_back(1.0f, -1.0f, 1.0f, 0.0f);
 	vertices.emplace_back(-1.0f, -1.0f, 0.0f, 0.0f);
 
 	indices.reserve(6);
@@ -522,13 +522,13 @@ void Model::updateFrameBufferSize()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
 	glBindTexture(GL_TEXTURE_2D, modelTexColorBuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Window::width * 2, Window::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Window::width, Window::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, modelTexColorBuffer, 0);
 
 	glBindRenderbuffer(GL_RENDERBUFFER, modelRbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, Window::width * 2, Window::height);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, Window::width, Window::height);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, modelRbo);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -540,50 +540,34 @@ void Model::updateFrameBufferSize()
 	bindUniformTextures();
 }
 
+//TODO: fix masking
 void Model::renderMaskedMesh(int meshNum)
 {
-	//shift to right side
-	glViewport(Window::width, 0, Window::width, Window::height);
-
-	//draw parent mesh
+	//draw parent mesh's alpha
 	shader.setVec4("texColor", modelMeshes[meshNum]->color);
-	glBlendFunc(GL_ONE, GL_ZERO);
+	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ZERO);
 	modelMeshes[meshNum]->render();
 
 	std::sort(modelMeshes[meshNum]->maskedMeshes.begin(), modelMeshes[meshNum]->maskedMeshes.end(), [this](const std::string& s1, const std::string s2)
 	{
-			return meshMap[s1]->renderOrder < meshMap[s2]->renderOrder;
+		return meshMap[s1]->renderOrder > meshMap[s2]->renderOrder;
 	});
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
+
+	//render based on parent's alpha and own alpha
+	shader.setInt("mode", 7);
+	glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA);
 	for (int j = 0; j < modelMeshes[meshNum]->maskedMeshes.size(); j++)
 	{
 		shader.setVec4("texColor", meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->color);
 		meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->render();
 	}
 
-	//allows to sample and render to same texture
-	glTextureBarrier();
-
-	shader.setMat4("projection", glm::mat4(1.0f));
-	shader.setVec4("texColor", glm::vec4(1.0f));
-
-	//shift back left
-	glViewport(0, 0, Window::width, Window::height);
-	shader.setInt("mode", 2);
-	glBindVertexArray(maskVao);
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
-	shader.setInt("mode", 0);
-
-	//shift back to right side to clear the mesh
-	glViewport(Window::width, 0, Window::width, Window::height);
-	shader.setMat4("projection", Camera2D::projection);
-	glBlendFunc(GL_ZERO, GL_ZERO);
+	//render parent over non-masked alpha and reset alpha
+	shader.setVec4("texColor", modelMeshes[meshNum]->color);
+	glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ZERO);
+	shader.setInt("mode", 6);
 	modelMeshes[meshNum]->render();
-
-	//return to normal
-	glViewport(0, 0, Window::width, Window::height);
-	shader.setMat4("projection", Camera2D::projection);
+	shader.setInt("mode", 0);
 }
 
 void Model::update()
@@ -620,17 +604,15 @@ void Model::update()
 void Model::render()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
+
+	//might set this for each mesh's setting
 	shader.setInt("mode", 0);
 
-	//clear left rect
-	shader.setMat4("projection", glm::mat4(1.0f));
-	updateVertexData();
-	glBindVertexArray(vao);
-	glBlendFunc(GL_ZERO, GL_ZERO);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	//clear framebuffer
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	//render each mesh
-	shader.setMat4("projection", Camera2D::projection);
 	for (auto const &[meshRenderOrder, meshIndex] : renderOrderMap)
 	{
 		//don't render meshes that are being masked by others
@@ -644,9 +626,21 @@ void Model::render()
 			{
 				shader.setVec4("texColor", modelMeshes[meshIndex]->color);
 
-				glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+				glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ZERO);
 				modelMeshes[meshIndex]->render();
 			}
+		}
+	}
+
+	//fix alpha
+	for (auto const& [meshRenderOrder, meshIndex] : renderOrderMap)
+	{
+		if (modelMeshes[meshIndex]->maskedCount == 0)
+		{
+			shader.setVec4("texColor", modelMeshes[meshIndex]->color);
+
+			glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+			modelMeshes[meshIndex]->render();
 		}
 	}
 
