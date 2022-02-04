@@ -17,8 +17,7 @@ public:
 	int layerOrder = 0;
 	glm::vec4 color = glm::vec4(1.0f);
 
-	std::vector<std::string> maskedMeshes;
-	int maskedCount = 0;
+	std::vector<std::string> clipMeshes;
 
 	bool visible = true;
 	int renderOrder = 0;

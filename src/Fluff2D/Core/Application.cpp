@@ -631,7 +631,7 @@ void Application::drawImGui()
 
 			if (model->partMap[selectedParts[0]]->type == ModelPart::PartType::mesh)
 			{
-				model->showMeshMaskingMenu(selectedParts[0]);
+				model->showMeshClippingingMenu(selectedParts[0]);
 			}
 		}
 		else

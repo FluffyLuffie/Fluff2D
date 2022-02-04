@@ -436,7 +436,7 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 				results.emplace_back(
 					pool.enqueue([texPtr, imageLayersRead, layerRects, layerNum, texturePixelBuffer]
 						{
-							AlphaBleeding::bleedPng(texPtr, layerRects[layerNum].h + texturePixelBuffer * 2, layerRects[layerNum].w + texturePixelBuffer * 2, texturePixelBuffer);
+							premultAlpha(texPtr, layerRects[layerNum].h + texturePixelBuffer * 2, layerRects[layerNum].w + texturePixelBuffer * 2);
 							return true;
 						})
 				);
@@ -446,7 +446,7 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 				results.emplace_back(
 					pool.enqueue([texPtr, imageLayersRead, layerRects, layerNum, texturePixelBuffer]
 						{
-							AlphaBleeding::bleedPng(texPtr, layerRects[layerNum].w + texturePixelBuffer * 2, layerRects[layerNum].h + texturePixelBuffer * 2, texturePixelBuffer);
+							premultAlpha(texPtr, layerRects[layerNum].w + texturePixelBuffer * 2, layerRects[layerNum].h + texturePixelBuffer * 2);
 							return true;
 						})
 				);
@@ -553,6 +553,18 @@ std::vector<rect_type> TextureLoader::prepareTextureAtlas(std::vector<LayerRect>
 	*atlasHeight = nextPower2(result_size.h);
 
 	return rectangles;
+}
+
+void TextureLoader::premultAlpha(unsigned char* image, int width, int height)
+{
+	const int N = width * height;
+
+	for (size_t i = 0, j = 3; i < N; i++, j += 4)
+	{
+		image[j - 1] = (unsigned char)(image[j - 1] * (image[j] / 255.0f));
+		image[j - 2] = (unsigned char)(image[j - 2] * (image[j] / 255.0f));
+		image[j - 3] = (unsigned char)(image[j - 3] * (image[j] / 255.0f));
+	}
 }
 
 int TextureLoader::nextPower2(int num)

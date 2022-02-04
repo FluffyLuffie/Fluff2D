@@ -459,11 +459,11 @@ void Model::updateCanvasCoord()
 	glEnableVertexAttribArray(0);
 }
 
-void Model::showMeshMaskingMenu(const std::string& meshName)
+void Model::showMeshClippingingMenu(const std::string& meshName)
 {
 	ImGui::Separator();
 
-	ImGui::Text("Masking");
+	ImGui::Text("Clipping");
 
 	for (int i = static_cast<int>(modelMeshes.size()) - 1; i >= 0; i--)
 	{
@@ -472,7 +472,7 @@ void Model::showMeshMaskingMenu(const std::string& meshName)
 		{
 			ImGuiTreeNodeFlags nodeFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
 
-			bool alreadySelected = alreadySelected = std::find(meshMap[meshName]->maskedMeshes.begin(), meshMap[meshName]->maskedMeshes.end(), modelMeshes[i]->name) != meshMap[meshName]->maskedMeshes.end();
+			bool alreadySelected = alreadySelected = std::find(meshMap[meshName]->clipMeshes.begin(), meshMap[meshName]->clipMeshes.end(), modelMeshes[i]->name) != meshMap[meshName]->clipMeshes.end();
 			if (alreadySelected)
 				nodeFlags |= ImGuiTreeNodeFlags_Selected;
 
@@ -480,15 +480,9 @@ void Model::showMeshMaskingMenu(const std::string& meshName)
 			if (ImGui::IsItemClicked())
 			{
 				if (alreadySelected)
-				{
-					meshMap[meshName]->maskedMeshes.erase(remove(meshMap[meshName]->maskedMeshes.begin(), meshMap[meshName]->maskedMeshes.end(), modelMeshes[i]->name), meshMap[meshName]->maskedMeshes.end());
-					meshMap[modelMeshes[i]->name]->maskedCount--;
-				}
+					meshMap[meshName]->clipMeshes.erase(remove(meshMap[meshName]->clipMeshes.begin(), meshMap[meshName]->clipMeshes.end(), modelMeshes[i]->name), meshMap[meshName]->clipMeshes.end());
 				else
-				{
-					meshMap[meshName]->maskedMeshes.push_back(modelMeshes[i]->name);
-					meshMap[modelMeshes[i]->name]->maskedCount++;
-				}
+					meshMap[meshName]->clipMeshes.push_back(modelMeshes[i]->name);
 			}
 		}
 	}
@@ -540,36 +534,6 @@ void Model::updateFrameBufferSize()
 	bindUniformTextures();
 }
 
-//TODO: fix masking
-void Model::renderMaskedMesh(int meshNum)
-{
-	//draw parent mesh's alpha
-	shader.setVec4("texColor", modelMeshes[meshNum]->color);
-	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ZERO);
-	modelMeshes[meshNum]->render();
-
-	std::sort(modelMeshes[meshNum]->maskedMeshes.begin(), modelMeshes[meshNum]->maskedMeshes.end(), [this](const std::string& s1, const std::string s2)
-	{
-		return meshMap[s1]->renderOrder > meshMap[s2]->renderOrder;
-	});
-
-	//render based on parent's alpha and own alpha
-	shader.setInt("mode", 7);
-	glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA);
-	for (int j = 0; j < modelMeshes[meshNum]->maskedMeshes.size(); j++)
-	{
-		shader.setVec4("texColor", meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->color);
-		meshMap[modelMeshes[meshNum]->maskedMeshes[j]]->render();
-	}
-
-	//render parent over non-masked alpha and reset alpha
-	shader.setVec4("texColor", modelMeshes[meshNum]->color);
-	glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ZERO);
-	shader.setInt("mode", 6);
-	modelMeshes[meshNum]->render();
-	shader.setInt("mode", 0);
-}
-
 void Model::update()
 {
 	shader.setMat4("projection", Camera2D::projection);
@@ -601,6 +565,31 @@ void Model::update()
 	}
 }
 
+void Model::renderMaskedMesh(int meshNum)
+{
+	//draw parent mesh's alpha
+	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	for (int j = 0; j < modelMeshes[meshNum]->clipMeshes.size(); j++)
+	{
+		shader.setVec4("texColor", meshMap[modelMeshes[meshNum]->clipMeshes[j]]->color);
+		meshMap[modelMeshes[meshNum]->clipMeshes[j]]->render();
+	}
+
+	//render based on parent's alpha and own alpha
+	shader.setVec4("texColor", modelMeshes[meshNum]->color);
+	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_SRC_ALPHA);
+	modelMeshes[meshNum]->render();
+	shader.setInt("mode", 6);
+	glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ZERO);
+	modelMeshes[meshNum]->render();
+
+	//reset alpha
+	shader.setInt("mode", 0);
+	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_ZERO);
+	for (int j = 0; j < modelMeshes[meshNum]->clipMeshes.size(); j++)
+		meshMap[modelMeshes[meshNum]->clipMeshes[j]]->render();
+}
+
 void Model::render()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
@@ -615,13 +604,12 @@ void Model::render()
 	//render each mesh
 	for (auto const &[meshRenderOrder, meshIndex] : renderOrderMap)
 	{
-		//don't render meshes that are being masked by others
-		if (modelMeshes[meshIndex]->maskedCount == 0)
+		if (modelMeshes[meshIndex]->visible)
 		{
-			//if masking others
-			if (modelMeshes[meshIndex]->maskedMeshes.size())
+			//if being clipped others
+			if (modelMeshes[meshIndex]->clipMeshes.size())
 				renderMaskedMesh(meshIndex);
-			//if not masking others
+			//if not being clipped by others
 			else
 			{
 				shader.setVec4("texColor", modelMeshes[meshIndex]->color);
@@ -635,7 +623,7 @@ void Model::render()
 	//fix alpha
 	for (auto const& [meshRenderOrder, meshIndex] : renderOrderMap)
 	{
-		if (modelMeshes[meshIndex]->maskedCount == 0)
+		if (!modelMeshes[meshIndex]->clipMeshes.size() && modelMeshes[meshIndex]->visible)
 		{
 			shader.setVec4("texColor", modelMeshes[meshIndex]->color);
 
@@ -655,9 +643,9 @@ void Model::render()
 	else
 		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
 
-	int fboRenderMode = 4;
-	if (!Settings::colorCorrection)
-		fboRenderMode = 2;
+	int fboRenderMode = 2;
+	if (Settings::colorCorrection)
+		fboRenderMode = 4;
 	if (Settings::effect)
 	{
 		fboRenderMode++;

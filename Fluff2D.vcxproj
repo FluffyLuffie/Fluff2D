@@ -204,7 +204,6 @@
     <ClInclude Include="src\Fluff2D\UI\Localization.h" />
     <ClInclude Include="src\Fluff2D\Core\Settings.h" />
     <ClInclude Include="src\Fluff2D\Core\Log.h" />
-    <ClInclude Include="dependencies\include\alpha-bleeding\alphaBleeding.h" />
     <ClInclude Include="dependencies\include\threadPool\ThreadPool.h" />
     <ClInclude Include="dependencies\rectpack2D\best_bin_finder.h" />
     <ClInclude Include="dependencies\rectpack2D\finders_interface.h" />

@@ -80,7 +80,7 @@ public:
 
 	void updateCanvasCoord();
 
-	void showMeshMaskingMenu(const std::string &meshName);
+	void showMeshClippingingMenu(const std::string &meshName);
 
 	void bindUniformTextures();
 

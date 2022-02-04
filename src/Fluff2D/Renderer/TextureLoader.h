@@ -14,7 +14,6 @@
 #include "../Core/Window.h"
 
 #include "rectpack2D/finders_interface.h"
-#include "alpha-bleeding/alphaBleeding.h"
 #include "threadPool/ThreadPool.h"
 
 using spaces_type = rectpack2D::empty_spaces<true, rectpack2D::default_empty_spaces>;
@@ -29,6 +28,7 @@ public:
 private:
 	static std::vector<rect_type> prepareTextureAtlas(std::vector <LayerRect>& layerRects, int texturePixelBuffer, int *atlasWidth, int *atlasHeight);
 
+	static void premultAlpha(unsigned char* image, int width, int height);
 	static int nextPower2(int num);
 };
 

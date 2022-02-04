@@ -170,9 +170,6 @@
     <ClInclude Include="src\Fluff2D\Renderer\LayerRect.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="dependencies\include\alpha-bleeding\alphaBleeding.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="dependencies\include\threadPool\ThreadPool.h">
       <Filter>Header Files</Filter>
     </ClInclude>

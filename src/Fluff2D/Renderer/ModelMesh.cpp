@@ -51,9 +51,7 @@ void ModelMesh::secondUpdate()
 void ModelMesh::render()
 {
 	updateVertexData();
-
-	if (visible)
-		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
 }
 
 void ModelMesh::renderInspector()
@@ -62,8 +60,7 @@ void ModelMesh::renderInspector()
 
 	ImGui::DragInt("Render Order", &renderOrder);
 
-	ImGui::Text("Masking: %d", maskedMeshes.size());
-	ImGui::Text("Masked: %d", maskedCount);
+	ImGui::Text("Masking: %d", clipMeshes.size());
 	ImGui::Separator();
 
 	ImGui::Checkbox("Visible", &visible);

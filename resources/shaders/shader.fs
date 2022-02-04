@@ -1,4 +1,4 @@
-#version 450 core
+#version 330 core
 
 out vec4 fragColor;
 
@@ -34,6 +34,9 @@ void main()
 	{
 		case(0):
 			fragColor = texture(atlasTex, texCoord) * texColor;
+			fragColor.r *= texColor.a;
+			fragColor.g *= texColor.a;
+			fragColor.b *= texColor.a;
 			break;
 		case(1):
 			fragColor = vec4(uiColor, 1.0f);
@@ -53,6 +56,10 @@ void main()
 		case(6):
 			vec4 v = texture(atlasTex, texCoord) * texColor;
 			fragColor = v / v.a;
+			fragColor.r *= texColor.a;
+			fragColor.g *= texColor.a;
+			fragColor.b *= texColor.a;
+			fragColor.a = v.a;
 			break;
 		case(7):
 			vec4 v2 = texture(atlasTex, texCoord) * texColor;
