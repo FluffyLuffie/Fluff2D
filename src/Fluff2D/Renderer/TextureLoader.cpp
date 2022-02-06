@@ -101,8 +101,6 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 
 	std::shared_ptr<ModelPartUI> currentFolder;
 
-	size_t totalLayerPixels = 0;
-
 	//read in layer data
 	for (int layerNum = 0; layerNum < layerCount; layerNum++)
 	{
@@ -111,8 +109,6 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 		layerRects[layerNum].x = (buffer[4] << 24) | ((buffer[5] & 0xFF) << 16) | ((buffer[6] & 0xFF) << 8) | (buffer[7] & 0xFF);
 		layerRects[layerNum].h = ((buffer[8] << 24) | ((buffer[9] & 0xFF) << 16) | ((buffer[10] & 0xFF) << 8) | (buffer[11] & 0xFF)) - layerRects[layerNum].y;
 		layerRects[layerNum].w = ((buffer[12] << 24) | ((buffer[13] & 0xFF) << 16) | ((buffer[14] & 0xFF) << 8) | (buffer[15] & 0xFF)) - layerRects[layerNum].x;
-
-		totalLayerPixels += layerRects[layerNum].h * layerRects[layerNum].w;
 
 		//number of channels
 		pf.read(buffer, 2);
@@ -249,9 +245,9 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 		}
 	}
 
-	//testing new texturePixelBuffer stuff
-	int atlasWidth = 0, atlasHeight = 0, tempAtlasWidth = 1, tempAtlasHeight = 1;
-	int texturePixelBuffer = std::max(nextPower2(static_cast<int>(sqrt(totalLayerPixels))) / 128, 10);
+	//TODO: maybe make texture buffer scale according to each rect's size?
+	int atlasWidth = 0, atlasHeight = 0;
+	int texturePixelBuffer = 5;
 	auto rectangles = prepareTextureAtlas(layerRects, texturePixelBuffer, &atlasWidth, &atlasHeight);
 
 	std::vector <unsigned char> atlasBytes;
@@ -527,7 +523,7 @@ std::vector<rect_type> TextureLoader::prepareTextureAtlas(std::vector<LayerRect>
 
 	const auto max_side = 16384;
 	const auto discard_step = -4;
-	//change to enabled after testing
+	//turn on after testing
 	const auto runtime_flipping_mode = rectpack2D::flipping_option::DISABLED;
 
 	std::vector<rect_type> rectangles;

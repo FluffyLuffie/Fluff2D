@@ -7,6 +7,7 @@
 #include "ModelPart.h"
 #include "../UI/ModelPartUI.h"
 #include "../Core/Parameter.h"
+#include "Triangulator.h"
 
 class ModelMesh : public ModelPart
 {
@@ -31,6 +32,7 @@ public:
 
 	//testing, call after making basic mesh
 	void createBoxMesh(int boxCountX, int boxCountY, int atlasWidth, int atlasHeight);
+	void createTriMesh(int boxCountX, int boxCountY, int atlasWidth, int atlasHeight);
 
 private:
 	int atlasPositionX = 0, atlasPositionY = 0, textureWidth = 0, textureHeight = 0;

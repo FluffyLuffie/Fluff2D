@@ -187,6 +187,7 @@
     <ClCompile Include="src\Fluff2D\Renderer\TextureLoader.cpp" />
     <ClCompile Include="src\Fluff2D\Core\Window.cpp" />
     <ClCompile Include="src\Fluff2D\Renderer\Vertex.cpp" />
+    <ClCompile Include="src\Fluff2D\Renderer\Triangulator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Fluff2D\Renderer\RenderGroup.h" />
@@ -228,6 +229,7 @@
     <ClInclude Include="src\Fluff2D\Renderer\TextureLoader.h" />
     <ClInclude Include="src\Fluff2D\Core\Window.h" />
     <ClInclude Include="src\Fluff2D\Renderer\Vertex.h" />
+    <ClInclude Include="src\Fluff2D\Renderer\Triangulator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -13,7 +13,7 @@ public:
 	LayerType layerType = LayerType::image;
 
 	LayerRect();
-	LayerRect(int _y, int _x, int _w, int _h);
+	//LayerRect(int _x, int _y, int _w, int _h);
 	LayerRect(const LayerRect& layerRect);
 
 	~LayerRect() {}

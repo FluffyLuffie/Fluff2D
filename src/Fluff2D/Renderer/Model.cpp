@@ -243,7 +243,7 @@ void Model::generateTestBoxMesh(std::string partName, int boxSizeX, int boxSizeY
 	{
 		if (modelMeshes[i]->name == partName)
 		{
-			modelMeshes[i]->createBoxMesh(boxSizeX, boxSizeY, atlasWidth, atlasHeight);
+			modelMeshes[i]->createTriMesh(boxSizeX, boxSizeY, atlasWidth, atlasHeight);
 		}
 	}
 }

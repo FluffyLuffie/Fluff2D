@@ -105,6 +105,9 @@
     <ClCompile Include="src\Fluff2D\Renderer\RenderGroup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Fluff2D\Renderer\Triangulator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dependencies\stb_image\stb_image.h">
@@ -222,6 +225,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Fluff2D\Renderer\RenderGroup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Fluff2D\Renderer\Triangulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

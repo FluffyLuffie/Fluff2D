@@ -147,17 +147,16 @@ void ModelMesh::createBoxMesh(int boxCountX, int boxCountY, int atlasWidth, int 
 	localVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1));
 	originalVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1));
 	prewarpedVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1));
-	for (int y = 0; y <= boxCountY; y++)
-	{
-		for (int x = 0; x <= boxCountX; x++)
-		{
-			//add flipped method later
-			if (flipped)
+
+	if (flipped)
+		for (int y = 0; y <= boxCountY; y++)
+			for (int x = 0; x <= boxCountX; x++)
+				addVertex(textureHeight * (-0.5f + 1.0f / boxCountX * x), textureWidth * (-0.5f + 1.0f / boxCountY * y), (atlasPositionX + textureWidth - ((float)textureWidth) * y / boxCountY) / atlasWidth, (atlasHeight - atlasPositionY - textureHeight + ((float)textureHeight) * x / boxCountX) / atlasHeight);
+	else
+		for (int y = 0; y <= boxCountY; y++)
+			for (int x = 0; x <= boxCountX; x++)
 				addVertex(textureWidth * (-0.5f + 1.0f / boxCountX * x), textureHeight * (-0.5f + 1.0f / boxCountY * y), (atlasPositionX + ((float)textureWidth) * x / boxCountX) / atlasWidth, (atlasHeight - atlasPositionY - textureHeight + ((float)textureHeight) * y / boxCountY) / atlasHeight);
-			else
-				addVertex(textureWidth * (-0.5f + 1.0f / boxCountX * x), textureHeight * (-0.5f + 1.0f / boxCountY * y), (atlasPositionX + ((float)textureWidth) * x / boxCountX) / atlasWidth, (atlasHeight - atlasPositionY - textureHeight + ((float)textureHeight) * y / boxCountY) / atlasHeight);
-		}
-	}
+
 
 	//indices
 	indices.resize(boxCountX * boxCountY * 6);
@@ -177,5 +176,58 @@ void ModelMesh::createBoxMesh(int boxCountX, int boxCountY, int atlasWidth, int 
 		}
 		vert++;
 	}
+	updateVertexData();
+}
+
+void ModelMesh::createTriMesh(int boxCountX, int boxCountY, int atlasWidth, int atlasHeight)
+{
+	clearMeshData();
+
+	//create vertices for boxes
+	vertices.reserve((boxCountX + 1) * (boxCountY + 1) + boxCountX * boxCountY);
+	localVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1) + boxCountX * boxCountY);
+	originalVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1) + boxCountX * boxCountY);
+	prewarpedVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1) + boxCountX * boxCountY);
+
+	//TODO: add flipped
+	if (flipped)
+	{
+
+	}
+	else
+	{
+		//normal box
+		for (int y = 0; y <= boxCountY; y++)
+			for (int x = 0; x <= boxCountX; x++)
+				addVertex(textureWidth * (-0.5f + 1.0f / boxCountX * x), textureHeight * (-0.5f + 1.0f / boxCountY * y), (atlasPositionX + ((float)textureWidth) * x / boxCountX) / atlasWidth, (atlasHeight - atlasPositionY - textureHeight + ((float)textureHeight) * y / boxCountY) / atlasHeight);
+
+		//put dot in middle
+		for (int y = 0; y < boxCountY; y++)
+			for (int x = 0; x < boxCountX; x++)
+				addVertex(textureWidth * (-0.5f + 1.0f / boxCountX * (x + 0.5f)), textureHeight * (-0.5f + 1.0f / boxCountY * (y + 0.5f)), (atlasPositionX + ((float)textureWidth) * (x + 0.5f) / boxCountX) / atlasWidth, (atlasHeight - atlasPositionY - textureHeight + ((float)textureHeight) * (y + 0.5f) / boxCountY) / atlasHeight);
+	}
+
+	Triangulator::triangulate(vertices, indices, atlasPositionX, atlasPositionY, flipped, atlasWidth, atlasHeight);
+
+	/*
+	//indices
+	indices.resize(boxCountX * boxCountY * 12);
+	for (int boxY = 0, vert = 0; boxY < boxCountY; boxY++)
+	{
+		for (int boxX = 0; boxX < boxCountX; boxX++)
+		{
+			int corners[] = { boxX + (boxCountX + 1) * boxY + 1, boxX + (boxCountX + 1) * boxY, boxX + (boxCountX + 1) * (boxY + 1), boxX + (boxCountX + 1) * (boxY + 1) + 1 };
+			int center = (boxCountX + 1) * (boxCountY + 1) + boxX + boxCountX * boxY;
+			for (int tri = 0; tri < 4; tri++)
+			{
+				indices[vert] = center;
+				indices[vert + 1] = corners[tri];
+				indices[vert + 2] = corners[(tri + 1) % 4];
+				vert += 3;
+			}
+		}
+	}
+	*/
+
 	updateVertexData();
 }
