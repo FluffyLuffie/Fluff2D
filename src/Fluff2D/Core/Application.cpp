@@ -143,13 +143,17 @@ void Application::initializeModelFromPsd(const char* fileName)
 
 	double startTime = glfwGetTime();
 	model = std::make_shared<Model>();
-	TextureLoader::loadPsdFile(fileName, model);
-	TextureLoader::loadTexture(&model->textureID, "saves/testExports/textureAtlas.png", &model->atlasWidth, &model->atlasHeight, &model->atlasNrChannels);
-	Log::logInfo("Took %f seconds to load PSD", glfwGetTime() - startTime);
+	if (TextureLoader::loadPsdFile(fileName, model))
+	{
+		TextureLoader::loadTexture(&model->textureID, "saves/testExports/textureAtlas.png", &model->atlasWidth, &model->atlasHeight, &model->atlasNrChannels);
+		Log::logInfo("Took %f seconds to load PSD", glfwGetTime() - startTime);
 
-	model->generateDefaltParams();
-	model->updatePartMap();
-	model->bindUniformTextures();
+		model->generateDefaltParams();
+		model->updatePartMap();
+		model->bindUniformTextures();
+	}
+	else
+		Log::logError("Failed to load psd");
 }
 
 void Application::saveModel()

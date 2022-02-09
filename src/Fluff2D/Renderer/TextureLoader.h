@@ -23,7 +23,7 @@ class TextureLoader
 {
 public:
 	static void loadTexture(unsigned int* texture, const char* fileName, int* width, int* height, int* nrChannels);
-	static void loadPsdFile(const char* fileName, std::shared_ptr<Model> model);
+	static bool loadPsdFile(const char* fileName, std::shared_ptr<Model> model);
 
 private:
 	static std::vector<rect_type> prepareTextureAtlas(std::vector <LayerRect>& layerRects, int texturePixelBuffer, int *atlasWidth, int *atlasHeight);

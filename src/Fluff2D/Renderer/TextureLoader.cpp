@@ -25,7 +25,7 @@ void TextureLoader::loadTexture(unsigned int* texture, const char* fileName, int
 //Very high chance of breaking if you so something besides just plain raster layers and folders
 //Read this if you want to understand a fraction of the pain I went for you, and others if this becomes an open source project like I intended to
 //https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
-void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> model)
+bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> model)
 {
 	//might move this to a class variable later
 	std::vector <LayerRect> layerRects;
@@ -37,7 +37,7 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	if (!pf.is_open())
 	{
 		Log::logError("Error opening psd file");
-		return;
+		return false;
 	}
 
 	char buffer[16];
@@ -49,7 +49,7 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	if (std::strncmp(buffer, "8BPS", 4) != 0)
 	{
 		Log::logError("PSD file has incorrect signature");
-		return;
+		return false;
 	}
 
 	//check version
@@ -57,7 +57,7 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	if (buffer[0] != 0 || buffer[1] != 1)
 	{
 		Log::logError("PSD file is incorrect version");
-		return;
+		return false;
 	}
 
 	//skip over junk
@@ -85,6 +85,7 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 
 	//skip over whatever junk of a section this is
 	pf.seekg((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF), std::ios::cur);
+
 #pragma endregion
 
 #pragma region Layer and Mask Information Section, also make texture atlas
@@ -95,12 +96,14 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	pf.seekg(8, std::ios::cur);
 
 	//layers count as 1, folders count as 2, don't ask me why cause that's how psd works
+	//negative layer counts exists, why does it even do it this way
 	pf.read(buffer, 2);
-	int layerCount = std::abs(((buffer[0] & 0xFF) << 8) | (buffer[1] & 0xFF));
+	int layerCount = std::abs(((buffer[0] & 0xFF) << 24) | ((buffer[1] & 0xFF) << 16));
+	layerCount = layerCount >> 16;
+
 	layerRects.resize(layerCount);
 
 	std::shared_ptr<ModelPartUI> currentFolder;
-
 	//read in layer data
 	for (int layerNum = 0; layerNum < layerCount; layerNum++)
 	{
@@ -122,7 +125,8 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 		pf.seekg((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF), std::ios::cur);
 
 		//layer blending ranges, go away too
-		pf.seekg(12 + 8 * channels, std::ios::cur);
+		pf.read(buffer, 4);
+		pf.seekg((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF), std::ios::cur);
 
 		//read in layer name
 		//whoever designed this part should be thrown in hell
@@ -145,6 +149,8 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 					layerNameBad = true;
 					break;
 				}
+				else
+					pf.seekg(-3, std::ios::cur);
 			}
 
 			layerRects[layerNum].layerName += buffer[0];
@@ -197,51 +203,77 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 
 			//distinguish if folder or image layer
 			pf.read(buffer, 4);
-			//if folder
-			if (std::strncmp(buffer, "lsct", 4) == 0)
+
+			int code = (buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF);
+			switch (code)
 			{
-				currentFolder->name = layerRects[layerNum].layerName;
-				currentFolder = currentFolder->parent;
+				//lsct, folder
+				case 1819501428:
+					currentFolder->name = layerRects[layerNum].layerName;
+					currentFolder = currentFolder->parent;
 
-				layerRects[layerNum].layerType = LayerRect::LayerType::folder;
+					layerRects[layerNum].layerType = LayerRect::LayerType::folder;
 
-				//skip a few things
-				pf.seekg(44, std::ios::cur);
+					//skip a few things
+					pf.seekg(44, std::ios::cur);
 
-				//skip unicode name
-				pf.read(buffer, 4);
-				pf.seekg(2 * ((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF)), std::ios::cur);
+					//skip unicode name
+					pf.read(buffer, 4);
+					pf.seekg(2 * ((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF)), std::ios::cur);
 
-				//junk
-				pf.seekg(16, std::ios::cur);
+					//junk
+					pf.seekg(16, std::ios::cur);
+					break;
+
+				//lspf, Clip Studio Paint raster layers start wit this
+				case 1819504742:
+					if (!currentFolder)
+					{
+						model->layerStructure.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image, layerRects[layerNum].layerName));
+					}
+					else
+					{
+						currentFolder->children.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image));
+						currentFolder->children.back()->name = layerRects[layerNum].layerName;
+					}
+
+					//skip a bunch of junk
+					pf.read(buffer, 4);
+					pf.seekg((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF), std::ios::cur);
+
+					//skip over junk
+					pf.seekg(12, std::ios::cur);
+
+					//skip unicode name
+					pf.read(buffer, 4);
+					pf.seekg(2 * ((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF)), std::ios::cur);
+
+					//skip more junk
+					pf.seekg(16, std::ios::cur);
+					break;
+
+				//luni, Krita raster layers start with this
+				case 1819635305:
+					if (!currentFolder)
+					{
+						model->layerStructure.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image, layerRects[layerNum].layerName));
+					}
+					else
+					{
+						currentFolder->children.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image));
+						currentFolder->children.back()->name = layerRects[layerNum].layerName;
+					}
+
+					//skip unicode name and junk
+					//for some reason this is not the number of characters but the number of bytes?
+					pf.read(buffer, 4);
+					pf.seekg((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF), std::ios::cur);
+					break;
+				default:
+					Log::logError("Unsupported layer code: %c%c%c%c", buffer[0], buffer[1], buffer[2], buffer[3]);
+					return false ;
 			}
-			//if image layer
-			else
-			{
-				if (!currentFolder)
-				{
-					model->layerStructure.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image, layerRects[layerNum].layerName));
-				}
-				else
-				{
-					currentFolder->children.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image));
-					currentFolder->children.back()->name = layerRects[layerNum].layerName;
-				}
-
-				//skip a bunch of junk
-				pf.read(buffer, 4);
-				pf.seekg((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF), std::ios::cur);
-
-				//skip over junk
-				pf.seekg(12, std::ios::cur);
-
-				//skip unicode name
-				pf.read(buffer, 4);
-				pf.seekg(2 * ((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF)), std::ios::cur);
-
-				//skip more junk
-				pf.seekg(16, std::ios::cur);
-			}
+			
 		}
 	}
 
@@ -452,7 +484,7 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			break;
 		default:
 			Log::logError("Compression method not supported: %d", compression);
-			return;
+			return false;
 		}
 	}
 
@@ -508,6 +540,7 @@ void TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	//create texture atlas
 	stbi_write_png("saves/testExports/textureAtlas.png", atlasWidth, atlasHeight, 4, &(atlasBytes[0]), atlasWidth * 4);
 	Log::logInfo("Finished generating texture atlas (%d %d)", atlasWidth, atlasHeight);
+	return true;
 }
 
 std::vector<rect_type> TextureLoader::prepareTextureAtlas(std::vector<LayerRect>& layerRects, int texturePixelBuffer, int* atlasWidth, int* atlasHeight)
