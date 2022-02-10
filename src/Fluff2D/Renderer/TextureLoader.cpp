@@ -5,8 +5,8 @@ void TextureLoader::loadTexture(unsigned int* texture, const char* fileName, int
 	glGenTextures(1, texture);
 	glBindTexture(GL_TEXTURE_2D, *texture);
 
-	float borderColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -100,6 +100,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	pf.read(buffer, 2);
 	int layerCount = std::abs(((buffer[0] & 0xFF) << 24) | ((buffer[1] & 0xFF) << 16));
 	layerCount = layerCount >> 16;
+	std::cout << "layercount: " << layerCount << std::endl;
 
 	layerRects.resize(layerCount);
 
@@ -157,6 +158,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			pf.read(buffer, 1);
 		}
 
+		std::cout << "layernum: " << layerNum << " name: " << layerRects[layerNum].layerName << " size: " << layerRects[layerNum].x << " " << layerRects[layerNum].y << " " << layerRects[layerNum].w << " " << layerRects[layerNum].h << std::endl;
+
 		//skip through null padding and signature if name isn't created by the devil
 		if (!layerNameBad)
 		{
@@ -168,8 +171,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 		}
 
 
-		//folder dividers are named like this idk
-		if (layerRects[layerNum].layerName.compare("</Layer set>") == 0)
+		//folder divider names hopefully start with this, Clip Studio Paint is "</Layer set", Krita is "</Layer group>"
+		if (layerRects[layerNum].layerName.compare(0, 7, "</Layer") == 0)
 		{
 			if (!currentFolder)
 			{
@@ -185,16 +188,44 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 
 			layerRects[layerNum].layerType = LayerRect::LayerType::divider;
 
-			//key is "lsct", I hope
-			//also skip a bunch of extra stuff, number of bytes are wrong on documentation but who cares
-			pf.seekg(48, std::ios::cur);
-
-			//skip unicode name
 			pf.read(buffer, 4);
-			pf.seekg(2 * ((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF)), std::ios::cur);
+			int code = (buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF);
 
-			//some junk I think, hope nothing breaks
-			pf.seekg(16, std::ios::cur);
+			switch (code)
+			{
+				//lsct, divider signature for Clip Studio Paint
+				case 1819501428:
+					//also skip a bunch of extra stuff, number of bytes are wrong on documentation but who cares
+					pf.seekg(44, std::ios::cur);
+
+					//skip unicode name
+					pf.read(buffer, 4);
+					pf.seekg(2 * ((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF)), std::ios::cur);
+
+					//some junk I think, hope nothing breaks
+					pf.seekg(16, std::ios::cur);
+					break;
+				//luni, divider signature for Krita
+				case 1819635305:
+					if (!currentFolder)
+					{
+						model->layerStructure.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image, layerRects[layerNum].layerName));
+					}
+					else
+					{
+						currentFolder->children.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image));
+						currentFolder->children.back()->name = layerRects[layerNum].layerName;
+					}
+
+					//skip unicode name
+					pf.read(buffer, 4);
+					pf.seekg(((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF)), std::ios::cur);
+
+					//should say 8BIM lsct, skip section divider setting
+					pf.seekg(24, std::ios::cur);
+					break;
+			}
+			
 		}
 		//if not divider
 		else
@@ -207,7 +238,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			int code = (buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF);
 			switch (code)
 			{
-				//lsct, folder
+				//lsct, divider end for Clip Studio Paint
 				case 1819501428:
 					currentFolder->name = layerRects[layerNum].layerName;
 					currentFolder = currentFolder->parent;
@@ -252,7 +283,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 					pf.seekg(16, std::ios::cur);
 					break;
 
-				//luni, Krita raster layers start with this
+				//luni, both Krita raster and divider end starts with this
 				case 1819635305:
 					if (!currentFolder)
 					{
@@ -268,6 +299,13 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 					//for some reason this is not the number of characters but the number of bytes?
 					pf.read(buffer, 4);
 					pf.seekg((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF), std::ios::cur);
+
+					//check to see if divider end for Krita
+					pf.read(buffer, 4);
+					if (std::strncmp(buffer, "8BIM", 4) == 0)
+						pf.seekg(20, std::ios::cur);
+					else
+						pf.seekg(-4, std::ios::cur);
 					break;
 				default:
 					Log::logError("Unsupported layer code: %c%c%c%c", buffer[0], buffer[1], buffer[2], buffer[3]);

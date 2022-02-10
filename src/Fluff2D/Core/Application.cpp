@@ -356,8 +356,12 @@ void Application::drawImGui()
 				fileBrowser.SetTypeFilters({ ".psd", ".ftd" });
 				fileBrowser.Open();
 			}
-			if (ImGui::MenuItem("Open test model"))
-				initializeModelFromPsd("saves/tempPsdTest/testModel.psd");
+			if (ImGui::MenuItem("Open test model csp"))
+				initializeModelFromPsd("tempPsdTest/testModel.psd");
+			if (ImGui::MenuItem("Open test model krita"))
+				initializeModelFromPsd("tempPsdTest/testModelKrita.psd");
+			if (ImGui::MenuItem("Open fluffy"))
+				initializeModelFromPsd("tempPsdTest/fluffy.psd");
 			if (ImGui::MenuItem("Save"))
 				saveModel();
 			ImGui::EndMenu();
