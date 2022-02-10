@@ -100,7 +100,6 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	pf.read(buffer, 2);
 	int layerCount = std::abs(((buffer[0] & 0xFF) << 24) | ((buffer[1] & 0xFF) << 16));
 	layerCount = layerCount >> 16;
-	std::cout << "layercount: " << layerCount << std::endl;
 
 	layerRects.resize(layerCount);
 
@@ -158,8 +157,6 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			pf.read(buffer, 1);
 		}
 
-		std::cout << "layernum: " << layerNum << " name: " << layerRects[layerNum].layerName << " size: " << layerRects[layerNum].x << " " << layerRects[layerNum].y << " " << layerRects[layerNum].w << " " << layerRects[layerNum].h << std::endl;
-
 		//skip through null padding and signature if name isn't created by the devil
 		if (!layerNameBad)
 		{
@@ -207,16 +204,6 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 					break;
 				//luni, divider signature for Krita
 				case 1819635305:
-					if (!currentFolder)
-					{
-						model->layerStructure.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image, layerRects[layerNum].layerName));
-					}
-					else
-					{
-						currentFolder->children.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image));
-						currentFolder->children.back()->name = layerRects[layerNum].layerName;
-					}
-
 					//skip unicode name
 					pf.read(buffer, 4);
 					pf.seekg(((buffer[0] << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF)), std::ios::cur);
@@ -285,16 +272,6 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 
 				//luni, both Krita raster and divider end starts with this
 				case 1819635305:
-					if (!currentFolder)
-					{
-						model->layerStructure.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image, layerRects[layerNum].layerName));
-					}
-					else
-					{
-						currentFolder->children.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image));
-						currentFolder->children.back()->name = layerRects[layerNum].layerName;
-					}
-
 					//skip unicode name and junk
 					//for some reason this is not the number of characters but the number of bytes?
 					pf.read(buffer, 4);
@@ -302,10 +279,29 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 
 					//check to see if divider end for Krita
 					pf.read(buffer, 4);
+					//if folder
 					if (std::strncmp(buffer, "8BIM", 4) == 0)
+					{
+						currentFolder->name = layerRects[layerNum].layerName;
+						currentFolder = currentFolder->parent;
+
+						layerRects[layerNum].layerType = LayerRect::LayerType::folder;
 						pf.seekg(20, std::ios::cur);
+					}
+					//if raster layer
 					else
+					{
+						if (!currentFolder)
+						{
+							model->layerStructure.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image, layerRects[layerNum].layerName));
+						}
+						else
+						{
+							currentFolder->children.emplace_back(std::make_shared<ModelPartUI>(ModelPartUI::PartType::image));
+							currentFolder->children.back()->name = layerRects[layerNum].layerName;
+						}
 						pf.seekg(-4, std::ios::cur);
+					}
 					break;
 				default:
 					Log::logError("Unsupported layer code: %c%c%c%c", buffer[0], buffer[1], buffer[2], buffer[3]);
