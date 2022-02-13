@@ -16,138 +16,150 @@ void Application::update()
 	Event::update();
 	glfwPollEvents();
 
-	Camera2D::update();
-
-	//don't need to clear window when transparent back since model FBO overwrites everything
-	if (!model || !Settings::transparentBackground)
-		window.update();
-
-	if (model)
+	if (Event::anyAction)
+		eventFramesCount = 0;
+	if (eventFramesCount < EVENT_FRAMES || Settings::effect)
 	{
-		model->update();
+		Event::anyAction = false;
 
-		int closestVertexIndex = -1;
-		int selectedPartNum = -1;
-		if (!Event::io->WantCaptureMouse)
+		Camera2D::update();
+
+		//don't need to clear window when transparent back since model FBO overwrites everything
+		if (!model || !Settings::transparentBackground)
+			window.update();
+
+		if (model)
 		{
-			if (selectedParts.size())
+			model->update();
+
+			int closestVertexIndex = -1;
+			int selectedPartNum = -1;
+			if (!Event::io->WantCaptureMouse)
 			{
-				//testing stuff, move somewhere else later
-				closestVertexIndex = model->findClosestVertex(selectedParts, &selectedPartNum);
-				if (closestVertexIndex != -1)
+				if (selectedParts.size())
 				{
-					if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+					//testing stuff, move somewhere else later
+					closestVertexIndex = model->findClosestVertex(selectedParts, &selectedPartNum);
+					if (closestVertexIndex != -1)
 					{
-						oldMouseCoord = ImGui::GetMousePos();
-						//if ctrl key pressed, add to selected vertices
-						if (GLFW_MOD_CONTROL == Event::mod)
+						if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 						{
-							model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
-							model->initialVerticesPos[&model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex))] = model->partMap[selectedParts[selectedPartNum]]->vertices[closestVertexIndex].position;
-						}
-						else
-						{
-							//if clicked vertex is not in selected vertices, clear
-							if (std::find(model->selectedVertices.begin(), model->selectedVertices.end(), VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex)) == model->selectedVertices.end())
+							oldMouseCoord = ImGui::GetMousePos();
+							//if ctrl key pressed, add to selected vertices
+							if (GLFW_MOD_CONTROL == Event::mod)
 							{
-								model->selectedVertices.clear();
-								model->initialVerticesPos.clear();
 								model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
 								model->initialVerticesPos[&model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex))] = model->partMap[selectedParts[selectedPartNum]]->vertices[closestVertexIndex].position;
 							}
+							else
+							{
+								//if clicked vertex is not in selected vertices, clear
+								if (std::find(model->selectedVertices.begin(), model->selectedVertices.end(), VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex)) == model->selectedVertices.end())
+								{
+									model->selectedVertices.clear();
+									model->initialVerticesPos.clear();
+									model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
+									model->initialVerticesPos[&model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex))] = model->partMap[selectedParts[selectedPartNum]]->vertices[closestVertexIndex].position;
+								}
+							}
+							model->updateOriginalVertexPositions();
 						}
-						model->updateOriginalVertexPositions();
+					}
+					//if clicked on nothing, clear
+					else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+					{
+						model->selectedVertices.clear();
+						model->initialVerticesPos.clear();
 					}
 				}
-				//if clicked on nothing, clear
-				else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+
+				//move vertices
+				if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != Event::mod)
 				{
-					model->selectedVertices.clear();
-					model->initialVerticesPos.clear();
+					if (model->selectedVertices.size())
+					{
+						model->moveSelectedVertices(oldMouseCoord);
+						draggingVertices = true;
+					}
 				}
-			}
-
-			//move vertices
-			if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != Event::mod)
-			{
-				if (model->selectedVertices.size())
+				else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && draggingVertices)
 				{
-					model->moveSelectedVertices(oldMouseCoord);
-					draggingVertices = true;
+					//model->updateOriginalVertexPositions();
+					draggingVertices = false;
 				}
+
+				//check if mouse should detect which mesh it is on
+				if (!draggingVertices && mouseInWindow())
+					model->detectMouseHover = true;
 			}
-			else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && draggingVertices)
+
+			model->render();
+
+			//testing stuff
+			if (selectedParts.size())
 			{
-				//model->updateOriginalVertexPositions();
-				draggingVertices = false;
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				model->shader.setInt("mode", 1);
+
+				for (int i = 0; i < selectedParts.size(); i++)
+				{
+					model->renderMeshVertice(selectedParts[i]);
+				}
+
+				model->renderSelectedVertices();
+
+				if (closestVertexIndex != -1)
+					model->renderClosestVertex(selectedParts[selectedPartNum], closestVertexIndex);
+
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			}
+
+			//detect which mesh mouse is on
+			if (model->mouseHoveredID != -1)
+				std::cout << model->mouseHoveredID << std::endl;
 		}
 
-		model->render();
+		if (Event::keyPressed(GLFW_KEY_ESCAPE))
+			drawMenu ^= true;
 
-		//testing stuff
-		if (selectedParts.size())
+		//create imgui frame
+		if (drawMenu)
 		{
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			model->shader.setInt("mode", 1);
+			ImGui_ImplGlfw_NewFrame();
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui::NewFrame();
 
-			for (int i = 0; i < selectedParts.size(); i++)
+			drawImGui();
+
+			//testing
+			//ImGui::ShowDemoWindow();
+
+			ImGui::EndFrame();
+			ImGui::Render();
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+			//load new font
+			if (queueFontChange)
 			{
-				model->renderMeshVertice(selectedParts[i]);
+				queueFontChange = false;
+				ImGuiIO& io = ImGui::GetIO();
+				io.Fonts->Clear();
+				io.Fonts->AddFontFromFileTTF(Settings::fontFile.c_str(), static_cast<float>(Settings::fontSize), NULL, io.Fonts->GetGlyphRangesJapanese());
+				ImGui_ImplOpenGL3_CreateFontsTexture();
 			}
-
-			model->renderSelectedVertices();
-
-			if (closestVertexIndex != -1)
-				model->renderClosestVertex(selectedParts[selectedPartNum], closestVertexIndex);
-
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
-
-		//detect which mesh mouse is on
-		if (!Event::io->WantCaptureMouse && !draggingVertices)
-		{
-			std::cout << model->mouseHoveredID << std::endl;
-		}
+		glfwSwapBuffers(window.getWindow());
+		eventFramesCount++;
 	}
-
-	if (Event::keyPressed(GLFW_KEY_ESCAPE))
-		drawMenu ^= true;
-
-	//create imgui frame
-	if (drawMenu)
-	{
-		ImGui_ImplGlfw_NewFrame();
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui::NewFrame();
-
-		drawImGui();
-
-		//testing
-		//ImGui::ShowDemoWindow();
-
-		ImGui::EndFrame();
-		ImGui::Render();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-		//load new font
-		if (queueFontChange)
-		{
-			queueFontChange = false;
-			ImGuiIO& io = ImGui::GetIO();
-			io.Fonts->Clear();
-			io.Fonts->AddFontFromFileTTF(Settings::fontFile.c_str(), static_cast<float>(Settings::fontSize), NULL, io.Fonts->GetGlyphRangesJapanese());
-			ImGui_ImplOpenGL3_CreateFontsTexture();
-		}
-	}
-
-	glfwSwapBuffers(window.getWindow());
+	else
+		std::this_thread::sleep_for(std::chrono::milliseconds((int)((1.0f / 60.0f - Event::deltaTime) * 1000.0f)));
 
 	checkRunning();
 }
 
 void Application::initializeModelFromPsd(const char* fileName)
 {
+	Event::anyAction = true;
 	selectedParts.clear();
 
 	double startTime = glfwGetTime();
@@ -167,12 +179,14 @@ void Application::initializeModelFromPsd(const char* fileName)
 
 void Application::saveModel()
 {
+	Event::anyAction = true;
 	if (model)
 		SaveSystem::saveModel(model, version);
 }
 
 int Application::loadModel(const char* filePath)
 {
+	Event::anyAction = true;
 	//idk what to do here, this is junk for now don't call
 	std::cout << "Don't call loadModel, yet" << std::endl;
 	//ModelMesh modelMesh();
@@ -188,6 +202,8 @@ void Application::init()
 	window.init();
 	Event::GLFWWin = window.getWindow();
 
+	glfwSetCursorPosCallback(window.getWindow(), Event::cursor_position_callback);
+	glfwSetMouseButtonCallback(window.getWindow(), Event::mouse_button_callback);
 	glfwSetFramebufferSizeCallback(window.getWindow(), Event::framebuffer_size_callback);
 	glfwSetScrollCallback(window.getWindow(), Event::scroll_callback);
 	glfwSetKeyCallback(window.getWindow(), Event::key_callback);
@@ -465,6 +481,9 @@ void Application::drawImGui()
 	//general
 	if (ImGui::Begin("General"))
 	{
+		//bunch of settings and stuff with frame rate so might as well
+		Event::anyAction = true;
+
 		int selected = static_cast<int>(Settings::selectedLanguage);
 		//***THIS DOES ABSOLUTELY NOTHING RIGHT NOW***
 		//hard coded in language names, not possible to turn enum names into strings with C++
@@ -710,4 +729,15 @@ void Application::drawImGui()
 	ImGui::End();
 
 	Log::draw("Log");
+}
+
+bool Application::mouseInWindow()
+{
+	int w, h;
+	glfwGetWindowSize(window.getWindow(), &w, &h);
+	ImVec2 mPos = ImGui::GetMousePos();
+
+	if (mPos.x >= 0.0f && (int)mPos.x <= w && mPos.y >= 0.0f && (int)mPos.y <= h)
+		return true;
+	return false;
 }

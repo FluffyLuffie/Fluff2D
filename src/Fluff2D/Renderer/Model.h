@@ -51,6 +51,7 @@ public:
 
 	int atlasWidth = 0, atlasHeight = 0, atlasNrChannels = 0;
 
+	bool detectMouseHover = false;
 	int mouseHoveredID = -1;
 	bool screenshot = false;
 

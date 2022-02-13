@@ -1,7 +1,7 @@
 #version 330 core
 
 layout(location = 0) out vec4 fragColor;
-layout(location = 1) out int meshId;
+layout(location = 1) out int meshID;
 
 in vec2 texCoord;
 
@@ -11,6 +11,7 @@ uniform sampler2D modelTex;
 uniform vec4 texColor;
 uniform vec3 uiColor;
 uniform int mode;
+uniform int ID;
 
 uniform float timer;
 
@@ -31,10 +32,10 @@ vec4 applyEffect (vec4 original)
 
 void main()
 {
-	meshId = 50;
 	switch (mode)
 	{
 		case(0):
+			meshID = ID;
 			fragColor = texture(atlasTex, texCoord) * texColor;
 			fragColor.r *= texColor.a;
 			fragColor.g *= texColor.a;
@@ -56,6 +57,7 @@ void main()
 			fragColor = divideAlpha(applyEffect(texture(modelTex, texCoord) * texColor));
 			break;
 		case(6):
+			meshID = ID;
 			vec4 v = texture(atlasTex, texCoord) * texColor;
 			fragColor = v / v.a;
 			fragColor.r *= texColor.a;
@@ -72,6 +74,9 @@ void main()
 			break;
 		case(8):
 			fragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		case(9):
+			fragColor = vec4(0.0f, 0.0f, 0.0f, texture(atlasTex, texCoord).a * texColor.a);
+			break;
 		default:
 			break;
 	}

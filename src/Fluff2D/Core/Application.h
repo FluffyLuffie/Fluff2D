@@ -1,6 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <chrono>
+#include <thread>
 
 #include "imgui_filebrowser/imfilebrowser.h"
 
@@ -42,6 +44,9 @@ private:
 	bool queueFontChange = false;
 	bool draggingVertices = false;
 
+	const int EVENT_FRAMES = 20;
+	int eventFramesCount = 0;
+
 	void checkRunning();
 	
 	//for docking
@@ -56,5 +61,7 @@ private:
 	void createModelTree(std::shared_ptr<ModelPart> currentPart);
 
 	void drawImGui();
+
+	bool mouseInWindow();
 };
 

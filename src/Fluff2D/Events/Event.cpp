@@ -3,21 +3,30 @@
 bool Event::keyDown(int key)
 {
 	if (!io->WantCaptureKeyboard && glfwGetKey(GLFWWin, key) == GLFW_PRESS)
+	{
+		anyAction = true;
 		return true;
+	}
 	return false;
 }
 
 bool Event::keyPressed(int key)
 {
 	if (!io->WantCaptureKeyboard && keysCheckFrame.find(key) != keysCheckFrame.end())
+	{
+		anyAction = true;
 		return keysCheckFrame[key];
+	}
 	return false;
 }
 
 bool Event::keyReleased(int key)
 {
 	if (!io->WantCaptureKeyboard && keysCheckFrame.find(key) != keysCheckFrame.end())
+	{
+		anyAction = true;
 		return !keysCheckFrame[key];
+	}
 	return false;
 }
 
@@ -51,23 +60,32 @@ void Event::update()
 
 void Event::framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
+	anyAction = true;
 	glViewport(0, 0, width, height);
 	frameBufferResized = true;
 	Window::width = width;
 	Window::height = height;
 }
 
-void Event::mouse_callback(GLFWwindow* window, double xPos, double yPos)
+void Event::cursor_position_callback(GLFWwindow* window, double xPos, double yPos)
 {
+	anyAction = true;
+}
+
+void Event::mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	anyAction = true;
 }
 
 void Event::scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
 {
+	anyAction = true;
 	scroll = (float)yOffset;
 }
 
 void Event::key_callback(GLFWwindow* window, int key, int scanmode, int action, int mods)
 {
+	anyAction = true;
 	if (action == GLFW_PRESS || action == GLFW_RELEASE)
 		keysCheckFrame[key] = action;
 

@@ -581,6 +581,7 @@ void Model::update()
 void Model::renderMaskedMesh(int meshNum)
 {
 	//draw parent mesh's alpha
+	shader.setInt("mode", 9);
 	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	for (int j = 0; j < modelMeshes[meshNum]->clipMeshes.size(); j++)
 	{
@@ -624,6 +625,7 @@ void Model::render()
 			//if not being clipped by others
 			else
 			{
+				shader.setInt("ID", meshIndex + 1);
 				shader.setVec4("texColor", modelMeshes[meshIndex]->color);
 
 				glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ZERO);
@@ -631,6 +633,20 @@ void Model::render()
 			}
 		}
 	}
+
+	//mouse hovering mesh
+	if (detectMouseHover)
+	{
+		detectMouseHover = false;
+		ImVec2 mPos = ImGui::GetMousePos();
+		mPos.y = Window::height - mPos.y;
+		glReadBuffer(GL_COLOR_ATTACHMENT1);
+		glReadPixels((int)mPos.x, (int)mPos.y, 1, 1, GL_RED_INTEGER, GL_INT, &mouseHoveredID);
+		//since buffer cleared to 0 and ID starts at 1
+		mouseHoveredID--;
+	}
+	else
+		mouseHoveredID = -1;
 
 	//fix alpha
 	for (auto const& [meshRenderOrder, meshIndex] : renderOrderMap)
@@ -643,13 +659,6 @@ void Model::render()
 			modelMeshes[meshIndex]->render();
 		}
 	}
-
-	//mouse hovering mesh
-	ImVec2 mPos = ImGui::GetMousePos();
-	mPos.y = Window::height - mPos.y;
-	glReadBuffer(GL_COLOR_ATTACHMENT1);
-	glReadPixels((int)mPos.x, (int)mPos.y, 1, 1, GL_RED_INTEGER, GL_INT, &mouseHoveredID);
-	//std::cout << "MousePos: " << (int)mPos.x << " " << (int)mPos.y << std::endl;
 
 	//render from framebuffer to screen
 	updateVertexData();
