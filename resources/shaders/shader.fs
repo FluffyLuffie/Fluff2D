@@ -1,6 +1,7 @@
 #version 330 core
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
+layout(location = 1) out int meshId;
 
 in vec2 texCoord;
 
@@ -29,7 +30,8 @@ vec4 applyEffect (vec4 original)
 }
 
 void main()
-{		
+{
+	meshId = 50;
 	switch (mode)
 	{
 		case(0):
@@ -51,7 +53,7 @@ void main()
 			fragColor = divideAlpha(texture(modelTex, texCoord) * texColor);
 			break;
 		case(5):
-			fragColor = applyEffect(divideAlpha(texture(modelTex, texCoord) * texColor));
+			fragColor = divideAlpha(applyEffect(texture(modelTex, texCoord) * texColor));
 			break;
 		case(6):
 			vec4 v = texture(atlasTex, texCoord) * texColor;
@@ -68,6 +70,8 @@ void main()
 			}
 			fragColor = v2;
 			break;
+		case(8):
+			fragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		default:
 			break;
 	}

@@ -51,6 +51,7 @@ public:
 
 	int atlasWidth = 0, atlasHeight = 0, atlasNrChannels = 0;
 
+	int mouseHoveredID = -1;
 	bool screenshot = false;
 
 	void update() override;
@@ -87,7 +88,7 @@ public:
 private:
 	void updatePartMapRecursive(std::shared_ptr<ModelPart> part);
 
-	unsigned int modelFbo = 0, modelTexColorBuffer = 0, modelRbo = 0;
+	unsigned int modelFbo = 0, modelTexColorBuffer = 0, mousePickBuffer = 0, modelRbo = 0;
 	unsigned int maskVao = 0, maskVbo = 0, maskEbo = 0;
 
 	Vertex maskVertices[4] = { Vertex(-1.0f, 1.0f, 0.5f, 1.0f), Vertex(1.0f, 1.0f, 1.0f, 1.0f) , Vertex(1.0f, -1.0f, 1.0f, 0.0f) , Vertex(-1.0f, -1.0f, 0.5f, 0.0f) };

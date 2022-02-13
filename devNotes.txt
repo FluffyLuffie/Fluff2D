@@ -1,0 +1,27 @@
+***Things to add/fix***
+Moving points inside warp deformers.
+Clicking on meshes selects them, and add textbox indicating which one mouse is hovering on.
+Parameters actually do something.
+Physics.
+Saving model for editor.
+Right clicking stuff does something.
+Auto vertices placer.
+Japanese translation.
+Model exporter.
+Model view window/tab instead of rending to main frame.
+
+***If have time***
+Invert clipping.
+Save settings in a file and read when launched.
+Moving model object hierarchy by dragging.
+Make psd importer more reliable.
+Clean up fragment shader code.
+Code documentation.
+Editor and exported file documentation.
+
+***Future plans***
+Ways to make moving vertices easier. (totally not copying from other software)
+Update textures and adding new parts with psd.
+Make file explorer use OS's file explorer.
+Other language translations.
+Option to lock UI.

@@ -12,11 +12,7 @@ Window::~Window()
 
 void Window::update()
 {
-	if (Settings::transparentBackground)
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	else
-		glClearColor(Settings::backgroundColor.r, Settings::backgroundColor.g, Settings::backgroundColor.b, 1.0f);
-
+	glClearColor(Settings::backgroundColor.r, Settings::backgroundColor.g, Settings::backgroundColor.b, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
@@ -33,7 +29,7 @@ void Window::init()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	//for transparent back, delete later after testing
+	//for transparent background
 	glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, 1);
 
 	//other settings

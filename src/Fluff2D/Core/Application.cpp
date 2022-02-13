@@ -16,8 +16,11 @@ void Application::update()
 	Event::update();
 	glfwPollEvents();
 
-	window.update();
 	Camera2D::update();
+
+	//don't need to clear window when transparent back since model FBO overwrites everything
+	if (!model || !Settings::transparentBackground)
+		window.update();
 
 	if (model)
 	{
@@ -99,6 +102,12 @@ void Application::update()
 				model->renderClosestVertex(selectedParts[selectedPartNum], closestVertexIndex);
 
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
+
+		//detect which mesh mouse is on
+		if (!Event::io->WantCaptureMouse && !draggingVertices)
+		{
+			std::cout << model->mouseHoveredID << std::endl;
 		}
 	}
 
@@ -488,7 +497,7 @@ void Application::drawImGui()
 		ImGui::ColorEdit3("Background", (float*)&Settings::backgroundColor);
 		ImGui::Checkbox("Transparent Background", &Settings::transparentBackground);
 		ImGui::SameLine();
-		ImGui::HelpMarker("If you want to capture transparency in recording softwares (like OBS),\nmake sure to also enable something like \"Enable Transparency\" inside the recording software.\nTransparent and edge colors will be darkened unless you also enable FBO and color correction.");
+		ImGui::HelpMarker("If you want to capture transparency in recording softwares (like OBS),\nmake sure to also enable something like \"Enable Transparency\" inside the recording software.\nTransparent colors will be darkened unless you also enable color correction.");
 		ImGui::Separator();
 
 		ImGui::Checkbox("Show Canvas", &Settings::showCanvas);

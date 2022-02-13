@@ -51,6 +51,7 @@ Model::Model()
 	glGenFramebuffers(1, &modelFbo);
 	glGenRenderbuffers(1, &modelRbo);
 	glGenTextures(1, &modelTexColorBuffer);
+	glGenTextures(1, &mousePickBuffer);
 
 	updateFrameBufferSize();
 
@@ -89,6 +90,7 @@ Model::~Model()
 	glDeleteFramebuffers(1, &modelFbo);
 	glDeleteRenderbuffers(1, &modelRbo);
 	glDeleteTextures(1, &modelTexColorBuffer);
+	glDeleteTextures(1, &mousePickBuffer);
 
 	glDeleteVertexArrays(1, &maskVao);
 	glDeleteBuffers(1, &maskVbo);
@@ -516,14 +518,25 @@ void Model::updateFrameBufferSize()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
 	glBindTexture(GL_TEXTURE_2D, modelTexColorBuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Window::width, Window::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Window::width, Window::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, modelTexColorBuffer, 0);
 
-	glBindRenderbuffer(GL_RENDERBUFFER, modelRbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, Window::width, Window::height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, modelRbo);
+	//mouse picking
+	glBindTexture(GL_TEXTURE_2D, mousePickBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, Window::width, Window::height, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mousePickBuffer, 0);
+
+	GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	glDrawBuffers(2, bufs);
+
+	//might not need rbo
+	//glBindRenderbuffer(GL_RENDERBUFFER, modelRbo);
+	//glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, Window::width, Window::height);
+	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, modelRbo);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		Log::logError("ERROR::FRAMEBUFFER:: Model framebuffer is not complete!");
@@ -593,13 +606,12 @@ void Model::renderMaskedMesh(int meshNum)
 void Model::render()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
-
-	//might set this for each mesh's setting
-	shader.setInt("mode", 0);
-
 	//clear framebuffer
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
+
+	//might set this for each mesh's setting
+	shader.setInt("mode", 0);
 
 	//render each mesh
 	for (auto const &[meshRenderOrder, meshIndex] : renderOrderMap)
@@ -631,6 +643,13 @@ void Model::render()
 			modelMeshes[meshIndex]->render();
 		}
 	}
+
+	//mouse hovering mesh
+	ImVec2 mPos = ImGui::GetMousePos();
+	mPos.y = Window::height - mPos.y;
+	glReadBuffer(GL_COLOR_ATTACHMENT1);
+	glReadPixels((int)mPos.x, (int)mPos.y, 1, 1, GL_RED_INTEGER, GL_INT, &mouseHoveredID);
+	//std::cout << "MousePos: " << (int)mPos.x << " " << (int)mPos.y << std::endl;
 
 	//render from framebuffer to screen
 	updateVertexData();
