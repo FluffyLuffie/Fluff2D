@@ -102,6 +102,8 @@ private:
 
 	std::multimap<int, int> renderOrderMap;
 
+	GLenum bufs[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+
 	void updateFrameBufferSize();
 
 	void renderMaskedMesh(int meshNum);

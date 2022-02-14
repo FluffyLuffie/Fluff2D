@@ -542,9 +542,6 @@ void Model::updateFrameBufferSize()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mousePickBuffer, 0);
 
-	GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-	glDrawBuffers(2, bufs);
-
 	//might not need rbo
 	//glBindRenderbuffer(GL_RENDERBUFFER, modelRbo);
 	//glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, Window::width, Window::height);
@@ -637,7 +634,6 @@ void Model::render()
 			//if not being clipped by others
 			else
 			{
-				shader.setInt("ID", meshIndex + 1);
 				shader.setVec4("texColor", modelMeshes[meshIndex]->color);
 
 				glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ZERO);
@@ -645,6 +641,25 @@ void Model::render()
 			}
 		}
 	}
+
+	//fix alpha
+	glDrawBuffers(2, bufs);
+	shader.setInt("mode", 10);
+	for (auto const& [meshRenderOrder, meshIndex] : renderOrderMap)
+	{
+		shader.setInt("ID", meshIndex + 1);
+
+		if (modelMeshes[meshIndex]->visible)
+		{
+			shader.setVec4("texColor", modelMeshes[meshIndex]->color);
+			if (!modelMeshes[meshIndex]->clipMeshes.size())
+				glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+			else
+				glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_ONE);
+			modelMeshes[meshIndex]->render();
+		}
+	}
+	glDrawBuffers(1, bufs);
 
 	//mouse hovering mesh
 	if (detectMouseHover)
@@ -659,18 +674,6 @@ void Model::render()
 	}
 	else
 		mouseHoveredID = -1;
-
-	//fix alpha
-	for (auto const& [meshRenderOrder, meshIndex] : renderOrderMap)
-	{
-		if (!modelMeshes[meshIndex]->clipMeshes.size() && modelMeshes[meshIndex]->visible)
-		{
-			shader.setVec4("texColor", modelMeshes[meshIndex]->color);
-
-			glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-			modelMeshes[meshIndex]->render();
-		}
-	}
 
 	//render from framebuffer to screen
 	updateVertexData();
