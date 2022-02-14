@@ -224,6 +224,12 @@ void Application::init()
 
 	SaveSystem::loadSettings();
 	glPointSize(static_cast<GLfloat>(Settings::meshPointSize));
+
+	//popup bg color
+	//also changed fade speed to instant
+	//in imgui.cpp in ImGui::NewFrame(), search for "Background darkening/whitening"
+	ImGuiStyle& style = ImGui::GetStyle();
+	style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.9f, 0.9f, 0.9f, 0.2f);
 }
 
 void Application::checkRunning()

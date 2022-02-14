@@ -44,7 +44,7 @@ private:
 	bool queueFontChange = false;
 	bool draggingVertices = false;
 
-	const int EVENT_FRAMES = 20;
+	const int EVENT_FRAMES = 3;
 	int eventFramesCount = 0;
 
 	void checkRunning();
