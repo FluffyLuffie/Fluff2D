@@ -40,5 +40,6 @@ public:
 
 	inline static int meshLineWidth = 1;
 	inline static glm::vec3 meshLineColor = glm::vec3(0.2f, 0.2f, 0.2f);
+	inline static glm::vec3 meshHighlightColor = glm::vec3(1.0f, 0.0f, 0.0f);
 };
 

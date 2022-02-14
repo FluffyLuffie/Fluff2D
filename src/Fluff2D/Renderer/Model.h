@@ -63,6 +63,7 @@ public:
 	void reset();
 
 	void renderMeshVertice(const std::string &meshName);
+	void renderHighlightedMesh();
 	void renderSelectedVertices();
 	void moveSelectedVertices(const ImVec2 &originalMouseCoord);
 	void updateOriginalVertexPositions();

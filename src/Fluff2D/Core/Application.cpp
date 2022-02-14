@@ -96,9 +96,25 @@ void Application::update()
 			model->render();
 
 			//testing stuff
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+			//if hovering over mesh that is not selected, and no closest vertex
+			if (model->mouseHoveredID != -1 && std::find(selectedParts.begin(), selectedParts.end(), model->modelMeshes[model->mouseHoveredID]->name) == selectedParts.end() && closestVertexIndex == -1)
+			{
+				model->renderHighlightedMesh();
+				if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+				{
+					model->selectedVertices.clear();
+					model->initialVerticesPos.clear();
+					selectedParts.clear();
+
+					selectedParts.push_back(model->modelMeshes[model->mouseHoveredID]->name);
+				}
+
+			}
+
 			if (selectedParts.size())
 			{
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				model->shader.setInt("mode", 1);
 
 				for (int i = 0; i < selectedParts.size(); i++)
@@ -111,12 +127,9 @@ void Application::update()
 				if (closestVertexIndex != -1)
 					model->renderClosestVertex(selectedParts[selectedPartNum], closestVertexIndex);
 
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			}
 
-			//detect which mesh mouse is on
-			if (model->mouseHoveredID != -1)
-				std::cout << model->mouseHoveredID << std::endl;
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 
 		if (Event::keyPressed(GLFW_KEY_ESCAPE))
@@ -542,6 +555,7 @@ void Application::drawImGui()
 
 		ImGui::DragInt("Mesh Line Width", &Settings::meshLineWidth);
 		ImGui::ColorEdit3("Mesh Line Color", (float*)&Settings::meshLineColor);
+		ImGui::ColorEdit3("Mesh Line Highlight Color", (float*)&Settings::meshHighlightColor);
 		ImGui::Separator();
 
 		ImGui::SliderFloat("Vertex Detection Distance", &Settings::vertexDetectionDistance, 1.0f, 80.0f);

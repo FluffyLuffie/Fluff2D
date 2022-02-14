@@ -175,6 +175,18 @@ void Model::renderMeshVertice(const std::string &meshName)
 	}
 }
 
+void Model::renderHighlightedMesh()
+{
+	glLineWidth(static_cast<GLfloat>(Settings::meshLineWidth));
+
+	modelMeshes[mouseHoveredID]->updateVertexData();
+	shader.setVec3("uiColor", Settings::meshHighlightColor);
+	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(modelMeshes[mouseHoveredID]->indices.size()), GL_UNSIGNED_INT, 0);
+
+	shader.setFloat("pointSize", static_cast<float>(Settings::meshPointBorderSize * 2 + Settings::meshPointSize));
+	glDrawElements(GL_POINTS, static_cast<GLsizei>(modelMeshes[mouseHoveredID]->indices.size()), GL_UNSIGNED_INT, 0);
+}
+
 void Model::renderSelectedVertices()
 {
 	shader.setVec3("uiColor", Settings::meshPointSelectedColor);
