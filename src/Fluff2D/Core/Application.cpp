@@ -95,11 +95,10 @@ void Application::update()
 
 			model->render();
 
-			//testing stuff
+			//render lines and points
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
 			//if hovering over mesh that is not selected, and no closest vertex
-			if (model->mouseHoveredID != -1 && std::find(selectedParts.begin(), selectedParts.end(), model->modelMeshes[model->mouseHoveredID]->name) == selectedParts.end() && closestVertexIndex == -1)
+			if (model->mouseHoveredID > -1 && std::find(selectedParts.begin(), selectedParts.end(), model->modelMeshes[model->mouseHoveredID]->name) == selectedParts.end() && closestVertexIndex == -1)
 			{
 				model->renderHighlightedMesh();
 				if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))

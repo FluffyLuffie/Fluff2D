@@ -183,7 +183,7 @@ void Model::renderHighlightedMesh()
 	shader.setVec3("uiColor", Settings::meshHighlightColor);
 	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(modelMeshes[mouseHoveredID]->indices.size()), GL_UNSIGNED_INT, 0);
 
-	shader.setFloat("pointSize", static_cast<float>(Settings::meshPointBorderSize * 2 + Settings::meshPointSize));
+	shader.setFloat("pointSize", static_cast<float>(Settings::meshPointSize));
 	glDrawElements(GL_POINTS, static_cast<GLsizei>(modelMeshes[mouseHoveredID]->indices.size()), GL_UNSIGNED_INT, 0);
 }
 
@@ -478,6 +478,7 @@ void Model::showMeshClippingingMenu(const std::string& meshName)
 	ImGui::Separator();
 
 	ImGui::Text("Clipping");
+	ImGui::Checkbox("Invert", &meshMap[meshName]->invertClip);
 
 	for (int i = static_cast<int>(modelMeshes.size()) - 1; i >= 0; i--)
 	{
@@ -542,6 +543,8 @@ void Model::updateFrameBufferSize()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mousePickBuffer, 0);
 
+	glDrawBuffers(2, bufs);
+
 	//might not need rbo
 	//glBindRenderbuffer(GL_RENDERBUFFER, modelRbo);
 	//glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, Window::width, Window::height);
@@ -600,10 +603,21 @@ void Model::renderMaskedMesh(int meshNum)
 
 	//render based on parent's alpha and own alpha
 	shader.setVec4("texColor", modelMeshes[meshNum]->color);
-	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_SRC_ALPHA);
-	modelMeshes[meshNum]->render();
-	shader.setInt("mode", 6);
-	glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ZERO);
+
+	if (modelMeshes[meshNum]->invertClip)
+	{
+		glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE_MINUS_DST_ALPHA, GL_ZERO);
+		modelMeshes[meshNum]->render();
+		shader.setInt("mode", 6);
+		glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ZERO);
+	}
+	else
+	{
+		glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_SRC_ALPHA);
+		modelMeshes[meshNum]->render();
+		shader.setInt("mode", 6);
+		glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ZERO);
+	}
 	modelMeshes[meshNum]->render();
 
 	//reset alpha
@@ -616,6 +630,7 @@ void Model::renderMaskedMesh(int meshNum)
 void Model::render()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
+
 	//clear framebuffer
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -643,7 +658,6 @@ void Model::render()
 	}
 
 	//fix alpha
-	glDrawBuffers(2, bufs);
 	shader.setInt("mode", 10);
 	for (auto const& [meshRenderOrder, meshIndex] : renderOrderMap)
 	{
@@ -652,14 +666,13 @@ void Model::render()
 		if (modelMeshes[meshIndex]->visible)
 		{
 			shader.setVec4("texColor", modelMeshes[meshIndex]->color);
-			if (!modelMeshes[meshIndex]->clipMeshes.size())
+			if (!modelMeshes[meshIndex]->clipMeshes.size() || modelMeshes[meshIndex]->invertClip)
 				glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 			else
 				glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_ONE);
 			modelMeshes[meshIndex]->render();
 		}
 	}
-	glDrawBuffers(1, bufs);
 
 	//mouse hovering mesh
 	if (detectMouseHover)
