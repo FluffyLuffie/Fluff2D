@@ -59,8 +59,6 @@ void ModelMesh::renderInspector()
 	ImGui::Text(name.c_str());
 
 	ImGui::DragInt("Render Order", &renderOrder);
-
-	ImGui::Text("Masking: %d", clipMeshes.size());
 	ImGui::Separator();
 
 	ImGui::Checkbox("Visible", &visible);

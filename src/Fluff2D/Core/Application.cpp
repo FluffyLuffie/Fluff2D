@@ -201,10 +201,6 @@ int Application::loadModel(const char* filePath)
 	Event::anyAction = true;
 	//idk what to do here, this is junk for now don't call
 	std::cout << "Don't call loadModel, yet" << std::endl;
-	//ModelMesh modelMesh();
-
-	//model->partList.push_back(modelMesh);
-	std::cout << "pushed back part" << std::endl;
 
 	return 0;
 }
@@ -331,59 +327,100 @@ void Application::createModelTree(std::shared_ptr<ModelPart> currentPart)
 	if (alreadySelected)
 		nodeFlags |= ImGuiTreeNodeFlags_Selected;
 
-	if (currentPart->type == ModelPart::PartType::mesh)
+	//may or may not replace with icons
+	const char* header;
+	switch (currentPart->type)
 	{
+	case ModelPart::PartType::mesh:
+		header = "[M] ";
 		nodeFlags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-		ImGui::TreeNodeEx(("[M] " + currentPart->name).c_str(), nodeFlags);
-
-		if (ImGui::IsItemClicked())
-		{
-			if (!Event::keyDown(GLFW_KEY_LEFT_CONTROL))
-			{
-				selectedParts.clear();
-				alreadySelected = false;
-			}
-			if (alreadySelected)
-				selectedParts.erase(remove(selectedParts.begin(), selectedParts.end(), currentPart->name), selectedParts.end());
-			else
-				selectedParts.push_back(currentPart->name);
-
-			//might implement some way to keep selected vertices if mesh is still selected
-			model->selectedVertices.clear();
-			model->initialVerticesPos.clear();
-		}
+		break;
+	case ModelPart::PartType::warpDeformer:
+		header = "[W] ";
+		break;
+	case ModelPart::PartType::rotationDeformer:
+		header = "[R] ";
+		break;
+	default:
+		header = "[UNKNOWN]";
+		break;
 	}
-	else
+
+
+	nodeOpen = ImGui::TreeNodeEx((header + currentPart->name).c_str(), nodeFlags);
+
+	if (ImGui::IsItemClicked())
 	{
-		if (currentPart->type == ModelPart::PartType::warpDeformer)
-			nodeOpen = ImGui::TreeNodeEx(("[W] " + currentPart->name).c_str(), nodeFlags);
+		if (!Event::keyDown(GLFW_KEY_LEFT_CONTROL))
+		{
+			selectedParts.clear();
+			alreadySelected = false;
+		}
+		if (alreadySelected)
+			selectedParts.erase(remove(selectedParts.begin(), selectedParts.end(), currentPart->name), selectedParts.end());
 		else
-			nodeOpen = ImGui::TreeNodeEx(("[R] " + currentPart->name).c_str(), nodeFlags);
+			selectedParts.push_back(currentPart->name);
 
-		if (ImGui::IsItemClicked())
+		//might implement some way to keep selected vertices if mesh is still selected
+		model->selectedVertices.clear();
+		model->initialVerticesPos.clear();
+	}
+
+	//drag and drop stuff
+	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+	{
+		//std::cout << "Source: " << currentPart->name << std::endl;
+
+		ImGui::SetDragDropPayload("ModelPart", currentPart->name.c_str(), currentPart->name.length() + 1);
+		ImGui::EndDragDropSource();
+	}
+
+	if (ImGui::BeginDragDropTarget())
+	{
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ModelPart"))
 		{
-			if (!Event::keyDown(GLFW_KEY_LEFT_CONTROL))
+			char* partName = (char*)payload->Data;
+			std::cout << "Received: " << partName << ": ";
+
+			if (currentPart->type == ModelPart::PartType::mesh)
 			{
-				selectedParts.clear();
-				alreadySelected = false;
+
 			}
-			if (alreadySelected)
-				selectedParts.erase(remove(selectedParts.begin(), selectedParts.end(), currentPart->name), selectedParts.end());
 			else
-				selectedParts.push_back(currentPart->name);
-
-			//might implement some way to keep selected vertices if mesh is still selected
-			model->selectedVertices.clear();
-			model->initialVerticesPos.clear();
-		}
-		if (nodeOpen)
-		{
-			for (int i = static_cast<int>(currentPart->children.size() - 1); i >= 0; i--)
 			{
-				createModelTree(currentPart->children[i]);
+				currentPart->children.push_back(model->partMap[partName]);
+				model->partMap[partName]->parent->children.erase(
+					remove(model->partMap[partName]->parent->children.begin(), model->partMap[partName]->parent->children.end(), model->partMap[partName]),
+					model->partMap[partName]->parent->children.end());
 			}
-			ImGui::TreePop();
+
+			switch (model->partMap[partName]->type)
+			{
+			case(ModelPart::PartType::mesh):
+				std::cout << "mesh";
+				break;
+			case(ModelPart::PartType::warpDeformer):
+				std::cout << "warp";
+				break;
+			case(ModelPart::PartType::rotationDeformer):
+				std::cout << "rotation";
+				break;
+			default:
+				break;
+			}
+
+			std::cout << std::endl;
 		}
+		ImGui::EndDragDropTarget();
+	}
+
+	if (currentPart->type != ModelPart::PartType::mesh && nodeOpen)
+	{
+		for (int i = static_cast<int>(currentPart->children.size() - 1); i >= 0; i--)
+		{
+			createModelTree(currentPart->children[i]);
+		}
+		ImGui::TreePop();
 	}
 }
 
@@ -686,7 +723,7 @@ void Application::drawImGui()
 
 			if (model->partMap[selectedParts[0]]->type == ModelPart::PartType::mesh)
 			{
-				model->showMeshClippingingMenu(selectedParts[0]);
+				model->showMeshClippingMenu(selectedParts[0]);
 			}
 		}
 		else

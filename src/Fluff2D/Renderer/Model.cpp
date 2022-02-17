@@ -473,11 +473,12 @@ void Model::updateCanvasCoord()
 	glEnableVertexAttribArray(0);
 }
 
-void Model::showMeshClippingingMenu(const std::string& meshName)
+void Model::showMeshClippingMenu(const std::string& meshName)
 {
 	ImGui::Separator();
 
 	ImGui::Text("Clipping");
+	ImGui::Text("Clipped: %d", meshMap[meshName]->clipMeshes.size());
 	ImGui::Checkbox("Invert", &meshMap[meshName]->invertClip);
 
 	for (int i = static_cast<int>(modelMeshes.size()) - 1; i >= 0; i--)

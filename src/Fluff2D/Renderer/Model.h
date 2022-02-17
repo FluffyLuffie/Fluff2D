@@ -40,7 +40,6 @@ public:
 	Shader shader;
 
 	std::vector<std::shared_ptr<ModelPartUI>> layerStructure;
-	std::vector<std::shared_ptr<ModelPartUI>> modelStructure;
 
 	std::unordered_map<std::string, std::shared_ptr<ModelPart>> partMap;
 	std::vector<std::shared_ptr<ModelMesh>> modelMeshes;
@@ -83,7 +82,7 @@ public:
 
 	void updateCanvasCoord();
 
-	void showMeshClippingingMenu(const std::string &meshName);
+	void showMeshClippingMenu(const std::string &meshName);
 
 	void bindUniformTextures();
 

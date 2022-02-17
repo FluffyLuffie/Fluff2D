@@ -1,6 +1,6 @@
 ***Things to add/fix***
 Moving points inside warp deformers.
-Clicking on meshes selects them, and add textbox indicating which one mouse is hovering on.
+[hover/clicking done, probably don't need name] Clicking on meshes selects them, and add textbox indicating which one mouse is hovering on.
 Parameters actually do something.
 Physics.
 Saving model for editor.
@@ -11,7 +11,7 @@ Model exporter.
 Model view window/tab instead of rending to main frame.
 
 ***If have time***
-Invert clipping.
+[Done] Inverse clipping.
 Save settings in a file and read when launched.
 Moving model object hierarchy by dragging.
 Make psd importer more reliable.
