@@ -44,7 +44,7 @@ void Application::update()
 					{
 						if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 						{
-							oldMouseCoord = ImGui::GetMousePos();
+							oldMouseCoord = glm::inverse(Camera2D::projection) * glm::vec4(ImGui::GetMousePos().x * 2.0f / Window::width - 1.0f, ImGui::GetMousePos().y * -2.0f / Window::height + 1.0f, 0.0f, 1.0f);;
 							//if ctrl key pressed, add to selected vertices
 							if (GLFW_MOD_CONTROL == Event::mod)
 							{
@@ -379,37 +379,19 @@ void Application::createModelTree(std::shared_ptr<ModelPart> currentPart)
 	{
 		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ModelPart"))
 		{
+			//the dropped's name
 			char* partName = (char*)payload->Data;
-			std::cout << "Received: " << partName << ": ";
 
-			if (currentPart->type == ModelPart::PartType::mesh)
-			{
+			//translates position, rotation not implemented
+			glm::vec2 temp = glm::inverse(currentPart->parent->transform) * (model->partMap[partName]->parent->transform * glm::vec4(model->partMap[partName]->pos, 0.0f, 1.0f));
+			model->partMap[partName]->pos = temp;
 
-			}
-			else
-			{
-				currentPart->children.push_back(model->partMap[partName]);
-				model->partMap[partName]->parent->children.erase(
-					remove(model->partMap[partName]->parent->children.begin(), model->partMap[partName]->parent->children.end(), model->partMap[partName]),
-					model->partMap[partName]->parent->children.end());
-			}
-
-			switch (model->partMap[partName]->type)
-			{
-			case(ModelPart::PartType::mesh):
-				std::cout << "mesh";
-				break;
-			case(ModelPart::PartType::warpDeformer):
-				std::cout << "warp";
-				break;
-			case(ModelPart::PartType::rotationDeformer):
-				std::cout << "rotation";
-				break;
-			default:
-				break;
-			}
-
-			std::cout << std::endl;
+			//remove dropped from parent and assign to new parent
+			model->partMap[partName]->parent->children.erase(
+				remove(model->partMap[partName]->parent->children.begin(), model->partMap[partName]->parent->children.end(), model->partMap[partName]),
+				model->partMap[partName]->parent->children.end());
+			currentPart->parent->children.insert((std::find(currentPart->parent->children.begin(), currentPart->parent->children.end(), currentPart) + 1), model->partMap[partName]);
+			model->partMap[partName]->parent = currentPart->parent;
 		}
 		ImGui::EndDragDropTarget();
 	}

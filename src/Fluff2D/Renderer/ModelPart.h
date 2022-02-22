@@ -25,7 +25,6 @@ public:
 	std::vector<Vertex> vertices;
 	std::vector<glm::vec2> localVertexPositions;
 	std::vector<glm::vec2> originalVertexPositions;
-	std::vector<glm::vec2> prewarpedVertexPositions;
 	std::vector<unsigned int> indices;
 
 	virtual void render() {}

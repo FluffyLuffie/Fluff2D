@@ -12,9 +12,10 @@ public:
 	~WarpDeformer();
 
 	void update() override;
-	void secondUpdate() override;
 	void render() override;
 	void renderInspector() override;
+
+	void applyWarp(ModelPart *part);
 
 private:
 	int boxCountX = 1, boxCountY = 1;

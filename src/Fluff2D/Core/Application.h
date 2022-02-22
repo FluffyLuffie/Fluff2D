@@ -36,7 +36,7 @@ public:
 
 	bool isRunning = true;
 private:
-	ImVec2 oldMouseCoord = ImVec2();
+	glm::vec2 oldMouseCoord;
 
 	ImGui::FileBrowser fileBrowser;
 

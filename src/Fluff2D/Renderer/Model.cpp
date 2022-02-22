@@ -210,17 +210,22 @@ void Model::renderSelectedVertices()
 	}
 }
 
-void Model::moveSelectedVertices(const ImVec2& originalMouseCoord)
+void Model::moveSelectedVertices(const glm::vec2& originalMouseCoord)
 {
 	ImVec2 mouseCoord = ImGui::GetMousePos();
 
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
-		auto mousePos = glm::inverse(partMap[selectedVertices[i].partName]->transform) * glm::inverse(Camera2D::projection) * glm::vec4(mouseCoord.x * 2.0f / Window::width - 1.0f, mouseCoord.y * -2.0f / Window::height + 1.0f, 0.0f, 1.0f);
-		auto originalMousePos = glm::inverse(Camera2D::projection) * glm::vec4(originalMouseCoord.x * 2.0f / Window::width - 1.0f, originalMouseCoord.y * -2.0f / Window::height + 1.0f, 0.0f, 1.0f);
+		//if warp deformer is parent, take into account the deformation
+		if (partMap[selectedVertices[i].partName]->parent->type == ModelPart::PartType::warpDeformer)
+		{
 
-		partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index].x = initialVerticesPos[&selectedVertices[i]].x + mousePos.x - originalMousePos.x;
-		partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index].y = initialVerticesPos[&selectedVertices[i]].y + mousePos.y - originalMousePos.y;
+		}
+
+		auto mousePos = glm::inverse(partMap[selectedVertices[i].partName]->transform) * glm::inverse(Camera2D::projection) * glm::vec4(mouseCoord.x * 2.0f / Window::width - 1.0f, mouseCoord.y * -2.0f / Window::height + 1.0f, 0.0f, 1.0f);
+
+		partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index].x = initialVerticesPos[&selectedVertices[i]].x + mousePos.x - originalMouseCoord.x;
+		partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index].y = initialVerticesPos[&selectedVertices[i]].y + mousePos.y - originalMouseCoord.y;
 	}
 }
 
@@ -331,16 +336,16 @@ void Model::addWarpDeformer(std::string name, const std::vector<std::string>& se
 		{
 			if (partMap.find(selectedParts[i]) == partMap.end())
 				continue;
-			for (int j = 0; j < partMap[selectedParts[i]]->prewarpedVertexPositions.size(); j++)
+			for (int j = 0; j < partMap[selectedParts[i]]->vertices.size(); j++)
 			{
-				if (partMap[selectedParts[i]]->prewarpedVertexPositions[j].y > top)
-					top = partMap[selectedParts[i]]->prewarpedVertexPositions[j].y;
-				if (partMap[selectedParts[i]]->prewarpedVertexPositions[j].y < bottom)
-					bottom = partMap[selectedParts[i]]->prewarpedVertexPositions[j].y;
-				if (partMap[selectedParts[i]]->prewarpedVertexPositions[j].x < left)
-					left = partMap[selectedParts[i]]->prewarpedVertexPositions[j].x;
-				if (partMap[selectedParts[i]]->prewarpedVertexPositions[j].x > right)
-					right = partMap[selectedParts[i]]->prewarpedVertexPositions[j].x;
+				if (partMap[selectedParts[i]]->vertices[j].position.y > top)
+					top = partMap[selectedParts[i]]->vertices[j].position.y;
+				if (partMap[selectedParts[i]]->vertices[j].position.y < bottom)
+					bottom = partMap[selectedParts[i]]->vertices[j].position.y;
+				if (partMap[selectedParts[i]]->vertices[j].position.x < left)
+					left = partMap[selectedParts[i]]->vertices[j].position.x;
+				if (partMap[selectedParts[i]]->vertices[j].position.x > right)
+					right = partMap[selectedParts[i]]->vertices[j].position.x;
 			}
 		}
 		localCoord = glm::vec4(left + (right - left) / 2.0f, bottom + (top - bottom) / 2.0f, 0.0f, 1.0f);
@@ -577,11 +582,6 @@ void Model::update()
 	for (int i = 0; i < children.size(); i++)
 	{
 		children[i]->update();
-	}
-
-	for (int i = 0; i < children.size(); i++)
-	{
-		children[i]->secondUpdate();
 	}
 
 	renderOrderMap.clear();

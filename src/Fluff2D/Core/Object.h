@@ -24,7 +24,6 @@ public:
 	glm::mat4 localTransform = glm::mat4(1.0f);
 
 	virtual void update() {}
-	virtual void secondUpdate() {}
 
 	void setPos(int posX, int posY);
 	void setPos(float posX, float posY);

@@ -24,26 +24,13 @@ void ModelMesh::update()
 	//assume parent always exists
 	transform = parent->transform * localTransform;
 
-	//testing stuff
-	if (Event::keyDown(GLFW_KEY_RIGHT))
-		localVertexPositions[0].x += 4;
-	if (Event::keyDown(GLFW_KEY_LEFT))
-		localVertexPositions[0].x -= 4;
-	if (Event::keyDown(GLFW_KEY_UP))
-		localVertexPositions[0].y += 4;
-	if (Event::keyDown(GLFW_KEY_DOWN))
-		localVertexPositions[0].y -= 4;
-	if (Event::keyDown(GLFW_KEY_R))
-		localVertexPositions[0] = glm::vec2(0.0f);
-
 	if (parent->type == ModelPart::PartType::warpDeformer)
+	{
 		for (int i = 0; i < localVertexPositions.size(); i++)
-			prewarpedVertexPositions[i] = localTransform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
-}
-
-void ModelMesh::secondUpdate()
-{
-	if (parent->type != ModelPart::PartType::warpDeformer)
+			vertices[i].position = localTransform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
+		std::dynamic_pointer_cast<WarpDeformer>(parent)->applyWarp(this);
+	}
+	else
 		for (int i = 0; i < localVertexPositions.size(); i++)
 			vertices[i].position = transform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
 }
@@ -97,7 +84,6 @@ void ModelMesh::createBasicMesh(int layerX, int layerY, int layerW, int layerH, 
 	vertices.reserve(5);
 	localVertexPositions.reserve(5);
 	originalVertexPositions.reserve(5);
-	prewarpedVertexPositions.reserve(5);
 
 	//create default vertices
 	//order is center, top left, top right, bottom right, bottom left (basically clockwise)
@@ -144,7 +130,6 @@ void ModelMesh::createBoxMesh(int boxCountX, int boxCountY, int atlasWidth, int 
 	vertices.reserve((boxCountX + 1) * (boxCountY + 1));
 	localVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1));
 	originalVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1));
-	prewarpedVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1));
 
 	if (flipped)
 		for (int y = 0; y <= boxCountY; y++)
@@ -185,7 +170,6 @@ void ModelMesh::createTriMesh(int boxCountX, int boxCountY, int atlasWidth, int 
 	vertices.reserve((boxCountX + 1) * (boxCountY + 1) + boxCountX * boxCountY);
 	localVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1) + boxCountX * boxCountY);
 	originalVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1) + boxCountX * boxCountY);
-	prewarpedVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1) + boxCountX * boxCountY);
 
 	//TODO: add flipped
 	if (flipped)

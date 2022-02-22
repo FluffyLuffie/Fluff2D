@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "ModelPart.h"
+#include "WarpDeformer.h"
 #include "../UI/ModelPartUI.h"
 #include "../Core/Parameter.h"
 #include "Triangulator.h"
@@ -25,7 +25,6 @@ public:
 	int renderOrder = 0;
 
 	void update() override;
-	void secondUpdate() override;
 	void render() override;
 	void renderInspector() override;
 
