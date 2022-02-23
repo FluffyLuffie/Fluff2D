@@ -65,26 +65,61 @@ WarpDeformer::~WarpDeformer()
 
 void WarpDeformer::update()
 {
-	localTransform = glm::mat4(1.0f);
-	localTransform = glm::translate(localTransform, glm::vec3(pos.x, pos.y, 0.0f));
-	localTransform = glm::rotate(localTransform, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-	localTransform = glm::scale(localTransform, glm::vec3(scale, 1.0f));
-
-	transform = parent->transform * localTransform;
-
-	//maybe move warp deformation here, where the child calls it before updating their child
-	if (parent->type == ModelPart::PartType::warpDeformer)
+	if (parent->type != ModelPart::PartType::warpDeformer)
 	{
-		for (int i = 0; i < localVertexPositions.size(); i++)
-			vertices[i].position = localTransform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
-		std::dynamic_pointer_cast<WarpDeformer>(parent)->applyWarp(this);
-	}
-	else
+		updateTransform();
 		for (int i = 0; i < localVertexPositions.size(); i++)
 			vertices[i].position = transform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
+	}
+	for (int i = 0; i < localVertexPositions.size(); i++)
+		vertices[i].position = transform * glm::vec4(originalVertexPositions[i] + deltaVertexPositions[i], 0.0f, 1.0f);
 
 	for (int i = 0; i < children.size(); i++)
+	{
+		children[i]->updateTransform();
+
+		for (int j = 0; j < children[i]->vertices.size(); j++)
+		{
+			glm::vec2 point = children[i]->localTransform * glm::vec4(children[i]->originalVertexPositions[j] + children[i]->deltaVertexPositions[j], 0.0f, 1.0f);
+
+			int boxX = static_cast<int>((point.x - originalVertexPositions[0].x) / warpWidth * boxCountX);
+			int boxY = static_cast<int>((point.y - originalVertexPositions[0].y) / warpHeight * boxCountY);
+
+			boxX = std::clamp(boxX, 0, boxCountX - 1);
+			boxY = std::clamp(boxY, 0, boxCountY - 1);
+
+			//get the 4 points of the quad the point is in
+			int p1 = boxY * (boxCountX + 1) + boxX;
+			int p2 = boxY * (boxCountX + 1) + boxX + 1;
+			int p3 = (boxY + 1) * (boxCountX + 1) + boxX + 1;
+			int p4 = (boxY + 1) * (boxCountX + 1) + boxX;
+
+			float xRatio = (point.x - originalVertexPositions[p1].x) / boxWidth;
+			float yRatio = (point.y - originalVertexPositions[p1].y) / boxHeight;
+
+			float xClamped = std::clamp(xRatio, 0.0f, 1.0f);
+			float yClamped = std::clamp(yRatio, 0.0f, 1.0f);
+
+			//offsets are reversed for some reason idk how matrices work
+			float xOffset = 0.0f, yOffset = 0.0f;
+			if (xRatio > 1.0f)
+				xOffset = (xRatio - 1.0f) * boxWidth;
+			else if (xRatio < 0.0f)
+				xOffset = xRatio * boxWidth;
+			if (yRatio > 1.0f)
+				yOffset = (yRatio - 1.0f) * boxHeight;
+			else if (yRatio < 0.0f)
+				yOffset = yRatio * boxHeight;
+
+			float initialX = localVertexPositions[p1].x + xClamped * (localVertexPositions[p2].x - localVertexPositions[p1].x);
+			float initialY = localVertexPositions[p1].y + yClamped * (localVertexPositions[p4].y - localVertexPositions[p1].y);
+
+			//set vertex position
+			children[i]->localVertexPositions[j] = glm::vec4(initialX + xOffset + (localVertexPositions[p4].x + xClamped * (localVertexPositions[p3].x - localVertexPositions[p4].x) - initialX) * yClamped, initialY + yOffset + (localVertexPositions[p2].y + yClamped * (localVertexPositions[p3].y - localVertexPositions[p2].y) - initialY) * xClamped, 0.0f, 1.0f);
+		}
+
 		children[i]->update();
+	}
 }
 
 void WarpDeformer::render()
@@ -104,45 +139,4 @@ void WarpDeformer::renderInspector()
 
 	ImGui::Separator();
 	ImGui::Text("Box count (x, y): %d, %d", boxCountX, boxCountY);
-}
-
-void WarpDeformer::applyWarp(ModelPart *part)
-{
-	for (int i = 0; i < part->vertices.size(); i++)
-	{
-		int boxX = static_cast<int>((part->vertices[i].position.x - originalVertexPositions[0].x) / warpWidth * boxCountX);
-		int boxY = static_cast<int>((part->vertices[i].position.y - originalVertexPositions[0].y) / warpHeight * boxCountY);
-
-		boxX = std::clamp(boxX, 0, boxCountX - 1);
-		boxY = std::clamp(boxY, 0, boxCountY - 1);
-
-		//get the 4 points of the quad the point is in
-		int p1 = boxY * (boxCountX + 1) + boxX;
-		int p2 = boxY * (boxCountX + 1) + boxX + 1;
-		int p3 = (boxY + 1) * (boxCountX + 1) + boxX + 1;
-		int p4 = (boxY + 1) * (boxCountX + 1) + boxX;
-
-		float xRatio = (part->vertices[i].position.x - originalVertexPositions[p1].x) / boxWidth;
-		float yRatio = (part->vertices[i].position.y - originalVertexPositions[p1].y) / boxHeight;
-
-		float xClamped = std::clamp(xRatio, 0.0f, 1.0f);
-		float yClamped = std::clamp(yRatio, 0.0f, 1.0f);
-
-		//offsets are reversed for some reason idk how matrices work
-		float xOffset = 0.0f, yOffset = 0.0f;
-		if (xRatio > 1.0f)
-			xOffset = (xRatio - 1.0f) * boxWidth;
-		else if (xRatio < 0.0f)
-			xOffset = xRatio * boxWidth;
-		if (yRatio > 1.0f)
-			yOffset = (yRatio - 1.0f) * boxHeight;
-		else if (yRatio < 0.0f)
-			yOffset = yRatio * boxHeight;
-
-		float initialX = localVertexPositions[p1].x + xClamped * (localVertexPositions[p2].x - localVertexPositions[p1].x);
-		float initialY = localVertexPositions[p1].y + yClamped * (localVertexPositions[p4].y - localVertexPositions[p1].y);
-
-		//set vertex position
-		part->vertices[i].position = transform * glm::vec4(initialX + xOffset + (localVertexPositions[p4].x + xClamped * (localVertexPositions[p3].x - localVertexPositions[p4].x) - initialX) * yClamped, initialY + yOffset + (localVertexPositions[p2].y + yClamped * (localVertexPositions[p3].y - localVertexPositions[p2].y) - initialY) * xClamped, 0.0f, 1.0f);
-	}
 }

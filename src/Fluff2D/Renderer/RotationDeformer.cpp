@@ -26,11 +26,14 @@ RotationDeformer::~RotationDeformer()
 
 void RotationDeformer::update()
 {
-	localTransform = glm::mat4(1.0f);
-	localTransform = glm::translate(localTransform, glm::vec3(pos.x, pos.y, 0.0f));
-	localTransform = glm::rotate(localTransform, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-
-	transform = parent->transform * localTransform;
+	if (parent->type != ModelPart::PartType::warpDeformer)
+	{
+		updateTransform();
+		for (int i = 0; i < localVertexPositions.size(); i++)
+			vertices[i].position = transform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
+	}
+	for (int i = 0; i < localVertexPositions.size(); i++)
+		vertices[i].position = transform * glm::vec4(originalVertexPositions[i] + deltaVertexPositions[i], 0.0f, 1.0f);
 
 	for (int i = 0; i < children.size(); i++)
 	{
@@ -51,4 +54,5 @@ void RotationDeformer::renderInspector()
 
 	ImGui::DragFloat2("Position", (float*)&pos);
 	ImGui::DragFloat("Rotation", &rotation);
+	ImGui::DragFloat2("Scale", &scale.x, 0.01f);
 }

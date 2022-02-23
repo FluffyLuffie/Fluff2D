@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "WarpDeformer.h"
+#include "ModelPart.h"
 #include "../UI/ModelPartUI.h"
 #include "../Core/Parameter.h"
 #include "Triangulator.h"
