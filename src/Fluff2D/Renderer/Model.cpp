@@ -218,32 +218,25 @@ void Model::moveSelectedVertices(const glm::vec2& originalMouseCoord)
 
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
-		//if warp deformer is parent, take into account the deformation
+		glm::vec2 mousePos = glm::inverse(partMap[selectedVertices[i].partName]->transform) * mouseToScreen;
+		glm::vec2 mousePosOriginal = glm::inverse(partMap[selectedVertices[i].partName]->transform) * glm::vec4(originalMouseCoord, 0.0f, 1.0f);
+
+		//TODO: if warp deformer is parent, take into account the deformation
 		if (partMap[selectedVertices[i].partName]->parent->type == ModelPart::PartType::warpDeformer)
 		{
-
+			auto p = std::dynamic_pointer_cast<WarpDeformer>(partMap[selectedVertices[i].partName]->parent);
 		}
 
-		auto mousePos = glm::inverse(partMap[selectedVertices[i].partName]->transform) * mouseToScreen;
-		auto mousePosOriginal = glm::inverse(partMap[selectedVertices[i].partName]->transform) * glm::vec4(originalMouseCoord, 0.0f, 1.0f);
-
-		//partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index].x = initialVerticesPos[&selectedVertices[i]].x + mousePos.x - originalMouseCoord.x;
-		//partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index].y = initialVerticesPos[&selectedVertices[i]].y + mousePos.y - originalMouseCoord.y;
-		
-		//partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index].x = initialVerticesPos[&selectedVertices[i]].x + mousePos.x - mousePosOriginal.x - partMap[selectedVertices[i].partName]->originalVertexPositions[selectedVertices[i].index].x;
-		//partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index].y = initialVerticesPos[&selectedVertices[i]].y + mousePos.y - mousePosOriginal.y - partMap[selectedVertices[i].partName]->originalVertexPositions[selectedVertices[i].index].y;
-
-		partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index].x = mousePos.x - mousePosOriginal.x + initialVerticesPos[&selectedVertices[i]].x;
-		partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index].y = mousePos.y - mousePosOriginal.y + initialVerticesPos[&selectedVertices[i]].y;
+		partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index] = mousePos - mousePosOriginal + initialDeltaVerticesPos[&selectedVertices[i]];
 	}
 }
 
 void Model::updateOriginalVertexPositions()
 {
-	initialVerticesPos.clear();
+	initialDeltaVerticesPos.clear();
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
-		initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index];
+		initialDeltaVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index];
 	}
 }
 

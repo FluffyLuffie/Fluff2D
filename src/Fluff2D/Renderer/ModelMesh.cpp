@@ -20,10 +20,14 @@ void ModelMesh::update()
 	{
 		updateTransform();
 		for (int i = 0; i < localVertexPositions.size(); i++)
+		{
+			localVertexPositions[i] = glm::vec4(originalVertexPositions[i] + deltaVertexPositions[i], 0.0f, 1.0f);
 			vertices[i].position = transform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
+		}
 	}
-	for (int i = 0; i < localVertexPositions.size(); i++)
-		vertices[i].position = transform * glm::vec4(originalVertexPositions[i] + deltaVertexPositions[i], 0.0f, 1.0f);
+	else
+		for (int i = 0; i < localVertexPositions.size(); i++)
+			vertices[i].position = transform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
 }
 
 void ModelMesh::render()

@@ -49,7 +49,7 @@ void Application::update()
 							if (GLFW_MOD_CONTROL == Event::mod)
 							{
 								model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
-								model->initialVerticesPos[&model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex))] = model->partMap[selectedParts[selectedPartNum]]->vertices[closestVertexIndex].position;
+								model->initialDeltaVerticesPos[&model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex))] = model->partMap[selectedParts[selectedPartNum]]->vertices[closestVertexIndex].position;
 							}
 							else
 							{
@@ -57,9 +57,9 @@ void Application::update()
 								if (std::find(model->selectedVertices.begin(), model->selectedVertices.end(), VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex)) == model->selectedVertices.end())
 								{
 									model->selectedVertices.clear();
-									model->initialVerticesPos.clear();
+									model->initialDeltaVerticesPos.clear();
 									model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
-									model->initialVerticesPos[&model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex))] = model->partMap[selectedParts[selectedPartNum]]->vertices[closestVertexIndex].position;
+									model->initialDeltaVerticesPos[&model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex))] = model->partMap[selectedParts[selectedPartNum]]->vertices[closestVertexIndex].position;
 								}
 							}
 							model->updateOriginalVertexPositions();
@@ -69,7 +69,7 @@ void Application::update()
 					else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 					{
 						model->selectedVertices.clear();
-						model->initialVerticesPos.clear();
+						model->initialDeltaVerticesPos.clear();
 					}
 				}
 
@@ -104,7 +104,7 @@ void Application::update()
 				if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 				{
 					model->selectedVertices.clear();
-					model->initialVerticesPos.clear();
+					model->initialDeltaVerticesPos.clear();
 					selectedParts.clear();
 
 					selectedParts.push_back(model->modelMeshes[model->mouseHoveredID]->name);
@@ -276,7 +276,7 @@ void Application::createModelTree(std::shared_ptr<ModelPartUI> currentPart)
 
 				//might implement some way to keep selected vertices if mesh is still selected
 				model->selectedVertices.clear();
-				model->initialVerticesPos.clear();
+				model->initialDeltaVerticesPos.clear();
 			}
 			break;
 		//for now, treat all of them the same
@@ -290,7 +290,7 @@ void Application::createModelTree(std::shared_ptr<ModelPartUI> currentPart)
 				{
 					selectedParts.clear();
 					model->selectedVertices.clear();
-					model->initialVerticesPos.clear();
+					model->initialDeltaVerticesPos.clear();
 					alreadySelected = false;
 				}
 				if (!ImGui::IsItemToggledOpen())
@@ -302,7 +302,7 @@ void Application::createModelTree(std::shared_ptr<ModelPartUI> currentPart)
 				}
 
 				model->selectedVertices.clear();
-				model->initialVerticesPos.clear();
+				model->initialDeltaVerticesPos.clear();
 			}
 
 			if (nodeOpen)
@@ -363,7 +363,7 @@ void Application::createModelTree(std::shared_ptr<ModelPart> currentPart)
 
 		//might implement some way to keep selected vertices if mesh is still selected
 		model->selectedVertices.clear();
-		model->initialVerticesPos.clear();
+		model->initialDeltaVerticesPos.clear();
 	}
 
 	//drag and drop stuff
