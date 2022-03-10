@@ -225,9 +225,14 @@ void Model::moveSelectedVertices(const glm::vec2& originalMouseCoord)
 		if (partMap[selectedVertices[i].partName]->parent->type == ModelPart::PartType::warpDeformer)
 		{
 			auto p = std::dynamic_pointer_cast<WarpDeformer>(partMap[selectedVertices[i].partName]->parent);
-		}
+			//glm::vec2 initialPos = glm::inverse(p->transform) * mouseToScreen;
+			//glm::vec2 pointParentPos = p->localTransform * glm::vec4(partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index], 0.0f, 1.0f);
+			glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index].position, 0.0f, 1.0f));
 
-		partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index] = mousePos - mousePosOriginal + initialDeltaVerticesPos[&selectedVertices[i]];
+
+		}
+		else
+			partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index] = mousePos - mousePosOriginal + initialDeltaVerticesPos[&selectedVertices[i]];
 	}
 }
 
