@@ -46,6 +46,7 @@ public:
 	std::unordered_map<std::string, std::shared_ptr<ModelMesh>> meshMap;
 
 	std::vector<VertexSpecifier> selectedVertices;
+	std::unordered_map<VertexSpecifier*, glm::vec2> initialVerticesPos;
 	std::unordered_map<VertexSpecifier*, glm::vec2> initialDeltaVerticesPos;
 
 	int atlasWidth = 0, atlasHeight = 0, atlasNrChannels = 0;

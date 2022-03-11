@@ -150,17 +150,25 @@ glm::vec2 WarpDeformer::unwarpPoint(glm::vec2 point)
 {
 	//find which box the point is in
 	int boxNum = findBox(point);
+	//std::cout << "box: " << boxNum << std::endl;
 
-	std::cout << "box: " << boxNum << std::endl;
-	if (boxNum != -1)
-	{
-		int boxX = boxNum % boxCountX;
-		int boxY = boxNum / boxCountX;
+	int boxX = boxNum % boxCountX;
+	int boxY = boxNum / boxCountX;
 
-		//std::cout << boxX << ", " << boxY << std::endl;
-	}
+	int p1 = boxX + boxY * (boxCountX + 1);
+	int p2 = boxX + 1 + boxY * (boxCountX + 1);
+	int p3 = boxX + (boxY + 1) * (boxCountX + 1);
+	int p4 = boxX + 1 + (boxY + 1) * (boxCountX + 1);
 
-	return glm::vec2();
+	float dBottom = minDistance(localVertexPositions[p1], localVertexPositions[p2], point);
+	float dTop = minDistance(localVertexPositions[p3], localVertexPositions[p4], point);
+	float dLeft = minDistance(localVertexPositions[p1], localVertexPositions[p3], point);
+	float dRight = minDistance(localVertexPositions[p2], localVertexPositions[p4], point);
+
+	//std::cout << dBottom << ", " << dTop << ", " << dLeft << ", " << dRight << std::endl;
+	//std::cout << "dx: " << dLeft / (dLeft + dRight) << " dy: " << dBottom / (dBottom + dTop) << std::endl;
+
+	return originalVertexPositions[p1] + glm::vec2((originalVertexPositions[p2].x - originalVertexPositions[p1].x) * dLeft / (dLeft + dRight), (originalVertexPositions[p3].y - originalVertexPositions[p1].y) * dBottom / (dBottom + dTop));
 }
 
 int WarpDeformer::findBox(glm::vec2 point)
@@ -197,7 +205,7 @@ int WarpDeformer::findBox(glm::vec2 point)
 			if (doIntersect(localVertexPositions[p3], localVertexPositions[p1], point, glm::vec2(point.x, top)))
 				crossCount++;
 
-			if (crossCount > 0 && crossCount % 2 == 1)
+			if (crossCount % 2 == 1)
 				return x + y * boxCountX;
 		}
 	}
@@ -248,9 +256,11 @@ int WarpDeformer::findBox(glm::vec2 point)
 
 	//don't really need to check?
 	return boxCountX * boxCountY - 1;
+}
 
-	//not found
-	//return -1;
+float WarpDeformer::minDistance(glm::vec2 p1, glm::vec2 p2, glm::vec2 distanceTo)
+{
+	return std::abs((p2.x - p1.x) * (p1.y - distanceTo.y) - (p1.x - distanceTo.x) * (p2.y - p1.y)) / std::sqrt((p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y));
 }
 
 bool WarpDeformer::onSegment(glm::vec2 p, glm::vec2 q, glm::vec2 r)

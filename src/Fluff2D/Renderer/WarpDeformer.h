@@ -25,6 +25,9 @@ private:
 
 	int findBox(glm::vec2 point);
 
+	//from https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+	float minDistance(glm::vec2 p1, glm::vec2 p2, glm::vec2 distanceTo);
+
 	//from https://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
 	bool onSegment(glm::vec2 p, glm::vec2 q, glm::vec2 r);
 	int orientation(glm::vec2 p, glm::vec2 q, glm::vec2 r);

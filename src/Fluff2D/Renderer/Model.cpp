@@ -227,9 +227,9 @@ void Model::moveSelectedVertices(const glm::vec2& originalMouseCoord)
 			auto p = std::dynamic_pointer_cast<WarpDeformer>(partMap[selectedVertices[i].partName]->parent);
 			//glm::vec2 initialPos = glm::inverse(p->transform) * mouseToScreen;
 			//glm::vec2 pointParentPos = p->localTransform * glm::vec4(partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index], 0.0f, 1.0f);
-			glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index].position, 0.0f, 1.0f));
-
-
+			glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + initialVerticesPos[&selectedVertices[i]], 0.0f, 1.0f));
+			//std::cout << unwarpedPoint.x << ", " << unwarpedPoint.y << std::endl;
+			partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index] = glm::vec2(glm::inverse(partMap[selectedVertices[i].partName]->localTransform) * glm::vec4(unwarpedPoint, 0.0f, 1.0f)) - partMap[selectedVertices[i].partName]->originalVertexPositions[selectedVertices[i].index];
 		}
 		else
 			partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index] = mousePos - mousePosOriginal + initialDeltaVerticesPos[&selectedVertices[i]];
@@ -238,9 +238,11 @@ void Model::moveSelectedVertices(const glm::vec2& originalMouseCoord)
 
 void Model::updateOriginalVertexPositions()
 {
+	initialVerticesPos.clear();
 	initialDeltaVerticesPos.clear();
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
+		initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index].position;
 		initialDeltaVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index];
 	}
 }
