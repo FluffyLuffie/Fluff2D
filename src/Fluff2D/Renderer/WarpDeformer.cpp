@@ -119,7 +119,7 @@ void WarpDeformer::update()
 			float initialY = localVertexPositions[p1].y + yClamped * (localVertexPositions[p4].y - localVertexPositions[p1].y);
 
 			//set vertex position
-			children[i]->localVertexPositions[j] = glm::vec4(initialX + xOffset + (localVertexPositions[p4].x + xClamped * (localVertexPositions[p3].x - localVertexPositions[p4].x) - initialX) * yClamped, initialY + yOffset + (localVertexPositions[p2].y + yClamped * (localVertexPositions[p3].y - localVertexPositions[p2].y) - initialY) * xClamped, 0.0f, 1.0f);
+			children[i]->localVertexPositions[j] = glm::inverse(children[i]->localTransform) * glm::vec4(initialX + xOffset + (localVertexPositions[p4].x + xClamped * (localVertexPositions[p3].x - localVertexPositions[p4].x) - initialX) * yClamped, initialY + yOffset + (localVertexPositions[p2].y + yClamped * (localVertexPositions[p3].y - localVertexPositions[p2].y) - initialY) * xClamped, 0.0f, 1.0f);
 		}
 
 		children[i]->update();
@@ -155,6 +155,42 @@ glm::vec2 WarpDeformer::unwarpPoint(glm::vec2 point)
 	int boxX = boxNum % boxCountX;
 	int boxY = boxNum / boxCountX;
 
+	glm::vec2 p1 = localVertexPositions[boxX + boxY * (boxCountX + 1)];
+	glm::vec2 p2 = localVertexPositions[boxX + 1 + boxY * (boxCountX + 1)];
+	glm::vec2 p3 = localVertexPositions[boxX + (boxY + 1) * (boxCountX + 1)];
+	glm::vec2 p4 = localVertexPositions[boxX + 1 + (boxY + 1) * (boxCountX + 1)];
+
+	float aX = (p4.x - p2.x) * (p3.y - p1.y) - (p3.x - p1.x) * (p4.y - p2.y);
+	float bX = p2.x * (p3.y - p1.y) + p1.y * (p4.x - p2.x) - point.y * (p4.x - p2.x) + point.y * (p3.x - p1.x) - p1.x * (p4.y - p2.y) - p2.y * (p3.x - p1.x) + point.x * (p4.y - p2.y) - point.x * (p3.y - p1.y);
+	float cX = p2.x * p1.y - p2.x * point.y + p1.x * point.y - p1.x * p2.y + p2.y * point.x - p1.y * point.x;
+
+	//if in uneditted box
+	if (std::abs(aX) == 0.0f)
+		return point;
+
+	//if in editted box
+	float aY = (p4.x - p3.x) * (p2.y - p1.y) - (p2.x - p1.x) * (p4.y - p3.y);
+	float bY = p3.x * (p2.y - p1.y) + p1.y * (p4.x - p3.x) - point.y * (p4.x - p3.x) + point.y * (p2.x - p1.x) - p1.x * (p4.y - p3.y) - p3.y * (p2.x - p1.x) + point.x * (p4.y - p3.y) - point.x * (p2.y - p1.y);
+	float cY = p3.x * p1.y - p3.x * point.y + p1.x * point.y - p1.x * p3.y + p3.y * point.x - p1.y * point.x;
+
+	float rYMax = (-bX + std::sqrt(bX * bX - 4 * aX * cX)) / (2 * aX);
+	float rXMin = (-bY - std::sqrt(bY * bY - 4 * aY * cY)) / (2 * aY);
+
+	//bottom left corner + offset
+	return originalVertexPositions[boxX + boxY * (boxCountX + 1)] + glm::vec2(boxWidth * rXMin, boxHeight * rYMax);
+
+	//don't need the other ones?
+	/*
+	float rYMin = (-bX - std::sqrt(bX * bX - 4 * aX * cX)) / (2 * aX);
+	float rXMax = (-bY + std::sqrt(bY * bY - 4 * aY * cY)) / (2 * aY);
+	std::cout << "a: " << aX << " b: " << bX << "  c: " << cX << std::endl;
+	std::cout << "quad: " << bX * bX - 4 * aX * cX << std::endl;
+	std::cout << "rYMax: " << rYMax << " ryMin: " << rYMin << std::endl;
+	std::cout << "rXMax: " << rXMax << " rXMin: " << rXMin << std::endl;
+	*/
+
+	//old version, uses minimum distance from the box lines, a bit off
+	/*
 	int p1 = boxX + boxY * (boxCountX + 1);
 	int p2 = boxX + 1 + boxY * (boxCountX + 1);
 	int p3 = boxX + (boxY + 1) * (boxCountX + 1);
@@ -168,7 +204,8 @@ glm::vec2 WarpDeformer::unwarpPoint(glm::vec2 point)
 	//std::cout << dBottom << ", " << dTop << ", " << dLeft << ", " << dRight << std::endl;
 	//std::cout << "dx: " << dLeft / (dLeft + dRight) << " dy: " << dBottom / (dBottom + dTop) << std::endl;
 
-	return originalVertexPositions[p1] + glm::vec2((originalVertexPositions[p2].x - originalVertexPositions[p1].x) * dLeft / (dLeft + dRight), (originalVertexPositions[p3].y - originalVertexPositions[p1].y) * dBottom / (dBottom + dTop));
+	return originalVertexPositions[p1] + glm::vec2(boxWidth * dLeft / (dLeft + dRight), boxHeight * dBottom / (dBottom + dTop));
+	*/
 }
 
 int WarpDeformer::findBox(glm::vec2 point)
@@ -260,7 +297,13 @@ int WarpDeformer::findBox(glm::vec2 point)
 
 float WarpDeformer::minDistance(glm::vec2 p1, glm::vec2 p2, glm::vec2 distanceTo)
 {
-	return std::abs((p2.x - p1.x) * (p1.y - distanceTo.y) - (p1.x - distanceTo.x) * (p2.y - p1.y)) / std::sqrt((p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y));
+	return std::abs((p2.x - p1.x) * (p1.y - distanceTo.y) - (p1.x - distanceTo.x) * (p2.y - p1.y)) / glm::distance(p1, p2);
+
+	/*
+	float lineLength = glm::distance(p1, p2);
+	return std::min(std::abs((p2.x - p1.x) / lineLength * (p1.y - distanceTo.y) - (p2.y - p1.y) / lineLength * (p1.x - distanceTo.x)),
+					std::abs((p1.x - p2.x) / lineLength * (p2.y - distanceTo.y) - (p1.y - p2.y) / lineLength * (p2.x - distanceTo.x)));
+	*/
 }
 
 bool WarpDeformer::onSegment(glm::vec2 p, glm::vec2 q, glm::vec2 r)

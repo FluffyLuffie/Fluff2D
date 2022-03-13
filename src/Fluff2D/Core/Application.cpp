@@ -30,8 +30,6 @@ void Application::update()
 
 		if (model)
 		{
-			model->update();
-
 			int closestVertexIndex = -1;
 			int selectedPartNum = -1;
 			if (!Event::io->WantCaptureMouse)
@@ -93,6 +91,7 @@ void Application::update()
 					model->detectMouseHover = true;
 			}
 
+			model->update();
 			model->render();
 
 			//render lines and points
@@ -574,6 +573,7 @@ void Application::drawImGui()
 		ImGui::DragInt("Mesh Line Width", &Settings::meshLineWidth);
 		ImGui::ColorEdit3("Mesh Line Color", (float*)&Settings::meshLineColor);
 		ImGui::ColorEdit3("Mesh Line Highlight Color", (float*)&Settings::meshHighlightColor);
+		ImGui::ColorEdit3("Warp Line Highlight Color", (float*)&Settings::warpDeformerColor);
 		ImGui::Separator();
 
 		ImGui::SliderFloat("Vertex Detection Distance", &Settings::vertexDetectionDistance, 1.0f, 80.0f);

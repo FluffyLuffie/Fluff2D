@@ -31,7 +31,7 @@ public:
 	inline static glm::vec3 meshPointHighlightColor = glm::vec3(1.0f, 0.0f, 0.0f);
 	inline static glm::vec3 meshPointSelectedColor = glm::vec3(1.0f, 0.0f, 0.0f);
 
-	inline static glm::vec3 warpDeformerColor = glm::vec3(0.0f, 1.0f, 0.0f);
+	inline static glm::vec3 warpDeformerColor = glm::vec3(0.0f, 0.8f, 0.0f);
 
 	inline static int meshPointBorderSize = 2;
 	inline static glm::vec3 meshPointBorderColor = glm::vec3(0.0f, 0.0f, 0.0f);

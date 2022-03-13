@@ -5,7 +5,7 @@
 class Parameter
 {
 public:
-	float value = 0.0f, defaultValue = 0.0f, maxValue, minValue;
+	float value = 0.0f, defaultValue = 0.0f, maxValue = 0.0f, minValue = 0.0f;
 	std::vector<float> keyValues;
 
 	Parameter() {}
@@ -13,5 +13,7 @@ public:
 	Parameter(float maxVal, float minVal) { maxValue = maxVal; minValue = minVal; }
 	Parameter(float defaultVal, float maxVal, float minVal) { value = defaultVal;  defaultValue = defaultVal;  maxValue = maxVal; minValue = minVal; }
 	~Parameter() {}
+
+	void snapToClosest();
 };
 
