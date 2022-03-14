@@ -418,7 +418,12 @@ void Application::drawImGui()
 				fileBrowser.Open();
 			}
 			if (ImGui::MenuItem("Open test model csp"))
+			{
 				initializeModelFromPsd("tempPsdTest/testModel.psd");
+				model->update();
+				selectedParts.push_back(model->modelMeshes[model->modelMeshes.size() - 1]->name);
+				model->addWarpDeformer("TestWarp", selectedParts, 5, 5);
+			}
 			if (ImGui::MenuItem("Open test model krita"))
 				initializeModelFromPsd("tempPsdTest/testModelKrita.psd");
 			if (ImGui::MenuItem("Open fluffy"))

@@ -1,6 +1,7 @@
 ***Things to add/fix***
-Moving points inside warp deformers.
-[hover/clicking done, probably don't need name] Clicking on meshes selects them, and add textbox indicating which one mouse is hovering on.
+Rotation deformers.
+[Done] Moving points inside warp deformers.
+[Done] Clicking on meshes selects them
 Parameters actually do something.
 Physics.
 Saving model for editor.

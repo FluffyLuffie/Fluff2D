@@ -149,6 +149,7 @@ void WarpDeformer::renderInspector()
 glm::vec2 WarpDeformer::unwarpPoint(glm::vec2 point)
 {
 	//find which box the point is in
+	glm::vec2 originalPoint = point;
 	int boxNum = findBox(point);
 	//std::cout << "box: " << boxNum << std::endl;
 
@@ -161,12 +162,12 @@ glm::vec2 WarpDeformer::unwarpPoint(glm::vec2 point)
 	glm::vec2 p4 = localVertexPositions[boxX + 1 + (boxY + 1) * (boxCountX + 1)];
 
 	float aX = (p4.x - p2.x) * (p3.y - p1.y) - (p3.x - p1.x) * (p4.y - p2.y);
+	//if in uneditted box
+	if (aX == 0.0f)
+		return point + originalPoint - point;
+
 	float bX = p2.x * (p3.y - p1.y) + p1.y * (p4.x - p2.x) - point.y * (p4.x - p2.x) + point.y * (p3.x - p1.x) - p1.x * (p4.y - p2.y) - p2.y * (p3.x - p1.x) + point.x * (p4.y - p2.y) - point.x * (p3.y - p1.y);
 	float cX = p2.x * p1.y - p2.x * point.y + p1.x * point.y - p1.x * p2.y + p2.y * point.x - p1.y * point.x;
-
-	//if in uneditted box
-	if (std::abs(aX) == 0.0f)
-		return point;
 
 	//if in editted box
 	float aY = (p4.x - p3.x) * (p2.y - p1.y) - (p2.x - p1.x) * (p4.y - p3.y);
@@ -177,7 +178,7 @@ glm::vec2 WarpDeformer::unwarpPoint(glm::vec2 point)
 	float rXMin = (-bY - std::sqrt(bY * bY - 4 * aY * cY)) / (2 * aY);
 
 	//bottom left corner + offset
-	return originalVertexPositions[boxX + boxY * (boxCountX + 1)] + glm::vec2(boxWidth * rXMin, boxHeight * rYMax);
+	return originalVertexPositions[boxX + boxY * (boxCountX + 1)] + glm::vec2(boxWidth * rXMin, boxHeight * rYMax) + originalPoint - point;
 
 	//don't need the other ones?
 	/*
@@ -208,7 +209,7 @@ glm::vec2 WarpDeformer::unwarpPoint(glm::vec2 point)
 	*/
 }
 
-int WarpDeformer::findBox(glm::vec2 point)
+int WarpDeformer::findBox(glm::vec2 &point)
 {
 	//if point is in box
 	for (int y = 0; y < boxCountY; y++)
@@ -251,48 +252,83 @@ int WarpDeformer::findBox(glm::vec2 point)
 	//check if below
 	for (int x = 0; x < boxCountX; x++)
 	{
-		float top = std::max(localVertexPositions[x].y, localVertexPositions[x + 1].y) + 1.0f;
-		if (doIntersect(localVertexPositions[x], localVertexPositions[x + 1], point, glm::vec2(point.x, top)))
+		glm::vec2 p1 = localVertexPositions[x];
+		glm::vec2 p2 = localVertexPositions[x + 1];
+		float top = std::max(p1.y, p2.y) + 1.0f;
+
+		if (doIntersect(p1, p2, point, glm::vec2(point.x, top)))
+		{
+			point.y = (p2.y - p1.y) / (p2.x - p1.x) * point.x + (p1.y - (p2.y - p1.y) / (p2.x - p1.x) * p1.x);
 			return x;
+		}
 	}
 	//check if above
 	for (int x = 0; x < boxCountX; x++)
 	{
-		float bottom = std::min(localVertexPositions[x + (boxCountY - 1) * (boxCountX + 1)].y, localVertexPositions[x + 1 + (boxCountY - 1) * (boxCountX + 1)].y) - 1.0f;
-		if (doIntersect(localVertexPositions[x + (boxCountY - 1) * (boxCountX + 1)], localVertexPositions[x + 1 + (boxCountY - 1) * (boxCountX + 1)], point, glm::vec2(point.x, bottom)))
+		glm::vec2 p1 = localVertexPositions[x + boxCountY * (boxCountX + 1)];
+		glm::vec2 p2 = localVertexPositions[x + 1 + boxCountY * (boxCountX + 1)];
+		float bottom = std::min(p1.y, p2.y) - 1.0f;
+
+		if (doIntersect(p1, p2, point, glm::vec2(point.x, bottom)))
+		{
+			point.y = (p2.y - p1.y) / (p2.x - p1.x) * point.x + (p1.y - (p2.y - p1.y) / (p2.x - p1.x) * p1.x);
 			return x + (boxCountY - 1) * boxCountX;
+		}
 	}
 	//check if left
 	for (int y = 0; y < boxCountY; y++)
 	{
-		float right = std::max(localVertexPositions[y * (boxCountX + 1)].x, localVertexPositions[(y + 1) * (boxCountX + 1)].x) + 1.0f;
-		if (doIntersect(localVertexPositions[y * (boxCountX + 1)], localVertexPositions[(y + 1) * (boxCountX + 1)], point, glm::vec2(right, point.y)))
+		glm::vec2 p1 = localVertexPositions[y * (boxCountX + 1)];
+		glm::vec2 p2 = localVertexPositions[(y + 1) * (boxCountX + 1)];
+		float right = std::max(p1.x, p2.x) + 1.0f;
+
+		if (doIntersect(p1, p2, point, glm::vec2(right, point.y)))
+		{
+			point.x = (p2.x - p1.x) / (p2.y - p1.y) * point.y + (p1.x - (p2.x - p1.x) / (p2.y - p1.y) * p1.y);
 			return y * boxCountX;
+		}
 	}
 	//check if right
 	for (int y = 0; y < boxCountY; y++)
 	{
-		float left = std::min(localVertexPositions[boxCountX - 1 + y * (boxCountX + 1)].x, localVertexPositions[boxCountX - 1 + (y + 1) * (boxCountX + 1)].x) - 1.0f;
-		if (doIntersect(localVertexPositions[boxCountX - 1 + y * (boxCountX + 1)], localVertexPositions[boxCountX - 1 + (y + 1) * (boxCountX + 1)], point, glm::vec2(left, point.y)))
+		glm::vec2 p1 = localVertexPositions[boxCountX + y * (boxCountX + 1)];
+		glm::vec2 p2 = localVertexPositions[boxCountX + (y + 1) * (boxCountX + 1)];
+		float left = std::min(p1.x, p2.x) - 1.0f;
+
+		if (doIntersect(p1, p2, point, glm::vec2(left, point.y)))
+		{
+			point.x = (p2.x - p1.x) / (p2.y - p1.y) * point.y + (p1.x - (p2.x - p1.x) / (p2.y - p1.y) * p1.y);
 			return boxCountX - 1 + y * boxCountX;
+		}
 	}
 
 	//check if corners
 	//check bottom left
 	if (point.x <= localVertexPositions[1].x && point.y <= localVertexPositions[boxCountX + 1].y)
+	{
+		point = localVertexPositions[0];
 		return 0;
+	}
 	//check bottom right
 	if (point.x >= localVertexPositions[boxCountX - 1].x && point.y <= localVertexPositions[boxCountX * 2 + 1].y)
+	{
+		point = localVertexPositions[boxCountX];
 		return boxCountX - 1;
+	}
 	//check top left
 	if (point.x <= localVertexPositions[boxCountY * (boxCountX + 1) + 1].x && point.y >= localVertexPositions[(boxCountY - 1) * (boxCountX + 1)].y)
+	{
+		point = localVertexPositions[boxCountY * (boxCountX + 1)];
 		return (boxCountY - 1) * boxCountX;
+	}
+
+	//don't really need to check?
+	point = localVertexPositions[boxCountX + boxCountY * (boxCountX + 1)];
+	return boxCountX * boxCountY - 1;
+
 	//check if top right
 	//if (point.x >= localVertexPositions[boxCountX - 1 + boxCountY * (boxCountX + 1)].x && point.y >= localVertexPositions[boxCountX + (boxCountY - 1) * (boxCountX + 1)].y)
 	//	return boxCountX * boxCountY - 1;
-
-	//don't really need to check?
-	return boxCountX * boxCountY - 1;
 }
 
 float WarpDeformer::minDistance(glm::vec2 p1, glm::vec2 p2, glm::vec2 distanceTo)
