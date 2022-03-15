@@ -361,7 +361,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 		//RLE Compression
 		//only happens in image layers, I hope
 		case 1:
-			layerBytes[imageLayersRead].resize((layerRects[layerNum].w + texturePixelBuffer * 2) * (layerRects[layerNum].h + texturePixelBuffer * 2) * 4);
+			layerBytes[imageLayersRead].resize(layerRects[layerNum].w * layerRects[layerNum].h * 4);
 			//not done yet
 			if (rectangles[imageLayersRead].flipped)
 			{
@@ -394,8 +394,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 
 							for (int i = 0; i < -buffer[0] + 1; i++)
 							{
-								layerBytes[imageLayersRead][(texturePixelBuffer + pixelsRead / layerRects[layerNum].w +
-									+(layerRects[layerNum].w - 1 + texturePixelBuffer - pixelsRead % layerRects[layerNum].w) * (layerRects[layerNum].h + texturePixelBuffer * 2))
+								layerBytes[imageLayersRead][(pixelsRead / layerRects[layerNum].w +
+									+(layerRects[layerNum].w - 1 - pixelsRead % layerRects[layerNum].w) * layerRects[layerNum].h)
 									* 4 + channelOffset] = buffer[1];
 								pixelsRead++;
 							}
@@ -408,8 +408,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 								pf.read(buffer + 1, 1);
 								channelBytesLeft--;
 
-								layerBytes[imageLayersRead][(texturePixelBuffer + pixelsRead / layerRects[layerNum].w +
-									+(layerRects[layerNum].w - 1 + texturePixelBuffer - pixelsRead % layerRects[layerNum].w) * (layerRects[layerNum].h + texturePixelBuffer * 2))
+								layerBytes[imageLayersRead][(pixelsRead / layerRects[layerNum].w +
+									+(layerRects[layerNum].w - 1 - pixelsRead % layerRects[layerNum].w) * (layerRects[layerNum].h))
 									* 4 + channelOffset] = buffer[1];
 								pixelsRead++;
 							}
@@ -454,8 +454,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 							channelBytesLeft--;
 							for (int i = 0; i < -buffer[0] + 1; i++)
 							{
-								layerBytes[imageLayersRead][(texturePixelBuffer + pixelsRead % layerRects[layerNum].w +
-									+(texturePixelBuffer + pixelsRead / layerRects[layerNum].w) * (layerRects[layerNum].w + texturePixelBuffer * 2))
+								layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w +
+									+(pixelsRead / layerRects[layerNum].w) * layerRects[layerNum].w)
 									* 4 + channelOffset] = buffer[1];
 								pixelsRead++;
 							}
@@ -468,8 +468,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 								pf.read(buffer + 1, 1);
 								channelBytesLeft--;
 
-								layerBytes[imageLayersRead][(texturePixelBuffer + pixelsRead % layerRects[layerNum].w +
-									+(texturePixelBuffer + pixelsRead / layerRects[layerNum].w) * (layerRects[layerNum].w + texturePixelBuffer * 2))
+								layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w +
+									+(pixelsRead / layerRects[layerNum].w) * layerRects[layerNum].w)
 									* 4 + channelOffset] = buffer[1];
 								pixelsRead++;
 							}
@@ -486,9 +486,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			}
 
 			model->modelMeshes[imageLayersRead]->name = layerRects[layerNum].layerName;
-			model->modelMeshes[imageLayersRead]->setPos(layerRects[layerNum].x + (layerRects[layerNum].w - model->psdDimension.x) / 2.0f, -layerRects[layerNum].y + (-layerRects[layerNum].h + model->psdDimension.y) / 2.0f);
-			model->modelMeshes[imageLayersRead]->originalPos.x = model->modelMeshes[imageLayersRead]->pos.x;
-			model->modelMeshes[imageLayersRead]->originalPos.y = model->modelMeshes[imageLayersRead]->pos.y;
+			model->modelMeshes[imageLayersRead]->pos = glm::vec2(layerRects[layerNum].x + (layerRects[layerNum].w - model->psdDimension.x) / 2.0f, -layerRects[layerNum].y + (-layerRects[layerNum].h + model->psdDimension.y) / 2.0f);
+			model->modelMeshes[imageLayersRead]->originalPos = model->modelMeshes[imageLayersRead]->pos;
 			model->modelMeshes[imageLayersRead]->createBasicMesh(rectangles[imageLayersRead].x, rectangles[imageLayersRead].y, rectangles[imageLayersRead].w, rectangles[imageLayersRead].h, rectangles[imageLayersRead].flipped, atlasWidth, atlasHeight);
 
 			//assign a pool of tasks to threads
@@ -496,9 +495,9 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			if (rectangles[imageLayersRead].flipped)
 			{
 				results.emplace_back(
-					pool.enqueue([texPtr, imageLayersRead, layerRects, layerNum, texturePixelBuffer]
+					pool.enqueue([texPtr, imageLayersRead, layerRects, layerNum]
 						{
-							premultAlpha(texPtr, layerRects[layerNum].h + texturePixelBuffer * 2, layerRects[layerNum].w + texturePixelBuffer * 2);
+							premultAlpha(texPtr, layerRects[layerNum].h, layerRects[layerNum].w);
 							return true;
 						})
 				);
@@ -506,9 +505,9 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			else
 			{
 				results.emplace_back(
-					pool.enqueue([texPtr, imageLayersRead, layerRects, layerNum, texturePixelBuffer]
+					pool.enqueue([texPtr, imageLayersRead, layerRects, layerNum]
 						{
-							premultAlpha(texPtr, layerRects[layerNum].w + texturePixelBuffer * 2, layerRects[layerNum].h + texturePixelBuffer * 2);
+							premultAlpha(texPtr, layerRects[layerNum].w, layerRects[layerNum].h);
 							return true;
 						})
 				);
@@ -542,25 +541,25 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			if (!rectangles[imageLayer].flipped)
 			{
 				//for each row
-				for (int row = 0; row < layerRects[i].h + texturePixelBuffer * 2; row++)
+				for (int row = 0; row < layerRects[i].h; row++)
 				{
 					memcpy(&atlasBytes[0]
 						+ (rectangles[imageLayer].x
 							+ (rectangles[imageLayer].y + row) * atlasWidth)
 						* 4,
-						&layerBytes[imageLayer][row * (layerRects[i].w + texturePixelBuffer * 2) * 4], (layerRects[i].w + texturePixelBuffer * 2) * 4);
+						&layerBytes[imageLayer][row * layerRects[i].w * 4], layerRects[i].w * 4);
 				}
 			}
 			else
 			{
 				//for each row
-				for (int row = 0; row < layerRects[i].w + texturePixelBuffer * 2; row++)
+				for (int row = 0; row < layerRects[i].w; row++)
 				{
 					memcpy(&atlasBytes[0]
 						+ (rectangles[imageLayer].x
 							+ (rectangles[imageLayer].y + row) * atlasWidth)
 						* 4,
-						&layerBytes[imageLayer][row * (layerRects[i].h + texturePixelBuffer * 2) * 4], (layerRects[i].h + texturePixelBuffer * 2) * 4);
+						&layerBytes[imageLayer][row * layerRects[i].h * 4], layerRects[i].h * 4);
 				}
 			}
 			imageLayer++;
@@ -614,6 +613,15 @@ std::vector<rect_type> TextureLoader::prepareTextureAtlas(std::vector<LayerRect>
 
 	*atlasWidth = nextPower2(result_size.w);
 	*atlasHeight = nextPower2(result_size.h);
+
+	//allign to center
+	for (int i = 0; i < rectangles.size(); i++)
+	{
+		rectangles[i].x += texturePixelBuffer;
+		rectangles[i].y += texturePixelBuffer;
+		rectangles[i].w -= texturePixelBuffer * 2;
+		rectangles[i].h -= texturePixelBuffer * 2;
+	}
 
 	return rectangles;
 }

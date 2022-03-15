@@ -7,7 +7,7 @@
 class RotationDeformer : public ModelPart
 {
 public:
-	RotationDeformer(const std::string& partName);
+	RotationDeformer(const std::string& partName, float centerX, float centerY);
 	~RotationDeformer();
 
 	void update() override;

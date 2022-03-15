@@ -423,6 +423,10 @@ void Application::drawImGui()
 				model->update();
 				selectedParts.push_back(model->modelMeshes[model->modelMeshes.size() - 1]->name);
 				model->addWarpDeformer("TestWarp", selectedParts, 5, 5);
+				selectedParts.clear();
+				selectedParts.push_back(model->modelMeshes[model->modelMeshes.size() - 2]->name);
+				model->addRotationDeformer("TestRotation", selectedParts);
+				selectedParts.clear();
 			}
 			if (ImGui::MenuItem("Open test model krita"))
 				initializeModelFromPsd("tempPsdTest/testModelKrita.psd");
@@ -578,7 +582,11 @@ void Application::drawImGui()
 		ImGui::DragInt("Mesh Line Width", &Settings::meshLineWidth);
 		ImGui::ColorEdit3("Mesh Line Color", (float*)&Settings::meshLineColor);
 		ImGui::ColorEdit3("Mesh Line Highlight Color", (float*)&Settings::meshHighlightColor);
-		ImGui::ColorEdit3("Warp Line Highlight Color", (float*)&Settings::warpDeformerColor);
+		ImGui::Separator();
+
+		ImGui::ColorEdit3("Warp Deformer Color", (float*)&Settings::warpDeformerColor);
+		ImGui::ColorEdit3("Rotation Deformer Color", (float*)&Settings::rotationDeformerColor);
+		ImGui::DragInt("Rotation Deformer Width", &Settings::rotationDeformerWidth);
 		ImGui::Separator();
 
 		ImGui::SliderFloat("Vertex Detection Distance", &Settings::vertexDetectionDistance, 1.0f, 80.0f);

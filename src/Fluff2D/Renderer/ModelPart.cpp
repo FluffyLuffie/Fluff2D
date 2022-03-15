@@ -3,7 +3,18 @@
 void ModelPart::updateTransform()
 {
 	localTransform = glm::mat4(1.0f);
-	localTransform = glm::translate(localTransform, glm::vec3(pos.x, pos.y, 0.0f));
+	localTransform = glm::translate(localTransform, glm::vec3(pos, 0.0f));
+	localTransform = glm::rotate(localTransform, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+	localTransform = glm::scale(localTransform, glm::vec3(scale, 1.0f));
+
+	//assume parent always exists
+	transform = parent->transform * localTransform;
+}
+
+void ModelPart::warpTransform(glm::vec2 delta)
+{
+	localTransform = glm::mat4(1.0f);
+	localTransform = glm::translate(localTransform, glm::vec3(pos + delta, 0.0f));
 	localTransform = glm::rotate(localTransform, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 	localTransform = glm::scale(localTransform, glm::vec3(scale, 1.0f));
 

@@ -8,7 +8,7 @@
 class WarpDeformer : public ModelPart
 {
 public:
-	WarpDeformer(const std::string& partName, int countX, int countY, float left, float bottom, float width, float height);
+	WarpDeformer(const std::string& partName, int countX, int countY, float centerX, float centerY, float width, float height);
 	~WarpDeformer();
 
 	void update() override;
@@ -22,6 +22,8 @@ private:
 	float warpWidth = 0.0f, warpHeight = 0.0f, boxWidth = 0.0f, boxHeight = 0.0f;
 
 	const float borderBuffer = 1.08f;
+
+	glm::vec2 warpPoint(glm::vec2 point);
 
 	//also changes value of point to be within box
 	int findBox(glm::vec2 &point);

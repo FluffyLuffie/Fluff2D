@@ -21,7 +21,7 @@ void ModelMesh::update()
 		updateTransform();
 		for (int i = 0; i < localVertexPositions.size(); i++)
 		{
-			localVertexPositions[i] = glm::vec4(originalVertexPositions[i] + deltaVertexPositions[i], 0.0f, 1.0f);
+			localVertexPositions[i] = originalVertexPositions[i] + deltaVertexPositions[i];
 			vertices[i].position = transform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
 		}
 	}

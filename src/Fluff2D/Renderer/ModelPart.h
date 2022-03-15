@@ -29,6 +29,7 @@ public:
 	std::vector<unsigned int> indices;
 
 	void updateTransform();
+	void warpTransform(glm::vec2 delta);
 
 	virtual void render() {}
 

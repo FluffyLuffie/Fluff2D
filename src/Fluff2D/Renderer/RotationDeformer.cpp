@@ -1,9 +1,11 @@
 #include "RotationDeformer.h"
 
-RotationDeformer::RotationDeformer(const std::string& partName)
+RotationDeformer::RotationDeformer(const std::string& partName, float centerX, float centerY)
 {
 	type = ModelPart::PartType::rotationDeformer;
 	name = partName;
+	pos = glm::vec2(centerX, centerY);
+	originalPos = glm::vec2(centerX, centerY);
 
 	glGenVertexArrays(1, (GLuint*)(&vao));
 	glGenBuffers(1, (GLuint*)(&vbo));
@@ -12,6 +14,8 @@ RotationDeformer::RotationDeformer(const std::string& partName)
 	//might need to make size not affected by other stuff
 	addVertex(0.0f, 0.0f);
 	addVertex(0.0f, 50.0f);
+
+	originalVertexPositions[0] = glm::vec2(centerX, centerY);
 
 	indices.push_back(0);
 	indices.push_back(1);
@@ -26,15 +30,14 @@ RotationDeformer::~RotationDeformer()
 
 void RotationDeformer::update()
 {
-	updateTransform();
-
-	//set center to vertex 0
 	if (parent->type != ModelPart::PartType::warpDeformer)
-		pos = originalVertexPositions[0] + deltaVertexPositions[0];
-	else
-		pos = transform * glm::vec4(localVertexPositions[0], 0.0f, 1.0f);
+		updateTransform();
+
 	localVertexPositions[0] = glm::vec2();
 	vertices[0].position = transform * glm::vec4(localVertexPositions[0], 0.0f, 1.0f);
+
+	localVertexPositions[1] = glm::vec2(0.0f, 20.0f);
+	vertices[1].position = transform * glm::vec4(localVertexPositions[1], 0.0f, 1.0f);
 
 	for (int i = 0; i < children.size(); i++)
 	{
@@ -44,10 +47,7 @@ void RotationDeformer::update()
 
 void RotationDeformer::render()
 {
-	//adjust position 
-
 	updateVertexData();
-
 	glDrawElements(GL_LINES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
 }
 

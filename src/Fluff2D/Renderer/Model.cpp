@@ -150,13 +150,12 @@ void Model::renderMeshVertice(const std::string &meshName)
 	if (partMap.find(meshName) == partMap.end())
 		return;
 
-	glLineWidth(static_cast<GLfloat>(Settings::meshLineWidth));
-
 	partMap[meshName]->updateVertexData();
 
 	switch (partMap[meshName]->type)
 	{
 	case ModelPart::PartType::mesh:
+		glLineWidth(static_cast<GLfloat>(Settings::meshLineWidth));
 		shader.setVec3("uiColor", Settings::meshLineColor);
 		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(partMap[meshName]->indices.size()), GL_UNSIGNED_INT, 0);
 
@@ -168,10 +167,27 @@ void Model::renderMeshVertice(const std::string &meshName)
 		glDrawElements(GL_POINTS, static_cast<GLsizei>(partMap[meshName]->indices.size()), GL_UNSIGNED_INT, 0);
 		break;
 	case ModelPart::PartType::warpDeformer:
+		glLineWidth(static_cast<GLfloat>(Settings::meshLineWidth));
 		shader.setVec3("uiColor", Settings::warpDeformerColor);
 		glDrawElements(GL_LINES, static_cast<GLsizei>(partMap[meshName]->indices.size()), GL_UNSIGNED_INT, 0);
+
 		shader.setFloat("pointSize", static_cast<float>(Settings::meshPointSize));
 		glDrawElements(GL_POINTS, static_cast<GLsizei>(partMap[meshName]->indices.size()), GL_UNSIGNED_INT, 0);
+		break;
+	case ModelPart::PartType::rotationDeformer:
+		glLineWidth(static_cast<GLfloat>(Settings::rotationDeformerWidth));
+		shader.setVec3("uiColor", Settings::rotationDeformerColor);
+		glDrawElements(GL_LINES, static_cast<GLsizei>(partMap[meshName]->indices.size()), GL_UNSIGNED_INT, 0);
+
+		shader.setFloat("pointSize", static_cast<float>(Settings::meshPointBorderSize * 2 + Settings::meshPointSize));
+		shader.setVec3("uiColor", Settings::meshPointBorderColor);
+		glDrawElements(GL_POINTS, GLsizei(1), GL_UNSIGNED_INT, 0);
+		shader.setFloat("pointSize", static_cast<float>(Settings::meshPointSize));
+		shader.setVec3("uiColor", Settings::rotationDeformerColor);
+		glDrawElements(GL_POINTS, static_cast<GLsizei>(partMap[meshName]->indices.size()), GL_UNSIGNED_INT, 0);
+		break;
+	default:
+		break;
 	}
 }
 
@@ -210,7 +226,7 @@ void Model::renderSelectedVertices()
 	}
 }
 
-void Model::moveSelectedVertices(const glm::vec2& originalMouseCoord)
+void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
 {
 	ImVec2 mouseCoord = ImGui::GetMousePos();
 
@@ -218,21 +234,73 @@ void Model::moveSelectedVertices(const glm::vec2& originalMouseCoord)
 
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
-		glm::vec2 mousePos = glm::inverse(partMap[selectedVertices[i].partName]->transform) * mouseToScreen;
-		glm::vec2 mousePosOriginal = glm::inverse(partMap[selectedVertices[i].partName]->transform) * glm::vec4(originalMouseCoord, 0.0f, 1.0f);
-
-		//TODO: if warp deformer is parent, take into account the deformation
 		if (partMap[selectedVertices[i].partName]->parent->type == ModelPart::PartType::warpDeformer)
 		{
 			auto p = std::dynamic_pointer_cast<WarpDeformer>(partMap[selectedVertices[i].partName]->parent);
-			//glm::vec2 initialPos = glm::inverse(p->transform) * mouseToScreen;
-			//glm::vec2 pointParentPos = p->localTransform * glm::vec4(partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index], 0.0f, 1.0f);
-			glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + initialVerticesPos[&selectedVertices[i]], 0.0f, 1.0f));
-			//std::cout << unwarpedPoint.x << ", " << unwarpedPoint.y << std::endl;
-			partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index] = glm::vec2(glm::inverse(partMap[selectedVertices[i].partName]->localTransform) * glm::vec4(unwarpedPoint, 0.0f, 1.0f)) - partMap[selectedVertices[i].partName]->originalVertexPositions[selectedVertices[i].index];
+			
+			if (partMap[selectedVertices[i].partName]->type == ModelPart::PartType::rotationDeformer)
+			{
+				//root selected
+				if (selectedVertices[i].index == 0)
+				{
+					glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + glm::vec2(p->transform * glm::vec4(initialVerticesPos[&selectedVertices[i]], 0.0f, 1.0f)), 0.0f, 1.0f));
+					std::cout << unwarpedPoint.x << ", " << unwarpedPoint.y << std::endl;
+					glm::mat4 tempMat = glm::mat4(1.0f);
+					tempMat = glm::translate(tempMat, glm::vec3(initialVerticesPos[&selectedVertices[i]], 0.0f));
+					tempMat = glm::rotate(tempMat, glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+					tempMat = glm::scale(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f));
+
+					glm::mat4 tempMat2 = glm::scale(glm::rotate(glm::mat4(1.0f), glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f)), glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f));
+					partMap[selectedVertices[i].partName]->pos = glm::inverse(tempMat) * glm::vec4(unwarpedPoint, 0.0f, 1.0f);
+				}
+				//end selected
+				else
+				{
+					glm::mat4 tempMat = glm::mat4(1.0f);
+					tempMat = glm::translate(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->pos.x, partMap[selectedVertices[i].partName]->pos.y, 0.0f));
+					tempMat = glm::rotate(tempMat, glm::radians(initialVerticesPos[&selectedVertices[i]].x), glm::vec3(0.0f, 0.0f, 1.0f));
+					tempMat = glm::scale(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f));
+
+					glm::vec2 mousePos = glm::inverse(partMap[selectedVertices[i].partName]->parent->transform * tempMat) * mouseToScreen;
+					glm::vec2 mousePosOriginal = glm::inverse(partMap[selectedVertices[i].partName]->parent->transform * tempMat) * glm::vec4(partMap[selectedVertices[i].partName]->vertices[0].position, 0.0f, 1.0f);
+
+					partMap[selectedVertices[i].partName]->rotation = glm::degrees(std::atan2((mousePos.y - mousePosOriginal.y), (mousePos.x - mousePosOriginal.x))) + initialVerticesPos[&selectedVertices[i]].x - 90.0f;
+				}
+			}
+			else
+			{
+				glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + initialVerticesPos[&selectedVertices[i]], 0.0f, 1.0f));
+
+				partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index] = glm::vec2(glm::inverse(partMap[selectedVertices[i].partName]->localTransform) * glm::vec4(unwarpedPoint, 0.0f, 1.0f)) - partMap[selectedVertices[i].partName]->originalVertexPositions[selectedVertices[i].index];
+			}
 		}
 		else
-			partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index] = mousePos - mousePosOriginal + initialDeltaVerticesPos[&selectedVertices[i]];
+		{
+			glm::vec2 mousePos = glm::inverse(partMap[selectedVertices[i].partName]->transform) * mouseToScreen;
+			glm::vec2 mousePosOriginal = glm::inverse(partMap[selectedVertices[i].partName]->transform) * glm::vec4(originalMouseCoord, 0.0f, 1.0f);
+
+			if (partMap[selectedVertices[i].partName]->type == ModelPart::PartType::rotationDeformer)
+			{
+				//root selected
+				if (selectedVertices[i].index == 0)
+					partMap[selectedVertices[i].partName]->pos = glm::vec2(glm::scale(glm::rotate(glm::mat4(1.0f), glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f)), glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f)) * glm::vec4(mousePos - mousePosOriginal, 0.0f, 1.0f)) + initialVerticesPos[&selectedVertices[i]];
+				//end selected
+				else
+				{
+					glm::mat4 tempMat = glm::mat4(1.0f);
+					tempMat = glm::translate(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->pos.x, partMap[selectedVertices[i].partName]->pos.y, 0.0f));
+					tempMat = glm::rotate(tempMat, glm::radians(initialVerticesPos[&selectedVertices[i]].x), glm::vec3(0.0f, 0.0f, 1.0f));
+					tempMat = glm::scale(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f));
+
+					mousePos = glm::inverse(partMap[selectedVertices[i].partName]->parent->transform * tempMat) * mouseToScreen;
+					mousePosOriginal = glm::inverse(partMap[selectedVertices[i].partName]->parent->transform * tempMat) * glm::vec4(partMap[selectedVertices[i].partName]->vertices[0].position, 0.0f, 1.0f);
+
+					partMap[selectedVertices[i].partName]->rotation = glm::degrees(std::atan2((mousePos.y - mousePosOriginal.y), (mousePos.x - mousePosOriginal.x))) + initialVerticesPos[&selectedVertices[i]].x - 90.0f;
+				}
+			}
+			else
+				partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index] = mousePos - mousePosOriginal + initialDeltaVerticesPos[&selectedVertices[i]];
+		}
 	}
 }
 
@@ -242,8 +310,17 @@ void Model::updateOriginalVertexPositions()
 	initialDeltaVerticesPos.clear();
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
-		initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index].position;
-		initialDeltaVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index];
+		//if rotation deformer, save other data
+		if (partMap[selectedVertices[i].partName]->type == ModelPart::PartType::rotationDeformer)
+			if (selectedVertices[i].index == 0)
+				initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->pos;
+			else
+				initialVerticesPos[&selectedVertices[i]] = glm::vec2(partMap[selectedVertices[i].partName]->rotation, 0.0f);
+		else
+		{
+			initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index].position;
+			initialDeltaVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index];
+		}
 	}
 }
 
@@ -317,48 +394,24 @@ void Model::addWarpDeformer(std::string name, const std::vector<std::string>& se
 
 	//figure out box size
 	float top = -FLT_MAX, bottom = FLT_MAX, left = FLT_MAX, right = -FLT_MAX;
-	glm::vec2 localCoord;
 
-	if (parentPart->type != ModelPart::PartType::warpDeformer)
+	for (int i = 0; i < selectedParts.size(); i++)
 	{
-		for (int i = 0; i < selectedParts.size(); i++)
+		if (partMap.find(selectedParts[i]) == partMap.end())
+			continue;
+		for (int j = 0; j < partMap[selectedParts[i]]->vertices.size(); j++)
 		{
-			if (partMap.find(selectedParts[i]) == partMap.end())
-				continue;
-			for (int j = 0; j < partMap[selectedParts[i]]->vertices.size(); j++)
-			{
-				if (partMap[selectedParts[i]]->vertices[j].position.y > top)
-					top = partMap[selectedParts[i]]->vertices[j].position.y;
-				if (partMap[selectedParts[i]]->vertices[j].position.y < bottom)
-					bottom = partMap[selectedParts[i]]->vertices[j].position.y;
-				if (partMap[selectedParts[i]]->vertices[j].position.x < left)
-					left = partMap[selectedParts[i]]->vertices[j].position.x;
-				if (partMap[selectedParts[i]]->vertices[j].position.x > right)
-					right = partMap[selectedParts[i]]->vertices[j].position.x;
-			}
+			if (partMap[selectedParts[i]]->vertices[j].position.y > top)
+				top = partMap[selectedParts[i]]->vertices[j].position.y;
+			if (partMap[selectedParts[i]]->vertices[j].position.y < bottom)
+				bottom = partMap[selectedParts[i]]->vertices[j].position.y;
+			if (partMap[selectedParts[i]]->vertices[j].position.x < left)
+				left = partMap[selectedParts[i]]->vertices[j].position.x;
+			if (partMap[selectedParts[i]]->vertices[j].position.x > right)
+				right = partMap[selectedParts[i]]->vertices[j].position.x;
 		}
-		localCoord = glm::inverse(parentPart->transform) * glm::vec4(left + (right - left) / 2.0f, bottom + (top - bottom) / 2.0f, 0.0f, 1.0f);
 	}
-	else
-	{
-		for (int i = 0; i < selectedParts.size(); i++)
-		{
-			if (partMap.find(selectedParts[i]) == partMap.end())
-				continue;
-			for (int j = 0; j < partMap[selectedParts[i]]->vertices.size(); j++)
-			{
-				if (partMap[selectedParts[i]]->vertices[j].position.y > top)
-					top = partMap[selectedParts[i]]->vertices[j].position.y;
-				if (partMap[selectedParts[i]]->vertices[j].position.y < bottom)
-					bottom = partMap[selectedParts[i]]->vertices[j].position.y;
-				if (partMap[selectedParts[i]]->vertices[j].position.x < left)
-					left = partMap[selectedParts[i]]->vertices[j].position.x;
-				if (partMap[selectedParts[i]]->vertices[j].position.x > right)
-					right = partMap[selectedParts[i]]->vertices[j].position.x;
-			}
-		}
-		localCoord = glm::vec4(left + (right - left) / 2.0f, bottom + (top - bottom) / 2.0f, 0.0f, 1.0f);
-	}
+	glm::vec2 localCoord = glm::inverse(parentPart->transform) * glm::vec4(left + (right - left) / 2.0f, bottom + (top - bottom) / 2.0f, 0.0f, 1.0f);
 
 	parentPart->children.push_back(std::make_shared<WarpDeformer>(name, countX, countY, localCoord.x, localCoord.y, right - left, top - bottom));
 
@@ -404,7 +457,28 @@ void Model::addRotationDeformer(std::string name, const std::vector<std::string>
 	if (!parentPart)
 		return;
 
-	parentPart->children.push_back(std::make_shared<RotationDeformer>(name));
+	//figure out box size
+	float top = -FLT_MAX, bottom = FLT_MAX, left = FLT_MAX, right = -FLT_MAX;
+
+	for (int i = 0; i < selectedParts.size(); i++)
+	{
+		if (partMap.find(selectedParts[i]) == partMap.end())
+			continue;
+		for (int j = 0; j < partMap[selectedParts[i]]->vertices.size(); j++)
+		{
+			if (partMap[selectedParts[i]]->vertices[j].position.y > top)
+				top = partMap[selectedParts[i]]->vertices[j].position.y;
+			if (partMap[selectedParts[i]]->vertices[j].position.y < bottom)
+				bottom = partMap[selectedParts[i]]->vertices[j].position.y;
+			if (partMap[selectedParts[i]]->vertices[j].position.x < left)
+				left = partMap[selectedParts[i]]->vertices[j].position.x;
+			if (partMap[selectedParts[i]]->vertices[j].position.x > right)
+				right = partMap[selectedParts[i]]->vertices[j].position.x;
+		}
+	}
+	glm::vec2 localCoord = glm::inverse(parentPart->transform) * glm::vec4(left + (right - left) / 2.0f, bottom + (top - bottom) / 2.0f, 0.0f, 1.0f);
+
+	parentPart->children.push_back(std::make_shared<RotationDeformer>(name, localCoord.x, localCoord.y));
 
 	newDeformer = parentPart->children.back();
 	newDeformer->parent = parentPart;
@@ -414,7 +488,6 @@ void Model::addRotationDeformer(std::string name, const std::vector<std::string>
 	{
 		if (partMap.find(selectedParts[i]) == partMap.end())
 			continue;
-
 		newDeformer->children.push_back(partMap[selectedParts[i]]);
 
 		partMap[selectedParts[i]]->parent->children.erase(
@@ -425,6 +498,7 @@ void Model::addRotationDeformer(std::string name, const std::vector<std::string>
 	for (int i = 0; i < newDeformer->children.size(); i++)
 	{
 		newDeformer->children[i]->parent = newDeformer;
+		newDeformer->children[i]->pos -= glm::vec2(newDeformer->pos.x, newDeformer->pos.y);
 	}
 
 	partMap[name] = newDeformer;
