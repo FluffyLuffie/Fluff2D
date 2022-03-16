@@ -15,6 +15,7 @@ public:
 	void render() override;
 	void renderInspector() override;
 
+	glm::vec2 warpPoint(glm::vec2 point);
 	glm::vec2 unwarpPoint(glm::vec2 point);
 
 private:
@@ -22,8 +23,6 @@ private:
 	float warpWidth = 0.0f, warpHeight = 0.0f, boxWidth = 0.0f, boxHeight = 0.0f;
 
 	const float borderBuffer = 1.08f;
-
-	glm::vec2 warpPoint(glm::vec2 point);
 
 	//also changes value of point to be within box
 	int findBox(glm::vec2 &point);

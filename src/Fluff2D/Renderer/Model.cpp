@@ -243,15 +243,14 @@ void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
 				//root selected
 				if (selectedVertices[i].index == 0)
 				{
-					glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + glm::vec2(p->transform * glm::vec4(initialVerticesPos[&selectedVertices[i]], 0.0f, 1.0f)), 0.0f, 1.0f));
-					std::cout << unwarpedPoint.x << ", " << unwarpedPoint.y << std::endl;
+					glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + glm::vec2(p->transform * glm::vec4(p->warpPoint(glm::vec4(initialVerticesPos[&selectedVertices[i]], 0.0f, 1.0f)), 0.0f, 1.0f)), 0.0f, 1.0f));
 					glm::mat4 tempMat = glm::mat4(1.0f);
 					tempMat = glm::translate(tempMat, glm::vec3(initialVerticesPos[&selectedVertices[i]], 0.0f));
 					tempMat = glm::rotate(tempMat, glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 					tempMat = glm::scale(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f));
 
 					glm::mat4 tempMat2 = glm::scale(glm::rotate(glm::mat4(1.0f), glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f)), glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f));
-					partMap[selectedVertices[i].partName]->pos = glm::inverse(tempMat) * glm::vec4(unwarpedPoint, 0.0f, 1.0f);
+					partMap[selectedVertices[i].partName]->pos = tempMat2 * glm::inverse(tempMat) * glm::vec4(unwarpedPoint, 0.0f, 1.0f) + glm::vec4(initialVerticesPos[&selectedVertices[i]], 0.0f, 0.0f);
 				}
 				//end selected
 				else
