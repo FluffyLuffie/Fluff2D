@@ -25,7 +25,7 @@ public:
 	std::vector<Vertex> vertices;
 	std::vector<glm::vec2> localVertexPositions;
 	std::vector<glm::vec2> originalVertexPositions;
-	std::vector<glm::vec2> deltaVertexPositions;
+	std::vector<glm::vec2> preWarpVertexPositions;
 	std::vector<unsigned int> indices;
 
 	void updateTransform();

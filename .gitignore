@@ -351,3 +351,4 @@ MigrationBackup/
 
 saves/testExports/textureAtlas.png
 saves/testExports/testFbo.png
+imgui.ini

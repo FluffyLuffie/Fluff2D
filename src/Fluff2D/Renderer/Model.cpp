@@ -270,7 +270,7 @@ void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
 			{
 				glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + initialVerticesPos[&selectedVertices[i]], 0.0f, 1.0f));
 
-				partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index] = glm::vec2(glm::inverse(partMap[selectedVertices[i].partName]->localTransform) * glm::vec4(unwarpedPoint, 0.0f, 1.0f)) - partMap[selectedVertices[i].partName]->originalVertexPositions[selectedVertices[i].index];
+				partMap[selectedVertices[i].partName]->preWarpVertexPositions[selectedVertices[i].index] = glm::vec2(glm::inverse(partMap[selectedVertices[i].partName]->localTransform) * glm::vec4(unwarpedPoint, 0.0f, 1.0f));
 			}
 		}
 		else
@@ -298,7 +298,7 @@ void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
 				}
 			}
 			else
-				partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index] = mousePos - mousePosOriginal + initialDeltaVerticesPos[&selectedVertices[i]];
+				partMap[selectedVertices[i].partName]->preWarpVertexPositions[selectedVertices[i].index] = mousePos - mousePosOriginal + initialDeltaVerticesPos[&selectedVertices[i]];
 		}
 	}
 }
@@ -318,7 +318,7 @@ void Model::updateOriginalVertexPositions()
 		else
 		{
 			initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index].position;
-			initialDeltaVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->deltaVertexPositions[selectedVertices[i].index];
+			initialDeltaVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index];
 		}
 	}
 }

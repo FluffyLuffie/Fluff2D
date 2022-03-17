@@ -71,7 +71,7 @@ void WarpDeformer::update()
 		updateTransform();
 		for (int i = 0; i < localVertexPositions.size(); i++)
 		{
-			localVertexPositions[i] = originalVertexPositions[i] + deltaVertexPositions[i];
+			localVertexPositions[i] = preWarpVertexPositions[i];
 			vertices[i].position = transform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
 		}
 	}
@@ -94,7 +94,7 @@ void WarpDeformer::update()
 			for (int j = 0; j < children[i]->vertices.size(); j++)
 			{
 				//set vertex position
-				children[i]->localVertexPositions[j] = glm::inverse(children[i]->localTransform) * glm::vec4(warpPoint(children[i]->localTransform * glm::vec4(children[i]->originalVertexPositions[j] + children[i]->deltaVertexPositions[j], 0.0f, 1.0f)), 0.0f, 1.0f);
+				children[i]->localVertexPositions[j] = glm::inverse(children[i]->localTransform) * glm::vec4(warpPoint(children[i]->localTransform * glm::vec4(children[i]->preWarpVertexPositions[j], 0.0f, 1.0f)), 0.0f, 1.0f);
 			}
 		}
 
