@@ -251,6 +251,13 @@ void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
 
 					glm::mat4 tempMat2 = glm::scale(glm::rotate(glm::mat4(1.0f), glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f)), glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f));
 					partMap[selectedVertices[i].partName]->pos = tempMat2 * glm::inverse(tempMat) * glm::vec4(unwarpedPoint, 0.0f, 1.0f) + glm::vec4(initialVerticesPos[&selectedVertices[i]], 0.0f, 0.0f);
+
+					//keep children's global position
+					if (Event::keyDown(GLFW_KEY_LEFT_ALT))
+						for (int i = 0; i < partMap[selectedVertices[i].partName]->children.size(); i++)
+						{
+
+						}
 				}
 				//end selected
 				else
@@ -282,7 +289,16 @@ void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
 			{
 				//root selected
 				if (selectedVertices[i].index == 0)
+				{
 					partMap[selectedVertices[i].partName]->pos = glm::vec2(glm::scale(glm::rotate(glm::mat4(1.0f), glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f)), glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f)) * glm::vec4(mousePos - mousePosOriginal, 0.0f, 1.0f)) + initialVerticesPos[&selectedVertices[i]];
+
+					//keep children's global position
+					if (Event::keyDown(GLFW_KEY_LEFT_ALT))
+						for (int i = 0; i < partMap[selectedVertices[i].partName]->children.size(); i++)
+						{
+							//partMap[selectedVertices[i].partName]->children[i]->pos = 
+						}
+				}
 				//end selected
 				else
 				{

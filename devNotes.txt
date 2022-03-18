@@ -1,5 +1,5 @@
 ***Things to add/fix***
-Rotation deformers.
+[Add changing root position] Rotation deformers.
 [Done] Moving points inside warp deformers.
 [Done] Clicking on meshes selects them
 Parameters actually do something.
@@ -28,10 +28,21 @@ Other language translations.
 Option to lock UI.
 Compute shader
 
+***Values affected by parameters***
+*All*
+Position (vec2)
+Rotation (float)
+Scale (vec2)
+*Mesh and Warp*
+Vertex positions(int, vec2)
+*Mesh*
+Render order (int)
+Color (vec4)
+
 ***Brain dump***
 How to implement the parameters thingy.
-Each keyform stores the change in value.
-For each keyform, recursively add up all the change in values and then take average.
+Each keyform stores the value.
+For each keyform, recursively add up all the values and then take average.
 For example, add up p[0][0][0] + p[0][0][1] + p[0][1][0] + ...
-If value right on keyform, count as 1 combination.
+If value on keyform, count as 1 combination.
 If value between 2 keyforms, count it as 2 combinations.
