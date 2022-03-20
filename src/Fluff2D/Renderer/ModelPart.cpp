@@ -1,7 +1,21 @@
 #include "ModelPart.h"
 
-void ModelPart::updateTransform()
+void ModelPart::updateTransform(const std::unordered_map<std::string, float>& paramValues)
 {
+	//update based on parameters
+	for (int i = 0; i < paramNames.size(); i++)
+	{
+		//find which 2 key values the param is between
+		/*
+		for (int j = 0; j < paramMap[paramNames[i]]->keyValues.size(); j++)
+		{
+
+		}
+		paramPos[paramNames[i]]
+		*/
+	}
+
+	//update local transform
 	localTransform = glm::mat4(1.0f);
 	localTransform = glm::translate(localTransform, glm::vec3(pos, 0.0f));
 	localTransform = glm::rotate(localTransform, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -9,6 +23,9 @@ void ModelPart::updateTransform()
 
 	//assume parent always exists
 	transform = parent->transform * localTransform;
+
+	for (int i = 0; i < localVertexPositions.size(); i++)
+		vertices[i].position = transform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
 }
 
 void ModelPart::warpTransform(glm::vec2 delta)
@@ -27,7 +44,6 @@ void ModelPart::addVertex(float xCoord, float yCoord)
 	vertices.emplace_back(xCoord, yCoord);
 	localVertexPositions.emplace_back(xCoord, yCoord);
 	originalVertexPositions.emplace_back(xCoord, yCoord);
-	preWarpVertexPositions.emplace_back(xCoord, yCoord);
 }
 
 void ModelPart::addVertex(float xCoord, float yCoord, float xTexCoord, float yTexCoord)
@@ -35,7 +51,6 @@ void ModelPart::addVertex(float xCoord, float yCoord, float xTexCoord, float yTe
 	vertices.emplace_back(xCoord, yCoord, xTexCoord, yTexCoord);
 	localVertexPositions.emplace_back(xCoord, yCoord);
 	originalVertexPositions.emplace_back(xCoord, yCoord);
-	preWarpVertexPositions.emplace_back(xCoord, yCoord);
 }
 
 void ModelPart::clearMeshData()
@@ -43,7 +58,6 @@ void ModelPart::clearMeshData()
 	vertices.clear();
 	localVertexPositions.clear();
 	originalVertexPositions.clear();
-	preWarpVertexPositions.clear();
 	indices.clear();
 }
 

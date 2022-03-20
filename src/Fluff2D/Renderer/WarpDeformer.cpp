@@ -64,24 +64,11 @@ WarpDeformer::~WarpDeformer()
 	glDeleteBuffers(1, &ebo);
 }
 
-void WarpDeformer::update()
+void WarpDeformer::modelUpdate(const std::unordered_map<std::string, float>& paramValues)
 {
-	if (parent->type != ModelPart::PartType::warpDeformer)
-	{
-		updateTransform();
-		for (int i = 0; i < localVertexPositions.size(); i++)
-		{
-			localVertexPositions[i] = preWarpVertexPositions[i];
-			vertices[i].position = transform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
-		}
-	}
-	else
-		for (int i = 0; i < localVertexPositions.size(); i++)
-			vertices[i].position = transform * glm::vec4(localVertexPositions[i], 0.0f, 1.0f);
-
 	for (int i = 0; i < children.size(); i++)
 	{
-		children[i]->updateTransform();
+		children[i]->updateTransform(paramValues);
 
 		if (children[i]->type == ModelPart::PartType::rotationDeformer)
 		{
@@ -94,11 +81,12 @@ void WarpDeformer::update()
 			for (int j = 0; j < children[i]->vertices.size(); j++)
 			{
 				//set vertex position
-				children[i]->localVertexPositions[j] = glm::inverse(children[i]->localTransform) * glm::vec4(warpPoint(children[i]->localTransform * glm::vec4(children[i]->preWarpVertexPositions[j], 0.0f, 1.0f)), 0.0f, 1.0f);
+				children[i]->vertices[j].position = transform * glm::vec4(warpPoint(children[i]->localTransform * glm::vec4(children[i]->localVertexPositions[j], 0.0f, 1.0f)), 0.0f, 1.0f);
 			}
 		}
 
-		children[i]->update();
+		if (children[i]->type != ModelPart::PartType::mesh)
+			children[i]->modelUpdate(paramValues);
 	}
 }
 
@@ -122,6 +110,7 @@ void WarpDeformer::renderInspector()
 }
 
 //unwarps a point in local coordinates
+//concave corners a bit weird, fix later
 glm::vec2 WarpDeformer::unwarpPoint(glm::vec2 point)
 {
 	//find which box the point is in
@@ -138,15 +127,15 @@ glm::vec2 WarpDeformer::unwarpPoint(glm::vec2 point)
 	glm::vec2 p4 = localVertexPositions[boxX + 1 + (boxY + 1) * (boxCountX + 1)];
 
 	float aX = (p4.x - p2.x) * (p3.y - p1.y) - (p3.x - p1.x) * (p4.y - p2.y);
+	float aY = (p4.x - p3.x) * (p2.y - p1.y) - (p2.x - p1.x) * (p4.y - p3.y);
 	//if in uneditted box
-	if (aX == 0.0f)
+	if (aX == 0.0f || aY == 0.0f)
 		return point + originalPoint - point;
 
 	float bX = p2.x * (p3.y - p1.y) + p1.y * (p4.x - p2.x) - point.y * (p4.x - p2.x) + point.y * (p3.x - p1.x) - p1.x * (p4.y - p2.y) - p2.y * (p3.x - p1.x) + point.x * (p4.y - p2.y) - point.x * (p3.y - p1.y);
 	float cX = p2.x * p1.y - p2.x * point.y + p1.x * point.y - p1.x * p2.y + p2.y * point.x - p1.y * point.x;
 
 	//if in editted box
-	float aY = (p4.x - p3.x) * (p2.y - p1.y) - (p2.x - p1.x) * (p4.y - p3.y);
 	float bY = p3.x * (p2.y - p1.y) + p1.y * (p4.x - p3.x) - point.y * (p4.x - p3.x) + point.y * (p2.x - p1.x) - p1.x * (p4.y - p3.y) - p3.y * (p2.x - p1.x) + point.x * (p4.y - p3.y) - point.x * (p2.y - p1.y);
 	float cY = p3.x * p1.y - p3.x * point.y + p1.x * point.y - p1.x * p3.y + p3.y * point.x - p1.y * point.x;
 

@@ -243,7 +243,7 @@ void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
 				//root selected
 				if (selectedVertices[i].index == 0)
 				{
-					glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + glm::vec2(p->transform * glm::vec4(p->warpPoint(glm::vec4(initialVerticesPos[&selectedVertices[i]], 0.0f, 1.0f)), 0.0f, 1.0f)), 0.0f, 1.0f));
+					glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + initialVerticesPos[&selectedVertices[i]], 0.0f, 1.0f));
 					glm::mat4 tempMat = glm::mat4(1.0f);
 					tempMat = glm::translate(tempMat, glm::vec3(initialVerticesPos[&selectedVertices[i]], 0.0f));
 					tempMat = glm::rotate(tempMat, glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -277,7 +277,7 @@ void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
 			{
 				glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + initialVerticesPos[&selectedVertices[i]], 0.0f, 1.0f));
 
-				partMap[selectedVertices[i].partName]->preWarpVertexPositions[selectedVertices[i].index] = glm::vec2(glm::inverse(partMap[selectedVertices[i].partName]->localTransform) * glm::vec4(unwarpedPoint, 0.0f, 1.0f));
+				partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index] = glm::vec2(glm::inverse(partMap[selectedVertices[i].partName]->localTransform) * glm::vec4(unwarpedPoint, 0.0f, 1.0f));
 			}
 		}
 		else
@@ -314,7 +314,7 @@ void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
 				}
 			}
 			else
-				partMap[selectedVertices[i].partName]->preWarpVertexPositions[selectedVertices[i].index] = mousePos - mousePosOriginal + initialDeltaVerticesPos[&selectedVertices[i]];
+				partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index] = mousePos - mousePosOriginal + initialVerticesPos[&selectedVertices[i]];
 		}
 	}
 }
@@ -322,19 +322,25 @@ void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
 void Model::updateOriginalVertexPositions()
 {
 	initialVerticesPos.clear();
-	initialDeltaVerticesPos.clear();
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
 		//if rotation deformer, save other data
 		if (partMap[selectedVertices[i].partName]->type == ModelPart::PartType::rotationDeformer)
+		{
 			if (selectedVertices[i].index == 0)
-				initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->pos;
+				if (partMap[selectedVertices[i].partName]->parent->type == ModelPart::PartType::warpDeformer)
+					initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->vertices[0].position;
+				else
+					initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->pos;
 			else
 				initialVerticesPos[&selectedVertices[i]] = glm::vec2(partMap[selectedVertices[i].partName]->rotation, 0.0f);
+		}
 		else
 		{
-			initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index].position;
-			initialDeltaVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index];
+			if (partMap[selectedVertices[i].partName]->parent->type == ModelPart::PartType::warpDeformer)
+				initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index].position;
+			else
+				initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index];
 		}
 	}
 }
@@ -523,8 +529,19 @@ void Model::resetParams()
 {
 	for (int i = 0; i < paramNames.size(); i++)
 	{
-		paramMap[paramNames[i]]->value = paramMap[paramNames[i]]->defaultValue;
+		paramValues[paramNames[i]] = paramMap[paramNames[i]]->defaultValue;
 	}
+}
+
+void Model::addParam(const std::string& partName, const std::string& paramName)
+{
+	//add param to model, might come up with system to deal with deleted params
+	paramMap[paramName]->keyValues.push_back(paramMap[paramName]->minValue);
+	paramMap[paramName]->keyValues.push_back(paramMap[paramName]->maxValue);
+
+	//add param to part
+	partMap[partName]->paramPos[paramName][paramMap[paramName]->minValue] = glm::vec2(-100.0f, 0.0f);
+	partMap[partName]->paramPos[paramName][paramMap[paramName]->maxValue] = glm::vec2(0.0f, 100.0f);
 }
 
 int Model::findClosestVertex(const std::vector<std::string>& selectedParts, int* partNum)
@@ -679,7 +696,8 @@ void Model::update()
 
 	for (int i = 0; i < children.size(); i++)
 	{
-		children[i]->update();
+		children[i]->updateTransform(paramValues);
+		children[i]->modelUpdate(paramValues);
 	}
 
 	renderOrderMap.clear();

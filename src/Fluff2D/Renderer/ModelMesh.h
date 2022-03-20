@@ -24,7 +24,6 @@ public:
 	bool visible = true;
 	int renderOrder = 0;
 
-	void update() override;
 	void render() override;
 	void renderInspector() override;
 

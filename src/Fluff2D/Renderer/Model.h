@@ -47,7 +47,9 @@ public:
 
 	std::vector<VertexSpecifier> selectedVertices;
 	std::unordered_map<VertexSpecifier*, glm::vec2> initialVerticesPos;
-	std::unordered_map<VertexSpecifier*, glm::vec2> initialDeltaVerticesPos;
+
+	std::unordered_map<std::string, float> paramValues;
+	std::unordered_map<std::string, std::shared_ptr<Parameter>> paramMap;
 
 	int atlasWidth = 0, atlasHeight = 0, atlasNrChannels = 0;
 
@@ -77,6 +79,8 @@ public:
 	void addRotationDeformer(std::string name, const std::vector<std::string>& selectedParts);
 
 	void resetParams();
+	void addParam(const std::string& partName, const std::string& paramName);
+
 	void updatePartMap();
 
 	int findClosestVertex(const std::vector<std::string> &selectedParts, int *partNum);

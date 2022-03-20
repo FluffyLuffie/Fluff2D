@@ -3005,7 +3005,7 @@ bool ImGui::SliderBehaviorParamT(const ImRect& bb, ImGuiID id, ImGuiDataType dat
                     TYPE value = ScaleValueFromRatioT<TYPE, SIGNEDTYPE, FLOATTYPE>(data_type, clicked_t, v_min, v_max, is_logarithmic, logarithmic_zero_epsilon, zero_deadzone_halfsize);
 
                     //find closest key value
-                    float closestValue = 0;
+                    float closestValue = FLT_MAX;
                     for (int i = 0; i < keyValues.size(); i++)
                     {
                         if (abs(value - closestValue) > abs(value - keyValues[i]))

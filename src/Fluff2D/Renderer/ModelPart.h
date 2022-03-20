@@ -20,17 +20,18 @@ public:
 	float originalRotation = 0.0f;
 
 	std::vector<std::string> paramNames;
-	std::unordered_map<std::string, std::shared_ptr<Parameter>> paramMap;
 
 	std::vector<Vertex> vertices;
 	std::vector<glm::vec2> localVertexPositions;
 	std::vector<glm::vec2> originalVertexPositions;
-	std::vector<glm::vec2> preWarpVertexPositions;
 	std::vector<unsigned int> indices;
 
-	void updateTransform();
+	std::map<std::string, std::map<float, glm::vec2>> paramPos;
+
+	void updateTransform(const std::unordered_map<std::string, float> &paramValues);
 	void warpTransform(glm::vec2 delta);
 
+	virtual void modelUpdate(const std::unordered_map<std::string, float>& paramValues) {}
 	virtual void render() {}
 
 	void addVertex(float xCoord, float yCoord);

@@ -1,6 +1,6 @@
 ***Things to add/fix***
 [Add changing root position] Rotation deformers.
-[Done] Moving points inside warp deformers.
+[Concave corners a bit weird but otherwise fine] Moving points inside warp deformers.
 [Done] Clicking on meshes selects them
 Parameters actually do something.
 Physics.

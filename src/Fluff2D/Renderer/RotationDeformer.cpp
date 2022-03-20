@@ -28,11 +28,8 @@ RotationDeformer::~RotationDeformer()
 	glDeleteBuffers(1, &ebo);
 }
 
-void RotationDeformer::update()
+void RotationDeformer::modelUpdate(const std::unordered_map<std::string, float>& paramValues)
 {
-	if (parent->type != ModelPart::PartType::warpDeformer)
-		updateTransform();
-
 	localVertexPositions[0] = glm::vec2();
 	vertices[0].position = transform * glm::vec4(localVertexPositions[0], 0.0f, 1.0f);
 
@@ -41,7 +38,9 @@ void RotationDeformer::update()
 
 	for (int i = 0; i < children.size(); i++)
 	{
-		children[i]->update();
+		children[i]->updateTransform(paramValues);
+		if (children[i]->type != ModelPart::PartType::mesh)
+			children[i]->modelUpdate(paramValues);
 	}
 }
 

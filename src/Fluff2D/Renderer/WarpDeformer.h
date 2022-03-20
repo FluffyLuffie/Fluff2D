@@ -11,7 +11,7 @@ public:
 	WarpDeformer(const std::string& partName, int countX, int countY, float centerX, float centerY, float width, float height);
 	~WarpDeformer();
 
-	void update() override;
+	void modelUpdate(const std::unordered_map<std::string, float>& paramValues) override;
 	void render() override;
 	void renderInspector() override;
 
