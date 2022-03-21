@@ -64,7 +64,7 @@ WarpDeformer::~WarpDeformer()
 	glDeleteBuffers(1, &ebo);
 }
 
-void WarpDeformer::modelUpdate(const std::unordered_map<std::string, float>& paramValues)
+void WarpDeformer::modelUpdate(std::unordered_map<std::string, float>& paramValues)
 {
 	for (int i = 0; i < children.size(); i++)
 	{

@@ -418,7 +418,14 @@ void Application::drawImGui()
 				selectedParts.push_back(model->modelMeshes[model->modelMeshes.size() - 2]->name);
 				model->addRotationDeformer("TestRotation", selectedParts);
 				selectedParts.clear();
-				model->addParam("headMain", "headX");
+				model->addKeyform("headMain", "headX", model->paramMap["headX"]->minValue);
+				model->addKeyform("headMain", "headX", model->paramMap["headX"]->maxValue);
+				model->addKeyform("headMain", "headY", model->paramMap["headY"]->minValue);
+				model->addKeyform("headMain", "headY", model->paramMap["headY"]->maxValue);
+				model->addKeyform("headMain", "headZ", model->paramMap["headZ"]->minValue);
+				model->addKeyform("headMain", "headZ", model->paramMap["headZ"]->maxValue);
+				model->addKeyform("headMain", "headX", 0.0f);
+				model->addKeyform("headMain", "headY", 0.0f);
 			}
 			if (ImGui::MenuItem("Open test model krita"))
 				initializeModelFromPsd("tempPsdTest/testModelKrita.psd");

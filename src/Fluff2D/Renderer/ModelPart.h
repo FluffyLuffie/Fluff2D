@@ -6,6 +6,23 @@
 #include "../Core/Parameter.h"
 #include "../Core/Log.h"
 
+struct KeyformData
+{
+	glm::vec2 position;
+	float rotation;
+	glm::vec2 scale;
+	std::map<int, glm::vec2> vertices;
+
+	KeyformData(glm::vec2 p = glm::vec2(), float r = 0.0f, glm::vec2 s = glm::vec2(1.0f, 1.0f))
+	{
+		position = p;
+		rotation = r;
+		scale = s;
+	}
+
+	~KeyformData() {}
+};
+
 class ModelPart : public Object
 {
 public:
@@ -20,18 +37,23 @@ public:
 	float originalRotation = 0.0f;
 
 	std::vector<std::string> paramNames;
+	std::vector<std::vector<float>> paramKeyvalues;
+	std::vector<float> paramWeights;
 
 	std::vector<Vertex> vertices;
 	std::vector<glm::vec2> localVertexPositions;
 	std::vector<glm::vec2> originalVertexPositions;
 	std::vector<unsigned int> indices;
 
-	std::map<std::string, std::map<float, glm::vec2>> paramPos;
+	//std::map<std::string, std::vector<glm::vec2>> paramPos;
+	std::vector<KeyformData> keyforms;
+	std::vector<int> keyformsPerDimension;
+	std::vector<float> keyformWeights;
 
-	void updateTransform(const std::unordered_map<std::string, float> &paramValues);
+	void updateTransform(std::unordered_map<std::string, float>& paramValues);
 	void warpTransform(glm::vec2 delta);
 
-	virtual void modelUpdate(const std::unordered_map<std::string, float>& paramValues) {}
+	virtual void modelUpdate(std::unordered_map<std::string, float>& paramValues) {}
 	virtual void render() {}
 
 	void addVertex(float xCoord, float yCoord);

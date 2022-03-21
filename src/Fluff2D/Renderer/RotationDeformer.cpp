@@ -28,7 +28,7 @@ RotationDeformer::~RotationDeformer()
 	glDeleteBuffers(1, &ebo);
 }
 
-void RotationDeformer::modelUpdate(const std::unordered_map<std::string, float>& paramValues)
+void RotationDeformer::modelUpdate(std::unordered_map<std::string, float>& paramValues)
 {
 	localVertexPositions[0] = glm::vec2();
 	vertices[0].position = transform * glm::vec4(localVertexPositions[0], 0.0f, 1.0f);

@@ -1,18 +1,58 @@
 #include "ModelPart.h"
 
-void ModelPart::updateTransform(const std::unordered_map<std::string, float>& paramValues)
+void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramValues)
 {
 	//update based on parameters
-	for (int i = 0; i < paramNames.size(); i++)
+	if (paramNames.size())
 	{
-		//find which 2 key values the param is between
-		/*
-		for (int j = 0; j < paramMap[paramNames[i]]->keyValues.size(); j++)
+		//for each parameter assigned to part, find weights
+		for (int i = 0; i < paramNames.size(); i++)
 		{
-
+			//if value below min keyvalue
+			if (paramValues[paramNames[i]] <= paramKeyvalues[i][0])
+			{
+				paramWeights[i] = 0.0f;
+				continue;
+			}
+			//if value above max keyvalue
+			if (paramValues[paramNames[i]] >= paramKeyvalues[i][paramKeyvalues[i].size() - 1])
+			{
+				paramWeights[i] = static_cast<float>(paramKeyvalues[i].size() - 1);
+				continue;
+			}
+			//find which 2 key values the param is between
+			bool found = false;
+			for (int j = 0; !found && j < paramKeyvalues[i].size() - 1; j++)
+			{
+				if (paramValues[paramNames[i]] <= paramKeyvalues[i][j + 1])
+				{
+					//integer part represents the lower index
+					//fractional part represents the distance from the lower index
+					paramWeights[i] = j + (paramValues[paramNames[i]] - paramKeyvalues[i][j]) / (paramKeyvalues[i][j + 1] - paramKeyvalues[i][j]);
+					found = true;
+				}
+			}
 		}
-		paramPos[paramNames[i]]
+
+		/*
+		glm::vec2 finalPos = paramPos["headX"][static_cast<int>(paramWeights["headX"])] * (1.0f - std::fmod(paramWeights["headX"], 1.0f));
+		//check if next keyvalue exists, and add if yes
+		if (paramValues["headX"] < paramKeyvalues["headX"][paramKeyvalues["headX"].size() - 1])
+			finalPos += paramPos["headX"][static_cast<int>(paramWeights["headX"]) + 1] * std::fmod(paramWeights["headX"], 1.0f);
 		*/
+
+		//calculate how much weight each keyform has
+		for (int i = 0; i < keyformWeights.size(); i++)
+		{
+			float mult = 1.0f;
+			for (int j = 0; j < paramWeights.size(); j++)
+				mult *= bool((i & (1 << j))) - std::fmod(paramWeights[j], 1.0f);
+
+			keyformWeights[i] = std::abs(mult);
+		}
+
+		//glm::vec2 finalPos = glm::vec2();
+		//pos = finalPos;
 	}
 
 	//update local transform

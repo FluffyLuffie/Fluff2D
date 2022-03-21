@@ -533,15 +533,39 @@ void Model::resetParams()
 	}
 }
 
-void Model::addParam(const std::string& partName, const std::string& paramName)
+void Model::addKeyform(const std::string& partName, const std::string& paramName, float keyvalue)
 {
-	//add param to model, might come up with system to deal with deleted params
-	paramMap[paramName]->keyValues.push_back(paramMap[paramName]->minValue);
-	paramMap[paramName]->keyValues.push_back(paramMap[paramName]->maxValue);
+	//add param to model, might come up with system to deal with duplicate/deleted keyforms
+	paramMap[paramName]->keyValues.push_back(keyvalue);
+	std::sort(paramMap[paramName]->keyValues.begin(), paramMap[paramName]->keyValues.end());
 
 	//add param to part
-	partMap[partName]->paramPos[paramName][paramMap[paramName]->minValue] = glm::vec2(-100.0f, 0.0f);
-	partMap[partName]->paramPos[paramName][paramMap[paramName]->maxValue] = glm::vec2(0.0f, 100.0f);
+	int paramNameIndex;
+	auto it = std::find(partMap[partName]->paramNames.begin(), partMap[partName]->paramNames.end(), paramName);
+	//if first keyform for parameter name
+	if (it == partMap[partName]->paramNames.end())
+	{
+		paramNameIndex = static_cast<int>(partMap[partName]->paramNames.size());
+		partMap[partName]->paramNames.push_back(paramName);
+	}
+	else
+		paramNameIndex = static_cast<int>(it - partMap[partName]->paramNames.begin());
+
+	partMap[partName]->paramKeyvalues.resize(partMap[partName]->paramNames.size());
+	partMap[partName]->paramWeights.resize(partMap[partName]->paramNames.size());
+	partMap[partName]->paramKeyvalues[paramNameIndex].push_back(keyvalue);
+	std::sort(partMap[partName]->paramKeyvalues[paramNameIndex].begin(), partMap[partName]->paramKeyvalues[paramNameIndex].end());
+
+	partMap[partName]->keyformsPerDimension.resize(partMap[partName]->paramNames.size());
+	int keyformInterpolateCount = 1, totalKeyformCount = 1;
+	for (int i = 0; i < partMap[partName]->paramKeyvalues.size(); i++)
+	{
+		keyformInterpolateCount *= 2;
+		totalKeyformCount *= static_cast<int>(partMap[partName]->paramKeyvalues[i].size());
+		partMap[partName]->keyformsPerDimension[i] = totalKeyformCount;
+	}
+	partMap[partName]->keyformWeights.resize(keyformInterpolateCount);
+	partMap[partName]->keyforms.resize(totalKeyformCount);
 }
 
 int Model::findClosestVertex(const std::vector<std::string>& selectedParts, int* partNum)
