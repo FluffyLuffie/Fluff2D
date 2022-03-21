@@ -535,7 +535,10 @@ void Model::resetParams()
 
 void Model::addKeyform(const std::string& partName, const std::string& paramName, float keyvalue)
 {
-	//add param to model, might come up with system to deal with duplicate/deleted keyforms
+	//might come up with system to deal with duplicate/deleted keyforms
+	//also copying values when adding keyforms to parts that already have keyforms
+
+	//add param to model
 	paramMap[paramName]->keyValues.push_back(keyvalue);
 	std::sort(paramMap[paramName]->keyValues.begin(), paramMap[paramName]->keyValues.end());
 
@@ -557,14 +560,15 @@ void Model::addKeyform(const std::string& partName, const std::string& paramName
 	std::sort(partMap[partName]->paramKeyvalues[paramNameIndex].begin(), partMap[partName]->paramKeyvalues[paramNameIndex].end());
 
 	partMap[partName]->keyformsPerDimension.resize(partMap[partName]->paramNames.size());
-	int keyformInterpolateCount = 1, totalKeyformCount = 1;
+	int keyformInterpolateCount = 1, totalKeyformCount = 1, prevKeyformCount = static_cast<int>(partMap[partName]->keyforms.size());
 	for (int i = 0; i < partMap[partName]->paramKeyvalues.size(); i++)
 	{
 		keyformInterpolateCount *= 2;
-		totalKeyformCount *= static_cast<int>(partMap[partName]->paramKeyvalues[i].size());
 		partMap[partName]->keyformsPerDimension[i] = totalKeyformCount;
+		totalKeyformCount *= static_cast<int>(partMap[partName]->paramKeyvalues[i].size());
 	}
 	partMap[partName]->keyformWeights.resize(keyformInterpolateCount);
+	partMap[partName]->keyformIndices.resize(keyformInterpolateCount);
 	partMap[partName]->keyforms.resize(totalKeyformCount);
 }
 

@@ -34,13 +34,6 @@ void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramVal
 			}
 		}
 
-		/*
-		glm::vec2 finalPos = paramPos["headX"][static_cast<int>(paramWeights["headX"])] * (1.0f - std::fmod(paramWeights["headX"], 1.0f));
-		//check if next keyvalue exists, and add if yes
-		if (paramValues["headX"] < paramKeyvalues["headX"][paramKeyvalues["headX"].size() - 1])
-			finalPos += paramPos["headX"][static_cast<int>(paramWeights["headX"]) + 1] * std::fmod(paramWeights["headX"], 1.0f);
-		*/
-
 		//calculate how much weight each keyform has
 		for (int i = 0; i < keyformWeights.size(); i++)
 		{
@@ -48,11 +41,53 @@ void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramVal
 			for (int j = 0; j < paramWeights.size(); j++)
 				mult *= bool((i & (1 << j))) - std::fmod(paramWeights[j], 1.0f);
 
-			keyformWeights[i] = std::abs(mult);
+			keyformWeights[i] = std::abs(1.0f - std::abs(mult));
 		}
 
-		//glm::vec2 finalPos = glm::vec2();
-		//pos = finalPos;
+		//interpolate the values of the keyforms
+		glm::vec2 finalPos = glm::vec2();
+		float finalRotation = 0.0f;
+		glm::vec2 finalScale = glm::vec2();
+
+		for (int i = 0; i < keyformWeights.size(); i++)
+		{
+			int keyformIndex = 0;
+			for (int j = 0; j < paramWeights.size(); j++)
+				keyformIndex += (bool((i & (1 << j))) + int(paramWeights[j])) * keyformsPerDimension[j];
+			keyformIndex = std::min(keyformIndex, static_cast<int>(keyforms.size() - 1));
+			keyformIndices[i] = keyformIndex;
+
+			finalPos += keyforms[keyformIndex].position * keyformWeights[i];
+			finalRotation += keyforms[keyformIndex].rotation * keyformWeights[i];
+			finalScale += keyforms[keyformIndex].scale * keyformWeights[i];
+		}
+
+		pos = finalPos;
+		rotation = finalRotation;
+		scale = finalScale;
+
+		//for each vertex
+		for (int i = 0; i < localVertexPositions.size(); i++)
+		{
+			glm::vec2 vPos = glm::vec2();
+			float leftoverWeight = 1.0f;
+
+			//for each of the keyforms
+			for (int j = 0; j < keyformIndices.size(); j++)
+			{
+				//if found
+				if (keyforms[keyformIndices[j]].vertices.find(i) != keyforms[keyformIndices[j]].vertices.end())
+				{
+					vPos += keyforms[keyformIndices[j]].vertices[i] * keyformWeights[j];
+					leftoverWeight -= keyformWeights[j];
+				}
+			}
+
+			//leftover weight is the original position's weight
+			vPos += originalVertexPositions[i] * leftoverWeight;
+
+			localVertexPositions[i] = vPos;
+		}
 	}
 
 	//update local transform
