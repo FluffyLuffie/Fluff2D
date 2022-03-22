@@ -3384,7 +3384,13 @@ IMGUI_API bool ImGui::SliderScalarParam(const char* label, ImGuiDataType data_ty
 
     // Render grab
     if (grab_bb.Max.x > grab_bb.Min.x)
-        window->DrawList->AddRectFilled(grab_bb.Min, grab_bb.Max, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), style.GrabRounding);
+    {
+        //if value in partKeyvalues, render a different color
+        if (std::find(partKeyvalues.begin(), partKeyvalues.end(), *(float*)p_data) != partKeyvalues.end())
+            window->DrawList->AddRectFilled(grab_bb.Min, grab_bb.Max, 0xff00d000, style.GrabRounding);
+        else
+            window->DrawList->AddRectFilled(grab_bb.Min, grab_bb.Max, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), style.GrabRounding);
+    }
 
     // Display value using user-provided display format so user can add prefix/suffix/decorations to the value.
     char value_buf[64];

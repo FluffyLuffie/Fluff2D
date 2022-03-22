@@ -5,6 +5,8 @@ void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramVal
 	//update based on parameters
 	if (paramNames.size())
 	{
+		calculateKeyformIndex(paramValues);
+
 		//for each parameter assigned to part, find weights
 		for (int i = 0; i < paramNames.size(); i++)
 		{
@@ -143,4 +145,26 @@ void ModelPart::updateVertexData()
 	//set tex coords
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
 	glEnableVertexAttribArray(1);
+}
+
+void ModelPart::calculateKeyformIndex(std::unordered_map<std::string, float>& paramValues)
+{
+	int index = 0;
+
+	for (int i = 0; i < paramNames.size(); i++)
+	{
+		auto it = std::find(paramKeyvalues[i].begin(), paramKeyvalues[i].end(), paramValues[paramNames[i]]);
+		//if paramValue not in vector
+		if (it == paramKeyvalues[i].end())
+		{
+			keyformIndex = -1;
+			return;
+		}
+
+		int keyPos = static_cast<int>(it - paramKeyvalues[i].begin());
+
+		index += keyformsPerDimension[i] * keyPos;
+	}
+
+	keyformIndex = index;
 }

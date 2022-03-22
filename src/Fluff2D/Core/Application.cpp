@@ -72,8 +72,29 @@ void Application::update()
 				{
 					if (model->selectedVertices.size())
 					{
-						model->moveSelectedVertices(oldMouseCoord);
-						draggingVertices = true;
+						//check if keyvalues are on keyforms of all parts
+						bool onKeyform = true;
+
+						//for each selected part
+						for (int i = 0; i < selectedParts.size() && onKeyform; i++)
+						{
+							//for each param name in part
+							for (int j = 0; j < model->partMap[selectedParts[i]]->paramNames.size(); j++)
+							{
+								//check if paramValue is in the keyvalues
+								if (std::find(model->partMap[selectedParts[i]]->paramKeyvalues[j].begin(), model->partMap[selectedParts[i]]->paramKeyvalues[j].end(), model->paramValues[model->partMap[selectedParts[i]]->paramNames[j]]) == model->partMap[selectedParts[i]]->paramKeyvalues[j].end())
+								{
+									onKeyform = false;
+									break;
+								}
+							}
+						}
+
+						if (onKeyform)
+						{
+							model->moveSelectedVertices(oldMouseCoord);
+							draggingVertices = true;
+						}
 					}
 				}
 				else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && draggingVertices)
@@ -769,7 +790,11 @@ void Application::drawImGui()
 				{
 					if (ImGui::MenuItem(model->paramNames[i].c_str()))
 					{
-
+						for (int j = 0; j < selectedParts.size(); j++)
+						{
+							model->addKeyform(selectedParts[j], model->paramNames[i], model->paramMap[model->paramNames[i]]->minValue);
+							model->addKeyform(selectedParts[j], model->paramNames[i], model->paramMap[model->paramNames[i]]->maxValue);
+						}
 					}
 				}
 				ImGui::EndMenu();
@@ -779,6 +804,18 @@ void Application::drawImGui()
 
 			if (ImGui::BeginMenu("3##Add 3 Keyvalues"))
 			{
+				for (int i = 0; i < model->paramNames.size(); i++)
+				{
+					if (ImGui::MenuItem(model->paramNames[i].c_str()))
+					{
+						for (int j = 0; j < selectedParts.size(); j++)
+						{
+							model->addKeyform(selectedParts[j], model->paramNames[i], model->paramMap[model->paramNames[i]]->minValue);
+							model->addKeyform(selectedParts[j], model->paramNames[i], model->paramMap[model->paramNames[i]]->defaultValue);
+							model->addKeyform(selectedParts[j], model->paramNames[i], model->paramMap[model->paramNames[i]]->maxValue);
+						}
+					}
+				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::IsItemHovered())

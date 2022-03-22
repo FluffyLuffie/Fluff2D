@@ -252,7 +252,7 @@ void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
 					tempMat = glm::scale(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f));
 
 					glm::mat4 tempMat2 = glm::scale(glm::rotate(glm::mat4(1.0f), glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f)), glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f));
-					partMap[selectedVertices[i].partName]->pos = tempMat2 * glm::inverse(tempMat) * glm::vec4(unwarpedPoint, 0.0f, 1.0f) + glm::vec4(initialVerticesPos[&selectedVertices[i]], 0.0f, 0.0f);
+					partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].position = tempMat2 * glm::inverse(tempMat) * glm::vec4(unwarpedPoint, 0.0f, 1.0f) + glm::vec4(initialVerticesPos[&selectedVertices[i]], 0.0f, 0.0f);
 
 					//keep children's global position
 					if (Event::keyDown(GLFW_KEY_LEFT_ALT))
@@ -272,14 +272,14 @@ void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
 					glm::vec2 mousePos = glm::inverse(partMap[selectedVertices[i].partName]->parent->transform * tempMat) * mouseToScreen;
 					glm::vec2 mousePosOriginal = glm::inverse(partMap[selectedVertices[i].partName]->parent->transform * tempMat) * glm::vec4(partMap[selectedVertices[i].partName]->vertices[0].position, 0.0f, 1.0f);
 
-					partMap[selectedVertices[i].partName]->rotation = glm::degrees(std::atan2((mousePos.y - mousePosOriginal.y), (mousePos.x - mousePosOriginal.x))) + initialVerticesPos[&selectedVertices[i]].x - 90.0f;
+					partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].rotation = glm::degrees(std::atan2((mousePos.y - mousePosOriginal.y), (mousePos.x - mousePosOriginal.x))) + initialVerticesPos[&selectedVertices[i]].x - 90.0f;
 				}
 			}
 			else
 			{
 				glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + initialVerticesPos[&selectedVertices[i]], 0.0f, 1.0f));
 
-				partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index] = glm::vec2(glm::inverse(partMap[selectedVertices[i].partName]->localTransform) * glm::vec4(unwarpedPoint, 0.0f, 1.0f));
+				partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].vertices[selectedVertices[i].index] = glm::vec2(glm::inverse(partMap[selectedVertices[i].partName]->localTransform) * glm::vec4(unwarpedPoint, 0.0f, 1.0f));
 			}
 		}
 		else
@@ -292,7 +292,7 @@ void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
 				//root selected
 				if (selectedVertices[i].index == 0)
 				{
-					partMap[selectedVertices[i].partName]->pos = glm::vec2(glm::scale(glm::rotate(glm::mat4(1.0f), glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f)), glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f)) * glm::vec4(mousePos - mousePosOriginal, 0.0f, 1.0f)) + initialVerticesPos[&selectedVertices[i]];
+					partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].position = glm::vec2(glm::scale(glm::rotate(glm::mat4(1.0f), glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f)), glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f)) * glm::vec4(mousePos - mousePosOriginal, 0.0f, 1.0f)) + initialVerticesPos[&selectedVertices[i]];
 
 					//keep children's global position
 					if (Event::keyDown(GLFW_KEY_LEFT_ALT))
@@ -312,11 +312,11 @@ void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
 					mousePos = glm::inverse(partMap[selectedVertices[i].partName]->parent->transform * tempMat) * mouseToScreen;
 					mousePosOriginal = glm::inverse(partMap[selectedVertices[i].partName]->parent->transform * tempMat) * glm::vec4(partMap[selectedVertices[i].partName]->vertices[0].position, 0.0f, 1.0f);
 
-					partMap[selectedVertices[i].partName]->rotation = glm::degrees(std::atan2((mousePos.y - mousePosOriginal.y), (mousePos.x - mousePosOriginal.x))) + initialVerticesPos[&selectedVertices[i]].x - 90.0f;
+					partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].rotation = glm::degrees(std::atan2((mousePos.y - mousePosOriginal.y), (mousePos.x - mousePosOriginal.x))) + initialVerticesPos[&selectedVertices[i]].x - 90.0f;
 				}
 			}
 			else
-				partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index] = mousePos - mousePosOriginal + initialVerticesPos[&selectedVertices[i]];
+				partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].vertices[selectedVertices[i].index] = mousePos - mousePosOriginal + initialVerticesPos[&selectedVertices[i]];
 		}
 	}
 }

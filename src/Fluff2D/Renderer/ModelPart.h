@@ -52,6 +52,7 @@ public:
 	std::vector<int> keyformsPerDimension;
 	std::vector<int> keyformIndices;
 	std::vector<float> keyformWeights;
+	int keyformIndex = -1;
 
 	void updateTransform(std::unordered_map<std::string, float>& paramValues);
 	void warpTransform(glm::vec2 delta);
@@ -66,6 +67,9 @@ public:
 	void updateVertexData();
 
 	virtual void renderInspector() {}
+
+	//returns -1 if not on keyform
+	void calculateKeyformIndex(std::unordered_map<std::string, float>& paramValues);
 
 	//move functions that use these stuff into derived classes later
 	unsigned int getVao() { return vao; }
