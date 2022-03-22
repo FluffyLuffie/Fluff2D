@@ -412,27 +412,34 @@ void Application::drawImGui()
 			{
 				initializeModelFromPsd("tempPsdTest/testModel.psd");
 				model->update();
+
+				//testing deformers
 				selectedParts.push_back(model->modelMeshes[model->modelMeshes.size() - 1]->name);
 				model->addWarpDeformer("TestWarp", selectedParts, 5, 5);
 				selectedParts.clear();
 				selectedParts.push_back(model->modelMeshes[model->modelMeshes.size() - 2]->name);
 				model->addRotationDeformer("TestRotation", selectedParts);
 				selectedParts.clear();
-				model->addKeyform("headMain", "headX", model->paramMap["headX"]->minValue);
-				model->addKeyform("headMain", "headX", 0.0f);
-				model->addKeyform("headMain", "headX", model->paramMap["headX"]->maxValue);
+
+				//testing keyforms
+				model->addKeyform("headMain", "headX", model->paramMap["headX"]->minValue + 5.0f);
+				model->addKeyform("headMain", "headX", model->paramMap["headX"]->maxValue - 5.0f);
+				model->addKeyform("headMain", "headY", model->paramMap["headY"]->minValue + 5.0f);
+				model->addKeyform("headMain", "headY", model->paramMap["headY"]->maxValue - 5.0f);
+				model->addKeyform("headMain", "headZ", model->paramMap["headZ"]->minValue + 5.0f);
+				model->addKeyform("headMain", "headZ", model->paramMap["headZ"]->maxValue - 5.0f);
 				model->partMap["headMain"]->keyforms[0].position = glm::vec2(-100.0f, 0.0f);
-				model->partMap["headMain"]->keyforms[1].position = glm::vec2(0.0f, 50.0f);
-				model->partMap["headMain"]->keyforms[2].position = glm::vec2(100.0f, 0.0f);
-				model->partMap["headMain"]->keyforms[1].vertices[0] = glm::vec2(0.0f, 100.0f);
-				/*
-				model->addKeyform("headMain", "headY", model->paramMap["headY"]->minValue);
-				model->addKeyform("headMain", "headY", model->paramMap["headY"]->maxValue);
-				model->addKeyform("headMain", "headZ", model->paramMap["headZ"]->minValue);
-				model->addKeyform("headMain", "headZ", model->paramMap["headZ"]->maxValue);
-				model->addKeyform("headMain", "headX", 0.0f);
-				model->addKeyform("headMain", "headY", 0.0f);
-				*/
+				model->partMap["headMain"]->keyforms[1].position = glm::vec2(100.0f, 0.0f);
+				model->partMap["headMain"]->keyforms[2].position = glm::vec2(-100.0f, 100.0f);
+				model->partMap["headMain"]->keyforms[3].position = glm::vec2(100.0f, 100.0f);
+				model->partMap["headMain"]->keyforms[4].position = glm::vec2(-100.0f, 0.0f);
+				model->partMap["headMain"]->keyforms[5].position = glm::vec2(100.0f, 0.0f);
+				model->partMap["headMain"]->keyforms[6].position = glm::vec2(-100.0f, 100.0f);
+				model->partMap["headMain"]->keyforms[7].position = glm::vec2(100.0f, 100.0f);
+				model->partMap["headMain"]->keyforms[4].scale = glm::vec2(2.0f, 1.0f);
+				model->partMap["headMain"]->keyforms[5].scale = glm::vec2(2.0f, 1.0f);
+				model->partMap["headMain"]->keyforms[6].scale = glm::vec2(1.0f, 2.0f);
+				model->partMap["headMain"]->keyforms[7].scale = glm::vec2(1.0f, 2.0f);
 			}
 			if (ImGui::MenuItem("Open test model krita"))
 				initializeModelFromPsd("tempPsdTest/testModelKrita.psd");

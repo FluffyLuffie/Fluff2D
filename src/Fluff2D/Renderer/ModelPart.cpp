@@ -8,27 +8,17 @@ void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramVal
 		//for each parameter assigned to part, find weights
 		for (int i = 0; i < paramNames.size(); i++)
 		{
-			//if value below min keyvalue
-			if (paramValues[paramNames[i]] <= paramKeyvalues[i][0])
-			{
-				paramWeights[i] = 0.0f;
-				continue;
-			}
-			//if value above max keyvalue
-			if (paramValues[paramNames[i]] >= paramKeyvalues[i][paramKeyvalues[i].size() - 1])
-			{
-				paramWeights[i] = static_cast<float>(paramKeyvalues[i].size() - 1);
-				continue;
-			}
+			float clampedVal = std::clamp(paramValues[paramNames[i]], paramKeyvalues[i][0], paramKeyvalues[i][paramKeyvalues[i].size() - 1]);
+
 			//find which 2 key values the param is between
 			bool found = false;
 			for (int j = 0; !found && j < paramKeyvalues[i].size() - 1; j++)
 			{
-				if (paramValues[paramNames[i]] <= paramKeyvalues[i][j + 1])
+				if (clampedVal <= paramKeyvalues[i][j + 1])
 				{
 					//integer part represents the lower index
 					//fractional part represents the distance from the lower index
-					paramWeights[i] = j + (paramValues[paramNames[i]] - paramKeyvalues[i][j]) / (paramKeyvalues[i][j + 1] - paramKeyvalues[i][j]);
+					paramWeights[i] = j + (clampedVal - paramKeyvalues[i][j]) / (paramKeyvalues[i][j + 1] - paramKeyvalues[i][j]);
 					found = true;
 				}
 			}
@@ -39,9 +29,9 @@ void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramVal
 		{
 			float mult = 1.0f;
 			for (int j = 0; j < paramWeights.size(); j++)
-				mult *= bool((i & (1 << j))) - std::fmod(paramWeights[j], 1.0f);
+				mult *= bool((i & (1 << j))) - (1.0f - std::fmod(paramWeights[j], 1.0f));
 
-			keyformWeights[i] = std::abs(1.0f - std::abs(mult));
+			keyformWeights[i] = std::abs(mult);
 		}
 
 		//interpolate the values of the keyforms

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include "Vertex.h"
 #include "Shader.h"
 #include "../Core/Object.h"
