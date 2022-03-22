@@ -3300,7 +3300,7 @@ bool ImGui::SliderScalarN(const char* label, ImGuiDataType data_type, void* v, i
     return value_changed;
 }
 
-IMGUI_API bool ImGui::SliderScalarParam(const char* label, ImGuiDataType data_type, void* p_data, const void* p_min, const void* p_max, const std::vector<float>& keyValues, const char* format, ImGuiSliderFlags flags)
+IMGUI_API bool ImGui::SliderScalarParam(const char* label, ImGuiDataType data_type, void* p_data, const void* p_min, const void* p_max, const std::vector<float>& keyvalues, const std::vector<float>& partKeyvalues, const char* format, ImGuiSliderFlags flags)
 {
     ImGuiWindow* window = GetCurrentWindow();
     if (window->SkipItems)
@@ -3358,7 +3358,7 @@ IMGUI_API bool ImGui::SliderScalarParam(const char* label, ImGuiDataType data_ty
 
     // Slider behavior
     ImRect grab_bb;
-    const bool value_changed = SliderBehaviorParam(frame_bb, id, p_data, p_min, p_max, format, flags, &grab_bb, keyValues);
+    const bool value_changed = SliderBehaviorParam(frame_bb, id, p_data, p_min, p_max, format, flags, &grab_bb, keyvalues);
     if (value_changed)
         MarkItemEdited(id);
 
@@ -3367,16 +3367,19 @@ IMGUI_API bool ImGui::SliderScalarParam(const char* label, ImGuiDataType data_ty
     const float grabWidth = grab_bb.Max.x - grab_bb.Min.x;
 
     // Draw key values
-    for (int i = 0; i < keyValues.size(); i++)
+    for (int i = 0; i < keyvalues.size(); i++)
     {
-        const ImU32 testColor = UINT_MAX;
-        const float tickLocation = (keyValues[i] - *(float*)p_min) / (*(float*)p_max - *(float*)p_min) * (sliderWidth - grabWidth) + grabPadding + grabWidth / 2.0f;
+        const float tickLocation = (keyvalues[i] - *(float*)p_min) / (*(float*)p_max - *(float*)p_min) * (sliderWidth - grabWidth) + grabPadding + grabWidth / 2.0f;
         const ImRect tick_bb(
             frame_bb.Min + ImVec2(tickLocation - 1.5f,
                 0.0f),
             frame_bb.Min + ImVec2(tickLocation + 1.5f,
                 label_size.y + style.FramePadding.y * 2.0f));
-        RenderFrame(tick_bb.Min, tick_bb.Max, testColor, true, g.Style.FrameRounding);
+        //if in partKeyvalues, render a different color
+        if (std::find(partKeyvalues.begin(), partKeyvalues.end(), keyvalues[i]) != partKeyvalues.end())
+            RenderFrame(tick_bb.Min, tick_bb.Max, 0xff00ff00, true, g.Style.FrameRounding);
+        else
+            RenderFrame(tick_bb.Min, tick_bb.Max, 0x80ffffff, true, g.Style.FrameRounding);
     }
 
     // Render grab
@@ -3507,9 +3510,9 @@ bool ImGui::VSliderScalar(const char* label, const ImVec2& size, ImGuiDataType d
 }
 
 //custom slider
-IMGUI_API bool ImGui::SliderParam(const char* label, float* v, float v_min, float v_max, const std::vector<float>& keyValues, const char* format, ImGuiSliderFlags flags)
+IMGUI_API bool ImGui::SliderParam(const char* label, float* v, float v_min, float v_max, const std::vector<float>& keyvalues, const std::vector<float>& partKeyvalues, const char* format, ImGuiSliderFlags flags)
 {
-    return SliderScalarParam(label, ImGuiDataType_Float, v, &v_min, &v_max, keyValues, format, flags);
+    return SliderScalarParam(label, ImGuiDataType_Float, v, &v_min, &v_max, keyvalues, partKeyvalues, format, flags);
 }
 
 void ImGui::HelpMarker(const char* desc)
@@ -4161,8 +4164,8 @@ static bool InputTextFilterCharacter(unsigned int* p_char, ImGuiInputTextFlags f
     if (c < 0x20)
     {
         bool pass = false;
-        pass |= (c == '\n' && (flags & ImGuiInputTextFlags_Multiline));
-        pass |= (c == '\t' && (flags & ImGuiInputTextFlags_AllowTabInput));
+        pass |= ((c == '\n') & (flags & ImGuiInputTextFlags_Multiline));
+        pass |= ((c == '\t') & (flags & ImGuiInputTextFlags_AllowTabInput));
         if (!pass)
             return false;
     }

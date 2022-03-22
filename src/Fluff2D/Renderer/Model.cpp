@@ -127,6 +127,8 @@ void Model::generateDefaltParams()
 			break;
 		}
 	}
+
+	resetParams();
 }
 
 void Model::reset()
@@ -537,10 +539,16 @@ void Model::addKeyform(const std::string& partName, const std::string& paramName
 {
 	//might come up with system to deal with duplicate/deleted keyforms
 	//also copying values when adding keyforms to parts that already have keyforms
+	//0 is adding a new paramName
+	//1 is adding a keyvalue to an existing paramName
+	bool paramExists = false;
 
 	//add param to model
-	paramMap[paramName]->keyValues.push_back(keyvalue);
-	std::sort(paramMap[paramName]->keyValues.begin(), paramMap[paramName]->keyValues.end());
+	if (std::find(paramMap[paramName]->keyValues.begin(), paramMap[paramName]->keyValues.end(), keyvalue) == paramMap[paramName]->keyValues.end())
+	{
+		paramMap[paramName]->keyValues.push_back(keyvalue);
+		std::sort(paramMap[paramName]->keyValues.begin(), paramMap[paramName]->keyValues.end());
+	}
 
 	//add param to part
 	int paramNameIndex;
@@ -552,7 +560,10 @@ void Model::addKeyform(const std::string& partName, const std::string& paramName
 		partMap[partName]->paramNames.push_back(paramName);
 	}
 	else
+	{
 		paramNameIndex = static_cast<int>(it - partMap[partName]->paramNames.begin());
+		paramExists = true;
+	}
 
 	partMap[partName]->paramKeyvalues.resize(partMap[partName]->paramNames.size());
 	partMap[partName]->paramWeights.resize(partMap[partName]->paramNames.size());
@@ -569,7 +580,22 @@ void Model::addKeyform(const std::string& partName, const std::string& paramName
 	}
 	partMap[partName]->keyformWeights.resize(keyformInterpolateCount);
 	partMap[partName]->keyformIndices.resize(keyformInterpolateCount);
-	partMap[partName]->keyforms.resize(totalKeyformCount);
+
+	//copy/move keyforms
+	std::vector<KeyformData> newKeyform;
+	newKeyform.reserve(totalKeyformCount);
+
+	//if adding a new paramName, doesn't really do anything
+	//only need to do stuff if param already exists
+	if (paramExists)
+	{
+		int keyvalueIndex = static_cast<int>(std::find(partMap[partName]->paramKeyvalues[paramNameIndex].begin(), partMap[partName]->paramKeyvalues[paramNameIndex].end(), keyvalue) - partMap[partName]->paramKeyvalues[paramNameIndex].begin());
+	}
+
+
+	//partMap[partName]->keyforms = newKeyform;
+	partMap[partName]->keyforms.resize(totalKeyformCount, KeyformData(partMap[partName]->originalPos));
+
 }
 
 int Model::findClosestVertex(const std::vector<std::string>& selectedParts, int* partNum)

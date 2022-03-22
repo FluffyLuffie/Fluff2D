@@ -421,7 +421,22 @@ void Application::drawImGui()
 				model->addRotationDeformer("TestRotation", selectedParts);
 				selectedParts.clear();
 
-				//testing keyforms
+				//simple test
+				model->addKeyform("headMain", "headX", 0.0f);
+				model->addKeyform("headMain", "headX", model->paramMap["headX"]->maxValue);
+				model->addKeyform("headMain", "headY", 0.0f);
+				model->addKeyform("headMain", "headY", model->paramMap["headY"]->maxValue);
+				model->partMap["headMain"]->keyforms[0].position = glm::vec2(0.0f, 0.0f);
+				model->partMap["headMain"]->keyforms[1].position = glm::vec2(100.0f, 0.0f);
+				model->partMap["headMain"]->keyforms[2].position = glm::vec2(0.0f, 100.0f);
+				model->partMap["headMain"]->keyforms[3].position = glm::vec2(100.0f, 100.0f);
+
+				model->addKeyform("mouthTop", "headX", 0.0f);
+				model->addKeyform("mouthBottom", "headX", model->paramMap["headX"]->maxValue);
+				model->addKeyform("mouthBottom", "headX", 10.0f);
+
+				//testing keyform values
+				/*
 				model->addKeyform("headMain", "headX", model->paramMap["headX"]->minValue + 5.0f);
 				model->addKeyform("headMain", "headX", model->paramMap["headX"]->maxValue - 5.0f);
 				model->addKeyform("headMain", "headY", model->paramMap["headY"]->minValue + 5.0f);
@@ -440,6 +455,7 @@ void Application::drawImGui()
 				model->partMap["headMain"]->keyforms[5].scale = glm::vec2(2.0f, 1.0f);
 				model->partMap["headMain"]->keyforms[6].scale = glm::vec2(1.0f, 2.0f);
 				model->partMap["headMain"]->keyforms[7].scale = glm::vec2(1.0f, 2.0f);
+				*/
 			}
 			if (ImGui::MenuItem("Open test model krita"))
 				initializeModelFromPsd("tempPsdTest/testModelKrita.psd");
@@ -747,15 +763,41 @@ void Application::drawImGui()
 	{
 		if (ImGui::BeginMenuBar())
 		{
-			if (ImGui::BeginMenu("Add Keyvalues"))
+			if (ImGui::BeginMenu("2##Add 2 Keyvalues"))
 			{
-				ImGui::MenuItem("Add 2 Keyvalues");
-				ImGui::MenuItem("Add 3 Keyvalues");
-				ImGui::MenuItem("Add Manual Keyvalues");
-				ImGui::MenuItem("Delete Keyvalues");
+				for (int i = 0; i < model->paramNames.size(); i++)
+				{
+					if (ImGui::MenuItem(model->paramNames[i].c_str()))
+					{
+
+					}
+				}
 				ImGui::EndMenu();
 			}
-			ImGui::Button("Test");
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Add 2 Keyvalues");
+
+			if (ImGui::BeginMenu("3##Add 3 Keyvalues"))
+			{
+				ImGui::EndMenu();
+			}
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Add 3 Keyvalues");
+
+			if (ImGui::BeginMenu("M##Manual Keyvalues"))
+			{
+				ImGui::EndMenu();
+			}
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Manual Keyvalues");
+
+			if (ImGui::BeginMenu("D##Delete Keyvalues"))
+			{
+				ImGui::EndMenu();
+			}
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Delete Keyvalues");
+
 			ImGui::EndMenuBar();
 		}
 
@@ -765,28 +807,63 @@ void Application::drawImGui()
 			model->resetParams();
 		}
 
-		//testing
-		ImGui::SameLine();
-		if (ImGui::Button("Test Key Value"))
-		{
-			model->paramMap[model->paramNames[0]]->keyValues.push_back(0.0f);
-			model->paramMap[model->paramNames[0]]->keyValues.push_back(10.0f);
-			model->paramMap[model->paramNames[0]]->keyValues.push_back(15.0f);
-			model->paramMap[model->paramNames[0]]->keyValues.push_back(-20.0f);
-			model->paramMap[model->paramNames[0]]->keyValues.push_back(30.0f);
-			model->paramMap[model->paramNames[0]]->keyValues.push_back(-30.0f);
-
-			model->paramMap[model->paramNames[1]]->keyValues.push_back(10.0f);
-			model->paramMap[model->paramNames[1]]->keyValues.push_back(-10.0f);
-			model->paramMap[model->paramNames[1]]->keyValues.push_back(-5.0f);
-
-		}
-
 		ImGui::Separator();
 
 		for (int i = 0; i < model->paramNames.size(); i++)
 		{
-			ImGui::SliderParam(model->paramNames[i].c_str(), &model->paramValues[model->paramNames[i]], model->paramMap[model->paramNames[i]]->minValue, model->paramMap[model->paramNames[i]]->maxValue, model->paramMap[model->paramNames[i]]->keyValues);
+			//common keyvalues between all selected parts
+			std::vector<float> commonKeyvalues;
+			if (selectedParts.size())
+			{
+				auto it = std::find(model->partMap[selectedParts[0]]->paramNames.begin(), model->partMap[selectedParts[0]]->paramNames.end(), model->paramNames[i]);
+				
+				//if first selected object does have param name
+				if (it != model->partMap[selectedParts[0]]->paramNames.end())
+				{
+					int paramIndex = static_cast<int>(it - model->partMap[selectedParts[0]]->paramNames.begin());
+
+					//if only one part selected, copy vector
+					if (selectedParts.size() == 1)
+					{
+						commonKeyvalues = model->partMap[selectedParts[0]]->paramKeyvalues[paramIndex];
+					}
+					//if multiple, seach for common keyvalues
+					else
+					{
+						//for each keyvalue in first selected part
+						for (int j = 0; j < model->partMap[selectedParts[0]]->paramKeyvalues[paramIndex].size(); j++)
+						{
+							bool allParts = true;
+
+							//for each selected part
+							for (int k = 1; k < selectedParts.size(); k++)
+							{
+								auto it2 = std::find(model->partMap[selectedParts[k]]->paramNames.begin(), model->partMap[selectedParts[k]]->paramNames.end(), model->paramNames[i]);
+
+								//if selected part doesn't also have same param name
+								if (it2 == model->partMap[selectedParts[k]]->paramNames.end())
+								{
+									allParts = false;
+									break;
+								}
+
+								int paramIndex2 = static_cast<int>(it2 - model->partMap[selectedParts[k]]->paramNames.begin());
+
+								if (std::find(model->partMap[selectedParts[k]]->paramKeyvalues[paramIndex2].begin(), model->partMap[selectedParts[k]]->paramKeyvalues[paramIndex2].end(), model->partMap[selectedParts[0]]->paramKeyvalues[paramIndex][j]) == model->partMap[selectedParts[k]]->paramKeyvalues[paramIndex2].end())
+								{
+									allParts = false;
+									break;
+								}
+							}
+
+							if (allParts)
+								commonKeyvalues.push_back(model->partMap[selectedParts[0]]->paramKeyvalues[paramIndex][j]);
+						}
+					}
+				}
+			}
+
+			ImGui::SliderParam(model->paramNames[i].c_str(), &model->paramValues[model->paramNames[i]], model->paramMap[model->paramNames[i]]->minValue, model->paramMap[model->paramNames[i]]->maxValue, model->paramMap[model->paramNames[i]]->keyValues, commonKeyvalues);
 		}
 	}
 	ImGui::End();
