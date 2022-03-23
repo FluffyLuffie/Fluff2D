@@ -47,6 +47,9 @@ private:
 	const int EVENT_FRAMES = 3;
 	int eventFramesCount = 0;
 
+	int manualKeyIndex = -1;
+	float manualKeyvalue = 0.0f;
+
 	void checkRunning();
 	
 	//for docking

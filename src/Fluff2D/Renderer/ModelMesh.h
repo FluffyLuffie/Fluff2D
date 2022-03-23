@@ -30,7 +30,6 @@ public:
 	void createBasicMesh(int layerX, int layerY, int layerW, int layerH, bool flip, int atlasWidth, int atlasHeight);
 
 	//testing, call after making basic mesh
-	void createBoxMesh(int boxCountX, int boxCountY, int atlasWidth, int atlasHeight);
 	void createTriMesh(int boxCountX, int boxCountY, int atlasWidth, int atlasHeight);
 
 private:

@@ -432,9 +432,11 @@ void Application::drawImGui()
 			if (ImGui::MenuItem("Open test model csp"))
 			{
 				initializeModelFromPsd("tempPsdTest/testModel.psd");
+
+				//simple test
+				/*
 				model->update();
 
-				//testing deformers
 				selectedParts.push_back(model->modelMeshes[model->modelMeshes.size() - 1]->name);
 				model->addWarpDeformer("TestWarp", selectedParts, 5, 5);
 				selectedParts.clear();
@@ -442,7 +444,6 @@ void Application::drawImGui()
 				model->addRotationDeformer("TestRotation", selectedParts);
 				selectedParts.clear();
 
-				//simple test
 				model->addKeyform("headMain", "headX", 0.0f);
 				model->addKeyform("headMain", "headX", model->paramMap["headX"]->maxValue);
 				model->addKeyform("headMain", "headY", 0.0f);
@@ -451,13 +452,14 @@ void Application::drawImGui()
 				model->partMap["headMain"]->keyforms[1].position = glm::vec2(100.0f, 0.0f);
 				model->partMap["headMain"]->keyforms[2].position = glm::vec2(0.0f, 100.0f);
 				model->partMap["headMain"]->keyforms[3].position = glm::vec2(100.0f, 100.0f);
-
 				model->addKeyform("mouthTop", "headX", 0.0f);
 				model->addKeyform("mouthBottom", "headX", model->paramMap["headX"]->maxValue);
 				model->addKeyform("mouthBottom", "headX", 10.0f);
+				*/
 
 				//testing keyform values
 				/*
+				model->update();
 				model->addKeyform("headMain", "headX", model->paramMap["headX"]->minValue + 5.0f);
 				model->addKeyform("headMain", "headX", model->paramMap["headX"]->maxValue - 5.0f);
 				model->addKeyform("headMain", "headY", model->paramMap["headY"]->minValue + 5.0f);
@@ -823,13 +825,74 @@ void Application::drawImGui()
 
 			if (ImGui::BeginMenu("M##Manual Keyvalues"))
 			{
+				for (int i = 0; i < model->paramNames.size(); i++)
+				{
+					if (ImGui::MenuItem(model->paramNames[i].c_str()) && selectedParts.size())
+					{
+						manualKeyIndex = i;
+						manualKeyvalue = model->paramMap[model->paramNames[i]]->defaultValue;
+					}
+				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Manual Keyvalues");
 
+			if (manualKeyIndex != -1)
+				ImGui::OpenPopup("Manual Keyvalues");
+
+			if (ImGui::BeginPopupModal("Manual Keyvalues", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+			{
+				ImGui::InputFloat("Keyvalue", &manualKeyvalue);
+				ImGui::SameLine();
+				if (ImGui::Button("Add"))
+					for (int i = 0; i < selectedParts.size(); i++)
+						model->addKeyform(selectedParts[i], model->paramNames[manualKeyIndex], std::clamp(manualKeyvalue, model->paramMap[model->paramNames[manualKeyIndex]]->minValue, model->paramMap[model->paramNames[manualKeyIndex]]->maxValue));
+
+				if (ImGui::Button("Close"))
+				{
+					manualKeyIndex = -1;
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::EndPopup();
+			}
+
 			if (ImGui::BeginMenu("D##Delete Keyvalues"))
 			{
+				if (selectedParts.size())
+				{
+					std::vector <std::string> commonParamNames;
+					if (selectedParts.size() == 1)
+						commonParamNames = model->partMap[selectedParts[0]]->paramNames;
+					else
+					{
+						for (int i = 0; i < model->partMap[selectedParts[0]]->paramNames.size(); i++)
+						{
+							bool inAll = true;
+							for (int j = 1; j < selectedParts.size(); j++)
+							{
+								if (std::find(model->partMap[selectedParts[j]]->paramNames.begin(), model->partMap[selectedParts[j]]->paramNames.end(), model->partMap[selectedParts[0]]->paramNames[i]) == model->partMap[selectedParts[j]]->paramNames.end())
+								{
+									inAll = false;
+									break;
+								}
+							}
+							if (inAll)
+								commonParamNames.push_back(model->partMap[selectedParts[0]]->paramNames[i]);
+						}
+					}
+
+					for (int i = 0; i < commonParamNames.size(); i++)
+					{
+						if (ImGui::MenuItem(model->paramNames[i].c_str()))
+						{
+							for (int j = 0; j < selectedParts.size(); j++)
+							{
+								model->partMap[selectedParts[j]]->removeParameter(commonParamNames[i]);
+							}
+						}
+					}
+				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::IsItemHovered())

@@ -70,6 +70,8 @@ public:
 
 	//returns -1 if not on keyform
 	void calculateKeyformIndex(std::unordered_map<std::string, float>& paramValues);
+	void removeKeyform(std::string paramName, float keyvalue);
+	void removeParameter(std::string paramName);
 
 	//move functions that use these stuff into derived classes later
 	unsigned int getVao() { return vao; }

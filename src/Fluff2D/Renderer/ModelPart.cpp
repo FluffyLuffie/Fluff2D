@@ -168,3 +168,15 @@ void ModelPart::calculateKeyformIndex(std::unordered_map<std::string, float>& pa
 
 	keyformIndex = index;
 }
+
+void ModelPart::removeKeyform(std::string paramName, float keyvalue)
+{
+	int paramPos = static_cast<int>(std::find(paramNames.begin(), paramNames.end(), paramName) - paramNames.begin());
+
+	//paramNames.erase(remove(paramNames.begin(), paramNames.end(), paramName), paramNames.end());
+}
+
+void ModelPart::removeParameter(std::string paramName)
+{
+	//for each keyvalue in parameter, call removeKeyform
+}
