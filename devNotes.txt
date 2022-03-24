@@ -2,7 +2,7 @@
 [Add changing root position] Rotation deformers.
 [Concave corners a bit weird but otherwise fine] Moving points inside warp deformers.
 [Done] Clicking on meshes selects them
-Parameters actually do something.
+[Color and other stuff too?] Parameters actually do something.
 Physics.
 Saving model for editor.
 Right clicking stuff does something.
@@ -13,8 +13,9 @@ Model view window/tab instead of rending to main frame.
 
 ***If have time***
 [Done] Inverse clipping.
+Bezier for warp transforms.
 Save settings in a file and read when launched.
-[good enough]Moving model object hierarchy by dragging.
+[good enough] Moving model object hierarchy by dragging.
 Make psd importer more reliable.
 Clean up fragment shader code.
 Code documentation.
@@ -26,7 +27,7 @@ Update textures and adding new parts with psd.
 Make file explorer use OS's file explorer.
 Other language translations.
 Option to lock UI.
-Compute shader
+Compute shader?
 
 ***Values affected by parameters***
 *All*
@@ -40,9 +41,6 @@ Render order (int)
 Color (vec4)
 
 ***Brain dump***
-How to implement the parameters thingy.
-Each keyform stores the value.
-For each keyform, recursively add up all the values and then take average.
-For example, add up p[0][0][0] + p[0][0][1] + p[0][1][0] + ...
-If value on keyform, count as 1 combination.
-If value between 2 keyforms, count it as 2 combinations.
+Auto vertices:
+https://github.com/godotengine/godot/blob/master/editor/plugins/sprite_2d_editor_plugin.h
+https://www.youtube.com/watch?v=vuWSVm_vx9c

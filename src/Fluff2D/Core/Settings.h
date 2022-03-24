@@ -26,7 +26,7 @@ public:
 	inline static int canvasLineWidth = 1;
 	inline static glm::vec3 canvasBorderColor = glm::vec3(0.0f);
 
-	inline static int meshPointSize = 5;
+	inline static int meshPointSize = 2;
 	inline static glm::vec3 meshPointColor = glm::vec3(1.0f, 1.0f, 1.0f);
 	inline static glm::vec3 meshPointHighlightColor = glm::vec3(1.0f, 0.0f, 0.0f);
 	inline static glm::vec3 meshPointSelectedColor = glm::vec3(1.0f, 0.0f, 0.0f);

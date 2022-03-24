@@ -28,7 +28,10 @@ void Camera2D::update()
 		rotation -= 100 * Event::deltaTime;
 	*/
 
-	projection = glm::ortho(Window::width / -2.0f / scale, Window::width / 2.0f / scale, Window::height / -2.0f / scale, Window::height / 2.0f / scale, -1.0f, 1.0f);
+	ImVec2 vpDim = ImGui::GetContentRegionAvail();
+
+	projection = glm::ortho(vpDim.x / -2.0f, vpDim.x / 2.0f, vpDim.y / 2.0f, vpDim.y / -2.0f, -1.0f, 1.0f);
+	projection = glm::scale(projection, glm::vec3(scale, scale, 1.0f));
 	projection = glm::translate(projection, glm::vec3(-pos.x, -pos.y, 0.0f));
 	//projection = glm::rotate(projection, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 }

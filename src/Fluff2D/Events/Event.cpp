@@ -2,7 +2,7 @@
 
 bool Event::keyDown(int key)
 {
-	if (!io->WantCaptureKeyboard && glfwGetKey(GLFWWin, key) == GLFW_PRESS)
+	if (!io->WantCaptureKeyboard && isFocused && glfwGetKey(GLFWWin, key) == GLFW_PRESS)
 	{
 		anyAction = true;
 		return true;
@@ -12,7 +12,7 @@ bool Event::keyDown(int key)
 
 bool Event::keyPressed(int key)
 {
-	if (!io->WantCaptureKeyboard && keysCheckFrame.find(key) != keysCheckFrame.end())
+	if (!io->WantCaptureKeyboard && isFocused && keysCheckFrame.find(key) != keysCheckFrame.end())
 	{
 		anyAction = true;
 		return keysCheckFrame[key];
@@ -22,7 +22,7 @@ bool Event::keyPressed(int key)
 
 bool Event::keyReleased(int key)
 {
-	if (!io->WantCaptureKeyboard && keysCheckFrame.find(key) != keysCheckFrame.end())
+	if (!io->WantCaptureKeyboard && isFocused && keysCheckFrame.find(key) != keysCheckFrame.end())
 	{
 		anyAction = true;
 		return !keysCheckFrame[key];
@@ -32,7 +32,7 @@ bool Event::keyReleased(int key)
 
 float Event::getScroll()
 {
-	if (!io->WantCaptureMouse && !io->WantCaptureKeyboard)
+	if (isHovered)
 		return scroll;
 	return 0.0f;
 }

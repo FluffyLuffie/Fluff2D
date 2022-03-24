@@ -40,7 +40,6 @@ private:
 
 	ImGui::FileBrowser fileBrowser;
 
-	bool drawMenu = true;
 	bool queueFontChange = false;
 	bool draggingVertices = false;
 
@@ -64,7 +63,5 @@ private:
 	void createModelTree(std::shared_ptr<ModelPart> currentPart);
 
 	void drawImGui();
-
-	bool mouseInWindow();
 };
 

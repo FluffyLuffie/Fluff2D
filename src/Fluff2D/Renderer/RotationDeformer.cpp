@@ -54,7 +54,16 @@ void RotationDeformer::renderInspector()
 {
 	ImGui::Text(name.c_str());
 
-	ImGui::DragFloat2("Position", (float*)&pos);
-	ImGui::DragFloat("Rotation", &rotation);
-	ImGui::DragFloat2("Scale", &scale.x, 0.01f);
+	bool dataChanged = false;
+
+	dataChanged |= ImGui::DragFloat2("Position", (float*)&pos);
+	dataChanged |= ImGui::DragFloat("Rotation", &rotation);
+	dataChanged |= ImGui::DragFloat2("Scale", &scale.x, 0.01f);
+
+	if (dataChanged && keyformIndex != -1)
+	{
+		keyforms[keyformIndex].position = pos;
+		keyforms[keyformIndex].rotation = rotation;
+		keyforms[keyformIndex].scale = scale;
+	}
 }

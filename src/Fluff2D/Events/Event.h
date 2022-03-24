@@ -15,8 +15,9 @@ public:
 	inline static int mod = 0;
 
 	inline static bool windowResized = false;
-
 	inline static bool anyAction = true;
+	inline static bool isFocused = false;
+	inline static bool isHovered = false;
 
 	static bool keyDown(int key);
 	static bool keyPressed(int key);

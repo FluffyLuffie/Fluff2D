@@ -333,7 +333,6 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	//keeps track of how many image layers read
 	int imageLayersRead = 0;
 
-	//turn off rectangle flipping for now, implementing it later
 	std::vector <std::vector <unsigned char>> layerBytes;
 	layerBytes.resize(rectangles.size());
 	//idk how many threads to create
@@ -348,7 +347,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 		pf.read(buffer, 2);
 		int compression = ((buffer[0] & 0xFF) << 8) | (buffer[1] & 0xFF);
 
-		int channelBytesLeft = 0, channelOffset = 0, pixelsRead = 0;
+		int channelBytesLeft = 0, channelOffset = 0, pixelsRead = 0, texW, texH;
 
 		switch (compression)
 		{
@@ -494,24 +493,22 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			texPtr = &layerBytes[imageLayersRead][0];
 			if (rectangles[imageLayersRead].flipped)
 			{
-				results.emplace_back(
-					pool.enqueue([texPtr, imageLayersRead, layerRects, layerNum]
-						{
-							premultAlpha(texPtr, layerRects[layerNum].h, layerRects[layerNum].w);
-							return true;
-						})
-				);
+				texW = layerRects[layerNum].h;
+				texH = layerRects[layerNum].w;
 			}
 			else
 			{
-				results.emplace_back(
-					pool.enqueue([texPtr, imageLayersRead, layerRects, layerNum]
-						{
-							premultAlpha(texPtr, layerRects[layerNum].w, layerRects[layerNum].h);
-							return true;
-						})
-				);
+				texW = layerRects[layerNum].w;
+				texH = layerRects[layerNum].h;
 			}
+
+			results.emplace_back(
+				pool.enqueue([texPtr, imageLayersRead, texW, texH]
+					{
+						premultAlpha(texPtr, texW, texH);
+						return true;
+					})
+			);
 
 			imageLayersRead++;
 			break;
@@ -525,9 +522,6 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 
 	Log::logInfo("Finished reading PSD");
 	pf.close();
-
-	pool.wait_until_empty();
-	pool.wait_until_nothing_in_flight();
 
 	int imageLayer = 0;
 

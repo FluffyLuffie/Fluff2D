@@ -57,6 +57,10 @@ public:
 	int mouseHoveredID = -1;
 	bool screenshot = false;
 
+	unsigned int modelTexColorBuffer = 0;
+	glm::vec2 fbDimension = glm::vec2();
+	int fbX = 0, fbY = 0;
+
 	void update() override;
 	void render() override;
 
@@ -67,7 +71,7 @@ public:
 	void renderMeshVertice(const std::string &meshName);
 	void renderHighlightedMesh();
 	void renderSelectedVertices();
-	void moveSelectedVertices(const glm::vec2 originalMouseCoord);
+	void moveSelectedVertices(const glm::vec2 &originalMouseCoord);
 	void updateOriginalVertexPositions();
 	void renderClosestVertex(const std::string &partName, int vertexIndex);
 
@@ -85,6 +89,7 @@ public:
 
 	int findClosestVertex(const std::vector<std::string> &selectedParts, int *partNum);
 
+	void updateFrameBufferSize(int x, int y);
 	void updateCanvasCoord();
 
 	void showMeshClippingMenu(const std::string &meshName);
@@ -94,11 +99,7 @@ public:
 private:
 	void updatePartMapRecursive(std::shared_ptr<ModelPart> part);
 
-	unsigned int modelFbo = 0, modelTexColorBuffer = 0, mousePickBuffer = 0, modelRbo = 0;
-	unsigned int maskVao = 0, maskVbo = 0, maskEbo = 0;
-
-	Vertex maskVertices[4] = { Vertex(-1.0f, 1.0f, 0.5f, 1.0f), Vertex(1.0f, 1.0f, 1.0f, 1.0f) , Vertex(1.0f, -1.0f, 1.0f, 0.0f) , Vertex(-1.0f, -1.0f, 0.5f, 0.0f) };
-
+	unsigned int modelFbo = 0, mousePickBuffer = 0, modelRbo = 0;
 	unsigned int canvasVao = 0, canvasVbo = 0, canvasEbo = 0;
 	glm::vec2 canvasCoords[4] = { glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f) };
 
@@ -107,8 +108,6 @@ private:
 	std::multimap<int, int> renderOrderMap;
 
 	GLenum bufs[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-
-	void updateFrameBufferSize();
 
 	void renderMaskedMesh(int meshNum);
 };

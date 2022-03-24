@@ -190,6 +190,7 @@
     <ClCompile Include="src\Fluff2D\Renderer\Triangulator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dependencies\include\threadPool\ThreadPool.h" />
     <ClInclude Include="src\Fluff2D\Renderer\RenderGroup.h" />
     <ClInclude Include="src\Fluff2D\Renderer\Camera2D.h" />
     <ClInclude Include="dependencies\include\imgui\imconfig.h" />
@@ -205,7 +206,6 @@
     <ClInclude Include="src\Fluff2D\UI\Localization.h" />
     <ClInclude Include="src\Fluff2D\Core\Settings.h" />
     <ClInclude Include="src\Fluff2D\Core\Log.h" />
-    <ClInclude Include="dependencies\include\threadPool\ThreadPool.h" />
     <ClInclude Include="dependencies\rectpack2D\best_bin_finder.h" />
     <ClInclude Include="dependencies\rectpack2D\finders_interface.h" />
     <ClInclude Include="dependencies\rectpack2D\empty_spaces.h" />

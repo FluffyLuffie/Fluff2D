@@ -52,27 +52,6 @@ Model::Model()
 	glGenRenderbuffers(1, &modelRbo);
 	glGenTextures(1, &modelTexColorBuffer);
 	glGenTextures(1, &mousePickBuffer);
-
-	updateFrameBufferSize();
-
-	//masking stuff
-	glGenVertexArrays(1, (GLuint*)(&maskVao));
-	glGenBuffers(1, (GLuint*)(&maskVbo));
-	glGenBuffers(1, (GLuint*)(&maskEbo));
-
-	glBindVertexArray(maskVao);
-	glBindBuffer(GL_ARRAY_BUFFER, maskVbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 4, maskVertices, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, maskEbo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
-	glEnableVertexAttribArray(1);
-
 }
 
 Model::~Model() 
@@ -91,10 +70,6 @@ Model::~Model()
 	glDeleteRenderbuffers(1, &modelRbo);
 	glDeleteTextures(1, &modelTexColorBuffer);
 	glDeleteTextures(1, &mousePickBuffer);
-
-	glDeleteVertexArrays(1, &maskVao);
-	glDeleteBuffers(1, &maskVbo);
-	glDeleteBuffers(1, &maskEbo);
 }
 
 void Model::generateDefaltParams()
@@ -228,14 +203,18 @@ void Model::renderSelectedVertices()
 	}
 }
 
-void Model::moveSelectedVertices(const glm::vec2 originalMouseCoord)
+void Model::moveSelectedVertices(const glm::vec2 &originalMouseCoord)
 {
 	ImVec2 mouseCoord = ImGui::GetMousePos();
+	ImVec2 vpDim = ImGui::GetContentRegionAvail();
 
-	glm::vec4 mouseToScreen = glm::inverse(Camera2D::projection) * glm::vec4(mouseCoord.x * 2.0f / Window::width - 1.0f, mouseCoord.y * -2.0f / Window::height + 1.0f, 0.0f, 1.0f);
+	glm::vec4 mouseToScreen = glm::inverse(Camera2D::projection) * glm::vec4(mouseCoord.x * 2.0f / vpDim.x - 1.0f, mouseCoord.y * 2.0f / vpDim.y - 1.0f, 0.0f, 1.0f);
 
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
+		//if not keyforms set, skip
+		if (partMap[selectedVertices[i].partName]->keyforms.size() == 0)
+			continue;
 		if (partMap[selectedVertices[i].partName]->parent->type == ModelPart::PartType::warpDeformer)
 		{
 			auto p = std::dynamic_pointer_cast<WarpDeformer>(partMap[selectedVertices[i].partName]->parent);
@@ -594,7 +573,7 @@ void Model::addKeyform(const std::string& partName, const std::string& paramName
 
 
 	//partMap[partName]->keyforms = newKeyform;
-	partMap[partName]->keyforms.resize(totalKeyformCount, KeyformData(partMap[partName]->originalPos));
+	partMap[partName]->keyforms.resize(totalKeyformCount, KeyformData(partMap[partName]->pos, partMap[partName]->rotation, partMap[partName]->scale));
 
 }
 
@@ -604,8 +583,11 @@ int Model::findClosestVertex(const std::vector<std::string>& selectedParts, int*
 
 	float closestDistance = FLT_MAX;
 
-	float mouseX = ImGui::GetMousePos().x;
-	float mouseY = ImGui::GetMousePos().y;
+	ImVec2 mPos = ImGui::GetMousePos();
+	ImVec2 offset = ImGui::GetWindowPos();
+	ImVec2 vpDim = ImGui::GetContentRegionAvail();
+	mPos.x -= offset.x;
+	mPos.y -= offset.y + ImGui::GetWindowContentRegionMin().y;
 
 	for (int i = 0; i < selectedParts.size(); i++)
 	{
@@ -614,7 +596,9 @@ int Model::findClosestVertex(const std::vector<std::string>& selectedParts, int*
 		for (int v = 0; v < partMap[selectedParts[i]]->vertices.size(); v++)
 		{
 			auto vert = Camera2D::projection * glm::vec4(partMap[selectedParts[i]]->vertices[v].position.x, partMap[selectedParts[i]]->vertices[v].position.y, 0.0f, 1.0f);
-			float pixelDistance = static_cast<float>(pow(mouseX - (vert.x + 1.0f) * Window::width / 2, 2) + pow(mouseY - (vert.y - 1.0f) * Window::height / -2, 2));
+			vert.x = (vert.x + 1.0f) * vpDim.x / 2;
+			vert.y = (vert.y + 1.0f) * vpDim.y / 2;
+			float pixelDistance = static_cast<float>(pow(mPos.x - vert.x, 2) + pow(mPos.y - vert.y, 2));
 			if (pixelDistance <= Settings::vertexDetectionDistance * Settings::vertexDetectionDistance && closestDistance > pixelDistance)
 			{
 				*partNum = i;
@@ -702,28 +686,30 @@ void Model::updatePartMapRecursive(std::shared_ptr<ModelPart> part)
 	}
 }
 
-void Model::updateFrameBufferSize()
+void Model::updateFrameBufferSize(int x, int y)
 {
+	fbX = x;
+	fbY = y;
 	glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
 	glBindTexture(GL_TEXTURE_2D, modelTexColorBuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Window::width, Window::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, fbX, fbY, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, modelTexColorBuffer, 0);
+	glViewport(0, 0, x, y);
 
 	//mouse picking
 	glBindTexture(GL_TEXTURE_2D, mousePickBuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, Window::width, Window::height, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, fbX, fbY, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mousePickBuffer, 0);
+	glViewport(0, 0, x, y);
 
 	glDrawBuffers(2, bufs);
 
-	//might not need rbo
-	//glBindRenderbuffer(GL_RENDERBUFFER, modelRbo);
-	//glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, Window::width, Window::height);
-	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, modelRbo);
+	//read mesh id for default
+	glReadBuffer(GL_COLOR_ATTACHMENT1);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		Log::logError("ERROR::FRAMEBUFFER:: Model framebuffer is not complete!");
@@ -737,9 +723,6 @@ void Model::updateFrameBufferSize()
 void Model::update()
 {
 	shader.setMat4("projection", Camera2D::projection);
-
-	if (Event::windowResized)
-		updateFrameBufferSize();
 
 	if (Event::keyDown(GLFW_KEY_R))
 		reset();
@@ -845,13 +828,28 @@ void Model::render()
 		}
 	}
 
+	if (screenshot)
+	{
+		screenshot = false;
+
+		std::vector<unsigned char> data;
+		data.resize(fbX * fbY * 4);
+
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glReadPixels(0, 0, fbX, fbY, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
+		glReadBuffer(GL_COLOR_ATTACHMENT1);
+
+		//stbi_flip_vertically_on_write(true);
+		stbi_write_png("saves/testExports/testFbo.png", fbX, fbY, 4, &data[0], fbX * 4);
+	}
+
 	//mouse hovering mesh
 	if (detectMouseHover)
 	{
-		detectMouseHover = false;
 		ImVec2 mPos = ImGui::GetMousePos();
-		mPos.y = Window::height - mPos.y;
-		glReadBuffer(GL_COLOR_ATTACHMENT1);
+		ImVec2 offset = ImGui::GetWindowPos();
+		mPos.x -= offset.x;
+		mPos.y -= offset.y + ImGui::GetWindowContentRegionMin().y;
 		glReadPixels((int)mPos.x, (int)mPos.y, 1, 1, GL_RED_INTEGER, GL_INT, &mouseHoveredID);
 		//since buffer cleared to 0 and ID starts at 1
 		mouseHoveredID--;
@@ -860,6 +858,7 @@ void Model::render()
 		mouseHoveredID = -1;
 
 	//render from framebuffer to screen
+	/*
 	updateVertexData();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	shader.setMat4("projection", glm::mat4(1.0f));
@@ -881,19 +880,7 @@ void Model::render()
 	shader.setInt("mode", fboRenderMode);
 
 	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
-
-	if (screenshot)
-	{
-		screenshot = false;
-
-		std::vector<unsigned char> data;
-		data.resize(Window::width * Window::height * 4);
-
-		glReadPixels(0, 0, Window::width, Window::height, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
-
-		stbi_flip_vertically_on_write(true);
-		stbi_write_png("saves/testExports/testFbo.png", Window::width, Window::height, 4, &data[0], Window::width * 4);
-	}
+	*/
 
 	//render the canvas rect
 	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
