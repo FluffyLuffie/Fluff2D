@@ -13,5 +13,7 @@ public:
 	void modelUpdate(std::unordered_map<std::string, float>& paramValues) override;
 	void render() override;
 	void renderInspector() override;
+
+	void changeCenterPoint(glm::vec2 offset);
 };
 

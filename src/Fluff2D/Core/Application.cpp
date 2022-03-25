@@ -64,21 +64,22 @@ void Application::update()
 						{
 							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 							{
-								oldMouseCoord = glm::inverse(Camera2D::projection) * glm::vec4(ImGui::GetMousePos().x * 2.0f / currentFbSize.x - 1.0f, ImGui::GetMousePos().y * 2.0f / currentFbSize.y - 1.0f, 0.0f, 1.0f);;
-								//if ctrl key pressed, add to selected vertices
-								if (GLFW_MOD_CONTROL == Event::mod)
+								dragMod = Event::mod;
+
+								ImVec2 mPos = ImGui::GetMousePos();
+								ImVec2 offset = ImGui::GetWindowPos();
+								mPos.x -= offset.x;
+								mPos.y -= offset.y + ImGui::GetWindowContentRegionMin().y;
+
+								oldMouseCoord = glm::inverse(Camera2D::projection) * glm::vec4(mPos.x * 2.0f / currentFbSize.x - 1.0f, mPos.y * 2.0f / currentFbSize.y - 1.0f, 0.0f, 1.0f);;
+								
+								//if clicked vertex is not in selected vertices, clear
+								if (GLFW_MOD_CONTROL != dragMod && std::find(model->selectedVertices.begin(), model->selectedVertices.end(), VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex)) == model->selectedVertices.end())
 								{
-									model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
+									model->selectedVertices.clear();
 								}
-								else
-								{
-									//if clicked vertex is not in selected vertices, clear
-									if (std::find(model->selectedVertices.begin(), model->selectedVertices.end(), VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex)) == model->selectedVertices.end())
-									{
-										model->selectedVertices.clear();
-										model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
-									}
-								}
+								model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
+
 								model->updateOriginalVertexPositions();
 							}
 						}
@@ -90,7 +91,7 @@ void Application::update()
 					}
 
 					//move vertices
-					if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != Event::mod)
+					if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != dragMod)
 					{
 						if (model->selectedVertices.size())
 						{
@@ -114,7 +115,7 @@ void Application::update()
 
 							if (onKeyform)
 							{
-								model->moveSelectedVertices(oldMouseCoord);
+								model->moveSelectedVertices(oldMouseCoord, dragMod);
 								draggingVertices = true;
 							}
 						}

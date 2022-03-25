@@ -48,6 +48,7 @@ private:
 
 	int manualKeyIndex = -1;
 	float manualKeyvalue = 0.0f;
+	int dragMod = 0;
 
 	void checkRunning();
 	

@@ -1,8 +1,10 @@
 ***Things to add/fix***
-[Add changing root position] Rotation deformers.
+[Done] Rotation deformers.
 [Concave corners a bit weird but otherwise fine] Moving points inside warp deformers.
 [Done] Clicking on meshes selects them
 [Color and other stuff too?] Parameters actually do something.
+Adding new keyvalues to existing keyforms.
+Deleting keyvalues/keyforms.
 Physics.
 Saving model for editor.
 Right clicking stuff does something.

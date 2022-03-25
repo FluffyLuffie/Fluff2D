@@ -71,7 +71,7 @@ public:
 	void renderMeshVertice(const std::string &meshName);
 	void renderHighlightedMesh();
 	void renderSelectedVertices();
-	void moveSelectedVertices(const glm::vec2 &originalMouseCoord);
+	void moveSelectedVertices(const glm::vec2 &originalMouseCoord, int dragMod);
 	void updateOriginalVertexPositions();
 	void renderClosestVertex(const std::string &partName, int vertexIndex);
 

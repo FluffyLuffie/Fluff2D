@@ -67,3 +67,23 @@ void RotationDeformer::renderInspector()
 		keyforms[keyformIndex].scale = scale;
 	}
 }
+
+void RotationDeformer::changeCenterPoint(glm::vec2 offset)
+{
+	if (keyforms.size() == 0)
+		pos += offset;
+
+	for (int i = 0; i < children.size(); i++)
+	{
+		glm::mat4 temp = glm::mat4(1.0f);
+		temp = glm::rotate(temp, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+		temp = glm::scale(temp, glm::vec3(scale, 1.0f));
+
+		glm::vec2 childOffset = glm::inverse(temp) * glm::vec4(offset, 0.0f, 1.0f);
+		children[i]->pos -= childOffset;
+		for (int j = 0; j < children[i]->keyforms.size(); j++)
+		{
+			children[i]->keyforms[j].position -= childOffset;
+		}
+	}
+}
