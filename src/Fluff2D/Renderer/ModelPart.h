@@ -35,8 +35,12 @@ public:
 	std::shared_ptr<ModelPart> parent;
 	std::vector<std::shared_ptr<ModelPart>> children;
 
+	//position in psd
 	glm::vec2 originalPos = glm::vec2(0.0f);
-	float originalRotation = 0.0f;
+
+	glm::vec2 basePos = glm::vec2(0.0f);
+	float baseRotation = 0.0f;
+	glm::vec2 baseScale = glm::vec2(0.0f);
 
 	std::vector<std::string> paramNames;
 	std::vector<std::vector<float>> paramKeyvalues;

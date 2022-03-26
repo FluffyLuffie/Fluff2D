@@ -16,11 +16,7 @@ public:
 	inline static int fontSize = 15;
 	inline static std::string fontFile = "C:/Windows/Fonts/Meiryob.ttc";
 
-	inline static bool colorCorrection = true;
-	inline static bool effect = false;
-
 	inline static glm::vec3 backgroundColor = glm::vec3(0.75f);
-	inline static bool transparentBackground = false;
 
 	inline static bool showCanvas = true;
 	inline static int canvasLineWidth = 1;

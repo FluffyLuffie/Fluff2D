@@ -56,6 +56,11 @@ void main()
 			meshID = ID;
 			break;
 		default:
+			float gray = 1.0f;
+			if (texCoord.x < 0.5f)
+				gray = 0.8f;
+			
+			fragColor = vec4(gray, gray, gray, 1.0f);
 			break;
 	}
 }

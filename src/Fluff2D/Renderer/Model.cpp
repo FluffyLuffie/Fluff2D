@@ -757,7 +757,6 @@ void Model::update()
 void Model::renderMaskedMesh(int meshNum)
 {
 	//draw parent mesh's alpha
-	shader.setInt("mode", 9);
 	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	for (int j = 0; j < modelMeshes[meshNum]->clipMeshes.size(); j++)
 	{
@@ -765,23 +764,18 @@ void Model::renderMaskedMesh(int meshNum)
 		meshMap[modelMeshes[meshNum]->clipMeshes[j]]->render();
 	}
 
-	//render based on parent's alpha and own alpha
+	//set the alpha to clipping amount
 	shader.setVec4("texColor", modelMeshes[meshNum]->color);
 
 	if (modelMeshes[meshNum]->invertClip)
-	{
 		glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE_MINUS_DST_ALPHA, GL_ZERO);
-		modelMeshes[meshNum]->render();
-		shader.setInt("mode", 6);
-		glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ZERO);
-	}
 	else
-	{
 		glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_SRC_ALPHA);
-		modelMeshes[meshNum]->render();
-		shader.setInt("mode", 6);
-		glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ZERO);
-	}
+	
+	//render the mesh
+	modelMeshes[meshNum]->render();
+	shader.setInt("mode", 2);
+	glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ZERO);
 	modelMeshes[meshNum]->render();
 
 	//reset alpha
@@ -796,21 +790,29 @@ void Model::render()
 	glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
 
 	//clear framebuffer
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+	//glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	//glClear(GL_COLOR_BUFFER_BIT);
 
-	//might set this for each mesh's setting
+	//set to invis color
+	updateVertexData();
+	shader.setMat4("projection", glm::mat4(1.0f));
+	shader.setVec3("uiColor", Settings::backgroundColor);
+	shader.setInt("mode", 1);
+	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ZERO);
+	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+
 	shader.setInt("mode", 0);
+	shader.setMat4("projection", Camera2D::projection);
 
 	//render each mesh
 	for (auto const &[meshRenderOrder, meshIndex] : renderOrderMap)
 	{
 		if (modelMeshes[meshIndex]->visible)
 		{
-			//if being clipped others
+			//if clip
 			if (modelMeshes[meshIndex]->clipMeshes.size())
 				renderMaskedMesh(meshIndex);
-			//if not being clipped by others
+			//if not clip
 			else
 			{
 				shader.setVec4("texColor", modelMeshes[meshIndex]->color);
@@ -821,19 +823,23 @@ void Model::render()
 		}
 	}
 
-	//fix alpha
-	shader.setInt("mode", 10);
+	//set alpha to 1
+	updateVertexData();
+	shader.setMat4("projection", glm::mat4(1.0f));
+	shader.setInt("mode", 1);
+	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ZERO);
+	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+
+	//mouse picking
+	shader.setMat4("projection", Camera2D::projection);
+	shader.setInt("mode", 3);
+	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_ONE);
 	for (auto const& [meshRenderOrder, meshIndex] : renderOrderMap)
 	{
 		shader.setInt("ID", meshIndex + 1);
 
 		if (modelMeshes[meshIndex]->visible)
 		{
-			shader.setVec4("texColor", modelMeshes[meshIndex]->color);
-			if (!modelMeshes[meshIndex]->clipMeshes.size() || modelMeshes[meshIndex]->invertClip)
-				glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-			else
-				glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_ONE);
 			modelMeshes[meshIndex]->render();
 		}
 	}
@@ -867,36 +873,10 @@ void Model::render()
 	else
 		mouseHoveredID = -1;
 
-	//render from framebuffer to screen
-	/*
-	updateVertexData();
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	shader.setMat4("projection", glm::mat4(1.0f));
-	shader.setVec4("texColor", glm::vec4(1.0f));
-
-	if (Settings::transparentBackground)
-		glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
-	else
-		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
-
-	int fboRenderMode = 2;
-	if (Settings::colorCorrection)
-		fboRenderMode = 4;
-	if (Settings::effect)
-	{
-		fboRenderMode++;
-		shader.setFloat("timer", static_cast<float>(glfwGetTime()));
-	}
-	shader.setInt("mode", fboRenderMode);
-
-	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
-	*/
-
 	//render the canvas rect
 	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
 	if (Settings::showCanvas)
 	{
-		shader.setMat4("projection", Camera2D::projection);
 		shader.setInt("mode", 1);
 		glBindVertexArray(canvasVao);
 		shader.setVec3("uiColor", Settings::canvasBorderColor);

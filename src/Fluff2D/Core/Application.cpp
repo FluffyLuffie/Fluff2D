@@ -18,13 +18,11 @@ void Application::update()
 
 	if (Event::anyAction)
 		eventFramesCount = 0;
-	if (eventFramesCount < EVENT_FRAMES || Settings::effect)
+	if (eventFramesCount < EVENT_FRAMES)
 	{
 		Event::anyAction = false;
 
-		//don't need to clear window when transparent back since model FBO overwrites everything
-		if (!model || !Settings::transparentBackground)
-			window.update();
+		window.update();
 
 		//create imgui frame
 		ImGui_ImplGlfw_NewFrame();
@@ -37,6 +35,7 @@ void Application::update()
 		//ImGui::ShowDemoWindow();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		//ImGui::PushStyleColor(ImGuiCol_WindowBg, *(ImVec4*)&Settings::backgroundColor);
 		if (ImGui::Begin("Model Viewport"))
 		{
 			Event::isFocused = ImGui::IsWindowFocused();
@@ -175,8 +174,9 @@ void Application::update()
 				ImGui::Image((void*)(size_t)model->modelTexColorBuffer, currentFbSize);
 			}
 		}
-		ImGui::PopStyleVar();
 		ImGui::End();
+		ImGui::PopStyleVar();
+		//ImGui::PopStyleColor();
 
 		ImGui::EndFrame();
 		ImGui::Render();
@@ -273,6 +273,7 @@ void Application::init()
 	//in imgui.cpp in ImGui::NewFrame(), search for "Background darkening/whitening"
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.9f, 0.9f, 0.9f, 0.2f);
+	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.0f);
 }
 
 void Application::checkRunning()
@@ -562,9 +563,7 @@ void Application::drawImGui()
 
 		if (ImGui::BeginPopupModal("Generate Box Vertices", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 		{
-			ImGui::Text("Box Count (X, Y)");
-			ImGui::SameLine();
-			ImGui::InputInt2("", boxCount);
+			ImGui::InputInt2("Box Count (X, Y)", boxCount);
 
 			if (ImGui::Button("Generate"))
 			{
@@ -620,19 +619,7 @@ void Application::drawImGui()
 			queueFontChange = true;
 		ImGui::Separator();
 
-		if (model)
-		{
-			ImGui::Checkbox("Color Correction", &Settings::colorCorrection);
-			ImGui::SameLine();
-			ImGui::HelpMarker("It looks weird in this window with transparent background,\nbut fixes itself in the recording software.");
-			ImGui::Checkbox("Effect", &Settings::effect);
-			ImGui::Separator();
-		}
-
 		ImGui::ColorEdit3("Background", (float*)&Settings::backgroundColor);
-		ImGui::Checkbox("Transparent Background", &Settings::transparentBackground);
-		ImGui::SameLine();
-		ImGui::HelpMarker("If you want to capture transparency in recording softwares (like OBS),\nmake sure to also enable something like \"Enable Transparency\" inside the recording software.\nTransparent colors will be darkened unless you also enable color correction.");
 		ImGui::Separator();
 
 		ImGui::Checkbox("Show Canvas", &Settings::showCanvas);
@@ -719,17 +706,12 @@ void Application::drawImGui()
 			switch (deformerType)
 			{
 			case ModelPart::PartType::warpDeformer:
-				ImGui::Text("Warp Deformer Name");
-
-				ImGui::SameLine();
-				ImGui::InputText("", nameBuf, 128);
+				ImGui::InputText("Warp Deformer Name", nameBuf, 128);
 				if (model->checkNameExists(nameBuf))
 					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "DUPLICATE NAME");
 				ImGui::Separator();
 
-				ImGui::Text("Box Count (X, Y)");
-				ImGui::SameLine();
-				ImGui::InputInt2("", boxCount);
+				ImGui::InputInt2("Box Count (X, Y)", boxCount);
 
 				if (ImGui::Button("Add") && nameBuf[0] != '\0')
 				{
@@ -742,10 +724,7 @@ void Application::drawImGui()
 				}
 				break;
 			case ModelPart::PartType::rotationDeformer:
-				ImGui::Text("Rotation Deformer Name");
-
-				ImGui::SameLine();
-				ImGui::InputText("", nameBuf, 128);
+				ImGui::InputText("Rotation Deformer Name", nameBuf, 128);
 				if (model->checkNameExists(nameBuf))
 					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "DUPLICATE NAME");
 				ImGui::Separator();

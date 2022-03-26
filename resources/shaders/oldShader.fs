@@ -44,13 +44,39 @@ void main()
 			fragColor = vec4(uiColor, 1.0f);
 			break;
 		case(2):
-			fragColor = texture(atlasTex, texCoord) * texColor;
-			fragColor.r *= texColor.a / fragColor.a;
-			fragColor.g *= texColor.a / fragColor.a;
-			fragColor.b *= texColor.a / fragColor.a;
+			fragColor = texture(modelTex, texCoord) * texColor;
 			break;
 		case(3):
-			fragColor = vec4(0.0f, 0.0f, 0.0f, texture(atlasTex, texCoord).a);
+			fragColor = applyEffect(texture(modelTex, texCoord) * texColor);
+			break;
+		case(4):
+			fragColor = divideAlpha(texture(modelTex, texCoord) * texColor);
+			break;
+		case(5):
+			fragColor = divideAlpha(applyEffect(texture(modelTex, texCoord) * texColor));
+			break;
+		case(6):
+			vec4 v = texture(atlasTex, texCoord) * texColor;
+			fragColor = v / v.a;
+			fragColor.r *= texColor.a;
+			fragColor.g *= texColor.a;
+			fragColor.b *= texColor.a;
+			fragColor.a = v.a;
+			break;
+		case(7):
+			vec4 v2 = texture(atlasTex, texCoord) * texColor;
+			if (v2.a <= 0.0f){
+				discard;
+			}
+			fragColor = v2;
+			break;
+		case(8):
+			fragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		case(9):
+			fragColor = vec4(0.0f, 0.0f, 0.0f, texture(atlasTex, texCoord).a * texColor.a);
+			break;
+		case(10):
+			fragColor = vec4(0.0f, 0.0f, 0.0f, texture(atlasTex, texCoord).a * texColor.a);
 			if (fragColor.a == 0.0f)
 				discard;
 			meshID = ID;
