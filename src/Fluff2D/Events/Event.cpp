@@ -1,5 +1,6 @@
 #include "Event.h"
 
+//any frame
 bool Event::keyDown(int key)
 {
 	if (!io->WantCaptureKeyboard && isFocused && glfwGetKey(GLFWWin, key) == GLFW_PRESS)
@@ -10,6 +11,7 @@ bool Event::keyDown(int key)
 	return false;
 }
 
+//first frame
 bool Event::keyPressed(int key)
 {
 	if (!io->WantCaptureKeyboard && isFocused && keysCheckFrame.find(key) != keysCheckFrame.end())

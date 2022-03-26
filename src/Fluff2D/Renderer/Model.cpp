@@ -593,11 +593,7 @@ int Model::findClosestVertex(const std::vector<std::string>& selectedParts, int*
 
 	float closestDistance = FLT_MAX;
 
-	ImVec2 mPos = ImGui::GetMousePos();
-	ImVec2 offset = ImGui::GetWindowPos();
 	ImVec2 vpDim = ImGui::GetContentRegionAvail();
-	mPos.x -= offset.x;
-	mPos.y -= offset.y + ImGui::GetWindowContentRegionMin().y;
 
 	for (int i = 0; i < selectedParts.size(); i++)
 	{
@@ -608,7 +604,7 @@ int Model::findClosestVertex(const std::vector<std::string>& selectedParts, int*
 			auto vert = Camera2D::projection * glm::vec4(partMap[selectedParts[i]]->vertices[v].position.x, partMap[selectedParts[i]]->vertices[v].position.y, 0.0f, 1.0f);
 			vert.x = (vert.x + 1.0f) * vpDim.x / 2;
 			vert.y = (vert.y + 1.0f) * vpDim.y / 2;
-			float pixelDistance = static_cast<float>(pow(mPos.x - vert.x, 2) + pow(mPos.y - vert.y, 2));
+			float pixelDistance = static_cast<float>(pow(Event::viewportMouseCoord.x - vert.x, 2) + pow(Event::viewportMouseCoord.y - vert.y, 2));
 			if (pixelDistance <= Settings::vertexDetectionDistance * Settings::vertexDetectionDistance && closestDistance > pixelDistance)
 			{
 				*partNum = i;
@@ -862,11 +858,7 @@ void Model::render()
 	//mouse hovering mesh
 	if (detectMouseHover)
 	{
-		ImVec2 mPos = ImGui::GetMousePos();
-		ImVec2 offset = ImGui::GetWindowPos();
-		mPos.x -= offset.x;
-		mPos.y -= offset.y + ImGui::GetWindowContentRegionMin().y;
-		glReadPixels((int)mPos.x, (int)mPos.y, 1, 1, GL_RED_INTEGER, GL_INT, &mouseHoveredID);
+		glReadPixels((int)Event::viewportMouseCoord.x, (int)Event::viewportMouseCoord.y, 1, 1, GL_RED_INTEGER, GL_INT, &mouseHoveredID);
 		//since buffer cleared to 0 and ID starts at 1
 		mouseHoveredID--;
 	}

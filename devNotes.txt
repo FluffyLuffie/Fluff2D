@@ -19,7 +19,7 @@ Bezier for warp transforms.
 Save settings in a file and read when launched.
 [good enough] Moving model object hierarchy by dragging.
 Make psd importer more reliable.
-Clean up fragment shader code.
+[Done] Clean up fragment shader code.
 Code documentation.
 Editor and exported file documentation.
 

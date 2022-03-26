@@ -19,6 +19,8 @@ public:
 	inline static bool isFocused = false;
 	inline static bool isHovered = false;
 
+	inline static glm::vec2 viewportMouseCoord = glm::vec2();
+
 	static bool keyDown(int key);
 	static bool keyPressed(int key);
 	static bool keyReleased(int key);

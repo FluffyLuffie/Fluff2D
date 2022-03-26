@@ -38,6 +38,10 @@ void Application::update()
 		//ImGui::PushStyleColor(ImGuiCol_WindowBg, *(ImVec4*)&Settings::backgroundColor);
 		if (ImGui::Begin("Model Viewport"))
 		{
+			ImVec2 mPos = ImGui::GetMousePos();
+			ImVec2 offset = ImGui::GetWindowPos();
+
+			Event::viewportMouseCoord = glm::vec2(mPos.x - offset.x, mPos.y - offset.y - ImGui::GetWindowContentRegionMin().y);
 			Event::isFocused = ImGui::IsWindowFocused();
 			Event::isHovered = ImGui::IsWindowHovered();
 			if (model)
@@ -53,80 +57,97 @@ void Application::update()
 
 				int closestVertexIndex = -1;
 				int selectedPartNum = -1;
-				if (Event::isHovered)
+				if (Event::isFocused)
 				{
-					if (selectedParts.size())
+					//if spacebar pressed, move camera
+					if (Event::keyDown(GLFW_KEY_SPACE) && !draggingVertices)
+						panningCamera = true;
+					else if (Event::keyReleased(GLFW_KEY_SPACE))
+						panningCamera = false;
+
+					if (panningCamera)
 					{
-						//testing stuff, move somewhere else later
-						closestVertexIndex = model->findClosestVertex(selectedParts, &selectedPartNum);
-						if (closestVertexIndex != -1)
+						if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+							oldMouseCoord = Event::viewportMouseCoord;
+						if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 						{
-							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-							{
-								dragMod = Event::mod;
-
-								ImVec2 mPos = ImGui::GetMousePos();
-								ImVec2 offset = ImGui::GetWindowPos();
-								mPos.x -= offset.x;
-								mPos.y -= offset.y + ImGui::GetWindowContentRegionMin().y;
-
-								oldMouseCoord = glm::inverse(Camera2D::projection) * glm::vec4(mPos.x * 2.0f / currentFbSize.x - 1.0f, mPos.y * 2.0f / currentFbSize.y - 1.0f, 0.0f, 1.0f);;
-								
-								//if clicked vertex is not in selected vertices, clear
-								if (GLFW_MOD_CONTROL != dragMod && std::find(model->selectedVertices.begin(), model->selectedVertices.end(), VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex)) == model->selectedVertices.end())
-								{
-									model->selectedVertices.clear();
-								}
-								model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
-
-								model->updateOriginalVertexPositions();
-							}
-						}
-						//if clicked on nothing, clear
-						else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-						{
-							model->selectedVertices.clear();
+							Camera2D::pos += glm::vec2(-Event::viewportMouseCoord.x + oldMouseCoord.x, Event::viewportMouseCoord.y - oldMouseCoord.y);
+							oldMouseCoord = Event::viewportMouseCoord;
 						}
 					}
-
-					//move vertices
-					if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != dragMod)
+					else
 					{
-						if (model->selectedVertices.size())
+						if (selectedParts.size())
 						{
-							//check if keyvalues are on keyforms of all parts
-							bool onKeyform = true;
-
-							//for each selected part
-							for (int i = 0; i < selectedParts.size() && onKeyform; i++)
+							//testing stuff, move somewhere else later
+							closestVertexIndex = model->findClosestVertex(selectedParts, &selectedPartNum);
+							if (closestVertexIndex != -1)
 							{
-								//for each param name in part
-								for (int j = 0; j < model->partMap[selectedParts[i]]->paramNames.size(); j++)
+								if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 								{
-									//check if paramValue is in the keyvalues
-									if (std::find(model->partMap[selectedParts[i]]->paramKeyvalues[j].begin(), model->partMap[selectedParts[i]]->paramKeyvalues[j].end(), model->paramValues[model->partMap[selectedParts[i]]->paramNames[j]]) == model->partMap[selectedParts[i]]->paramKeyvalues[j].end())
+									dragMod = Event::mod;
+
+									oldMouseCoord = glm::inverse(Camera2D::projection) * glm::vec4(Event::viewportMouseCoord.x * 2.0f / currentFbSize.x - 1.0f, Event::viewportMouseCoord.y * 2.0f / currentFbSize.y - 1.0f, 0.0f, 1.0f);;
+
+									//if clicked vertex is not in selected vertices, clear
+									if (GLFW_MOD_CONTROL != dragMod && std::find(model->selectedVertices.begin(), model->selectedVertices.end(), VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex)) == model->selectedVertices.end())
 									{
-										onKeyform = false;
-										break;
+										model->selectedVertices.clear();
+									}
+									model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
+
+									model->updateOriginalVertexPositions();
+								}
+							}
+							//if clicked on nothing, clear
+							else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+							{
+								model->selectedVertices.clear();
+							}
+						}
+
+						//move vertices
+						if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != dragMod)
+						{
+							if (model->selectedVertices.size())
+							{
+								//check if keyvalues are on keyforms of all parts
+								bool onKeyform = true;
+
+								//for each selected part
+								for (int i = 0; i < selectedParts.size() && onKeyform; i++)
+								{
+									//for each param name in part
+									for (int j = 0; j < model->partMap[selectedParts[i]]->paramNames.size(); j++)
+									{
+										//check if paramValue is in the keyvalues
+										if (std::find(model->partMap[selectedParts[i]]->paramKeyvalues[j].begin(), model->partMap[selectedParts[i]]->paramKeyvalues[j].end(), model->paramValues[model->partMap[selectedParts[i]]->paramNames[j]]) == model->partMap[selectedParts[i]]->paramKeyvalues[j].end())
+										{
+											onKeyform = false;
+											break;
+										}
 									}
 								}
-							}
 
-							if (onKeyform)
-							{
-								model->moveSelectedVertices(oldMouseCoord, dragMod);
-								draggingVertices = true;
+								if (onKeyform)
+								{
+									model->moveSelectedVertices(oldMouseCoord, dragMod);
+									draggingVertices = true;
+								}
 							}
 						}
 					}
-					else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && draggingVertices)
+
+					if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
 					{
 						//model->updateOriginalVertexPositions();
 						draggingVertices = false;
+						if (!Event::keyDown(GLFW_KEY_SPACE))
+							panningCamera = false;
 					}
 
 					//check if mouse should detect which mesh it is on
-					if (!draggingVertices)
+					if (!draggingVertices && !panningCamera)
 						model->detectMouseHover = true;
 					else
 						model->detectMouseHover = false;
@@ -139,7 +160,7 @@ void Application::update()
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 				//if hovering over mesh that is not selected, and no closest vertex
-				if (Event::isHovered && model->mouseHoveredID > -1 && std::find(selectedParts.begin(), selectedParts.end(), model->modelMeshes[model->mouseHoveredID]->name) == selectedParts.end() && closestVertexIndex == -1)
+				if (Event::isFocused && Event::isHovered && model->mouseHoveredID > -1 && std::find(selectedParts.begin(), selectedParts.end(), model->modelMeshes[model->mouseHoveredID]->name) == selectedParts.end() && closestVertexIndex == -1)
 				{
 					model->renderHighlightedMesh();
 					if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))

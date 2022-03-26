@@ -42,6 +42,7 @@ private:
 
 	bool queueFontChange = false;
 	bool draggingVertices = false;
+	bool panningCamera = false;
 
 	const int EVENT_FRAMES = 3;
 	int eventFramesCount = 0;
