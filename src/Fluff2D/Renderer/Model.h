@@ -99,7 +99,7 @@ public:
 private:
 	void updatePartMapRecursive(std::shared_ptr<ModelPart> part);
 
-	unsigned int modelFbo = 0, mousePickBuffer = 0, modelRbo = 0;
+	unsigned int modelFbo = 0, mousePickBuffer = 0;
 	unsigned int canvasVao = 0, canvasVbo = 0, canvasEbo = 0;
 	glm::vec2 canvasCoords[4] = { glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f) };
 

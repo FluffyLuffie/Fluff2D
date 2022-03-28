@@ -55,6 +55,9 @@ WarpDeformer::WarpDeformer(const std::string& partName, int countX, int countY, 
 	glGenVertexArrays(1, (GLuint*)(&vao));
 	glGenBuffers(1, (GLuint*)(&vbo));
 	glGenBuffers(1, (GLuint*)(&ebo));
+
+	glBindVertexArray(vao);
+	glEnableVertexAttribArray(0);
 }
 
 WarpDeformer::~WarpDeformer()

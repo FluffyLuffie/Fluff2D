@@ -5,6 +5,10 @@ ModelMesh::ModelMesh()
 	glGenVertexArrays(1, (GLuint*)(&vao));
 	glGenBuffers(1, (GLuint*)(&vbo));
 	glGenBuffers(1, (GLuint*)(&ebo));
+
+	glBindVertexArray(vao);
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 }
 
 ModelMesh::~ModelMesh()

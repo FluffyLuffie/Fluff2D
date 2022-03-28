@@ -11,6 +11,9 @@ RotationDeformer::RotationDeformer(const std::string& partName, float centerX, f
 	glGenBuffers(1, (GLuint*)(&vbo));
 	glGenBuffers(1, (GLuint*)(&ebo));
 
+	glBindVertexArray(vao);
+	glEnableVertexAttribArray(0);
+
 	//might need to make size not affected by other stuff
 	addVertex(0.0f, 0.0f);
 	addVertex(0.0f, 50.0f);

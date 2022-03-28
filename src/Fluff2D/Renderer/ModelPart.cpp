@@ -140,11 +140,9 @@ void ModelPart::updateVertexData()
 
 	//set vertices
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-	glEnableVertexAttribArray(0);
 
 	//set tex coords
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
-	glEnableVertexAttribArray(1);
 }
 
 void ModelPart::calculateKeyformIndex(std::unordered_map<std::string, float>& paramValues)

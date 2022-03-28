@@ -33,6 +33,9 @@ Model::Model()
 	glGenBuffers(1, (GLuint*)(&canvasVbo));
 	glGenBuffers(1, (GLuint*)(&canvasEbo));
 
+	glBindVertexArray(canvasVao);
+	glEnableVertexAttribArray(0);
+
 	glBindVertexArray(vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -49,7 +52,6 @@ Model::Model()
 
 	//framebuffer stuff
 	glGenFramebuffers(1, &modelFbo);
-	glGenRenderbuffers(1, &modelRbo);
 	glGenTextures(1, &modelTexColorBuffer);
 	glGenTextures(1, &mousePickBuffer);
 }
@@ -67,7 +69,7 @@ Model::~Model()
 	glDeleteBuffers(1, &canvasEbo);
 
 	glDeleteFramebuffers(1, &modelFbo);
-	glDeleteRenderbuffers(1, &modelRbo);
+
 	glDeleteTextures(1, &modelTexColorBuffer);
 	glDeleteTextures(1, &mousePickBuffer);
 }
@@ -186,19 +188,15 @@ void Model::renderSelectedVertices()
 	shader.setFloat("pointSize", static_cast<float>(Settings::meshPointSize));
 
 	glBindVertexArray(vao);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int), 0, GL_DYNAMIC_DRAW);
 
 	//might group all the vertices into a single draw call if it becomes slow, just testing for now
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex), &partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index], GL_DYNAMIC_DRAW);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW);
-
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-		glEnableVertexAttribArray(0);
-
 		glDrawElements(GL_POINTS, GLsizei(1), GL_UNSIGNED_INT, 0);
 	}
 }
@@ -349,7 +347,6 @@ void Model::renderClosestVertex(const std::string& partName, int vertexIndex)
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int), 0, GL_DYNAMIC_DRAW);
 
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-	glEnableVertexAttribArray(0);
 
 	glDrawElements(GL_POINTS, GLsizei(1), GL_UNSIGNED_INT, 0);
 }
@@ -634,7 +631,6 @@ void Model::updateCanvasCoord()
 
 	//set vertices
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
-	glEnableVertexAttribArray(0);
 }
 
 void Model::showMeshClippingMenu(const std::string& meshName)
