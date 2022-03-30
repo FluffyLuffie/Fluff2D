@@ -6,6 +6,7 @@ RotationDeformer::RotationDeformer(const std::string& partName, float centerX, f
 	name = partName;
 	pos = glm::vec2(centerX, centerY);
 	originalPos = glm::vec2(centerX, centerY);
+	basePos = glm::vec2(centerX, centerY);
 
 	glGenVertexArrays(1, (GLuint*)(&vao));
 	glGenBuffers(1, (GLuint*)(&vbo));
@@ -17,8 +18,6 @@ RotationDeformer::RotationDeformer(const std::string& partName, float centerX, f
 	//might need to make size not affected by other stuff
 	addVertex(0.0f, 0.0f);
 	addVertex(0.0f, 50.0f);
-
-	originalVertexPositions[0] = glm::vec2(centerX, centerY);
 
 	indices.push_back(0);
 	indices.push_back(1);
@@ -33,10 +32,7 @@ RotationDeformer::~RotationDeformer()
 
 void RotationDeformer::modelUpdate(std::unordered_map<std::string, float>& paramValues)
 {
-	localVertexPositions[0] = glm::vec2();
 	vertices[0].position = transform * glm::vec4(localVertexPositions[0], 0.0f, 1.0f);
-
-	localVertexPositions[1] = glm::vec2(0.0f, 20.0f);
 	vertices[1].position = transform * glm::vec4(localVertexPositions[1], 0.0f, 1.0f);
 
 	for (int i = 0; i < children.size(); i++)
@@ -63,19 +59,25 @@ void RotationDeformer::renderInspector()
 	dataChanged |= ImGui::DragFloat("Rotation", &rotation);
 	dataChanged |= ImGui::DragFloat2("Scale", &scale.x, 0.01f);
 
-	if (dataChanged && keyformIndex != -1)
+	if (dataChanged)
 	{
-		keyforms[keyformIndex].position = pos;
-		keyforms[keyformIndex].rotation = rotation;
-		keyforms[keyformIndex].scale = scale;
+		if (keyformIndex != -1)
+		{
+			keyforms[keyformIndex].position = pos - basePos;
+			keyforms[keyformIndex].rotation = rotation - baseRotation;
+			keyforms[keyformIndex].scale = scale - baseScale;
+		}
+		else
+		{
+			basePos = pos;
+			baseRotation = rotation;
+			baseScale = scale;
+		}
 	}
 }
 
 void RotationDeformer::changeCenterPoint(glm::vec2 offset)
 {
-	if (keyforms.size() == 0)
-		pos += offset;
-
 	for (int i = 0; i < children.size(); i++)
 	{
 		glm::mat4 temp = glm::mat4(1.0f);
@@ -83,10 +85,6 @@ void RotationDeformer::changeCenterPoint(glm::vec2 offset)
 		temp = glm::scale(temp, glm::vec3(scale, 1.0f));
 
 		glm::vec2 childOffset = glm::inverse(temp) * glm::vec4(offset, 0.0f, 1.0f);
-		children[i]->pos -= childOffset;
-		for (int j = 0; j < children[i]->keyforms.size(); j++)
-		{
-			children[i]->keyforms[j].position -= childOffset;
-		}
+		children[i]->basePos -= childOffset;
 	}
 }

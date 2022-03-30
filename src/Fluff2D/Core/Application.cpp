@@ -94,9 +94,13 @@ void Application::update()
 									{
 										model->selectedVertices.clear();
 									}
-									model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
 
-									model->updateOriginalVertexPositions();
+									//if selected vertex's part has parameters
+									if (model->partMap[selectedParts[selectedPartNum]]->keyforms.size())
+									{
+										model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
+										model->updateOriginalVertexPositions();
+									}
 								}
 							}
 							//if clicked on nothing, clear

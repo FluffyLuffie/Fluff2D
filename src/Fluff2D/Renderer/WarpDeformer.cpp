@@ -9,6 +9,7 @@ WarpDeformer::WarpDeformer(const std::string& partName, int countX, int countY, 
 
 	pos = glm::vec2(centerX, centerY);
 	originalPos = glm::vec2(centerX, centerY);
+	basePos = glm::vec2(centerX, centerY);
 
 	//increase bounding box
 	width *= borderBuffer;
@@ -77,7 +78,7 @@ void WarpDeformer::modelUpdate(std::unordered_map<std::string, float>& paramValu
 		{
 			//change position
 			glm::mat4 temp = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(children[i]->pos, 0.0f)), glm::vec3(children[i]->scale, 1.0f));
-			children[i]->warpTransform(glm::inverse(temp) * glm::vec4(warpPoint(children[i]->localTransform * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), 0.0f, 1.0f));
+			children[i]->warpTransform(warpPoint(children[i]->localTransform * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)));
 		}
 		else
 		{
@@ -110,11 +111,20 @@ void WarpDeformer::renderInspector()
 	dataChanged |= ImGui::DragFloat("Rotation", &rotation);
 	dataChanged |= ImGui::DragFloat2("Scale", &scale.x, 0.01f);
 
-	if (dataChanged && keyformIndex != -1)
+	if (dataChanged)
 	{
-		keyforms[keyformIndex].position = pos;
-		keyforms[keyformIndex].rotation = rotation;
-		keyforms[keyformIndex].scale = scale;
+		if (keyformIndex != -1)
+		{
+			keyforms[keyformIndex].position = pos - basePos;
+			keyforms[keyformIndex].rotation = rotation - baseRotation;
+			keyforms[keyformIndex].scale = scale - baseScale;
+		}
+		else
+		{
+			basePos = pos;
+			baseRotation = rotation;
+			baseScale = scale;
+		}
 	}
 
 	ImGui::Separator();

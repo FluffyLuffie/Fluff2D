@@ -42,11 +42,20 @@ void ModelMesh::renderInspector()
 	dataChanged |= ImGui::ColorEdit4("Mesh Color", &color[0]);
 	ImGui::Separator();
 
-	if (dataChanged && keyformIndex != -1)
+	if (dataChanged)
 	{
-		keyforms[keyformIndex].position = pos;
-		keyforms[keyformIndex].rotation = rotation;
-		keyforms[keyformIndex].scale = scale;
+		if (keyformIndex != -1)
+		{
+			keyforms[keyformIndex].position = pos - basePos;
+			keyforms[keyformIndex].rotation = rotation - baseRotation;
+			keyforms[keyformIndex].scale = scale - baseScale;
+		}
+		else
+		{
+			basePos = pos;
+			baseRotation = rotation;
+			baseScale = scale;
+		}
 	}
 
 	//maybe move this somewhere else

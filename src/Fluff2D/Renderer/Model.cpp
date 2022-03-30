@@ -225,19 +225,19 @@ void Model::moveSelectedVertices(const glm::vec2 &originalMouseCoord, int dragMo
 				//root selected
 				if (selectedVertices[i].index == 0)
 				{
-					glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + initialVerticesPos[&selectedVertices[i]], 0.0f, 1.0f));
+					glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + initialDragData[&selectedVertices[i]], 0.0f, 1.0f));
 					glm::mat4 tempMat = glm::mat4(1.0f);
-					tempMat = glm::translate(tempMat, glm::vec3(initialVerticesPos[&selectedVertices[i]], 0.0f));
+					tempMat = glm::translate(tempMat, glm::vec3(initialDragData[&selectedVertices[i]], 0.0f));
 					tempMat = glm::rotate(tempMat, glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 					tempMat = glm::scale(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f));
 
 					glm::mat4 tempMat2 = glm::scale(glm::rotate(glm::mat4(1.0f), glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f)), glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f));
 					
 					glm::vec2 oldPos = partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].position;
-					glm::vec2 newPos = tempMat2 * glm::inverse(tempMat) * glm::vec4(unwarpedPoint, 0.0f, 1.0f) + glm::vec4(initialVerticesPos[&selectedVertices[i]], 0.0f, 0.0f);
+					glm::vec2 newPos = glm::vec2(tempMat2 * glm::inverse(tempMat) * glm::vec4(unwarpedPoint, 0.0f, 1.0f)) + initialDragData[&selectedVertices[i]] - partMap[selectedVertices[i].partName]->basePos;
 					partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].position = newPos;
 
-					//keep children's global position
+					//a bit off when in warped rect
 					if (dragMod == GLFW_MOD_ALT)
 					{
 						auto r = std::dynamic_pointer_cast<RotationDeformer>(partMap[selectedVertices[i].partName]);
@@ -250,20 +250,20 @@ void Model::moveSelectedVertices(const glm::vec2 &originalMouseCoord, int dragMo
 				{
 					glm::mat4 tempMat = glm::mat4(1.0f);
 					tempMat = glm::translate(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->pos.x, partMap[selectedVertices[i].partName]->pos.y, 0.0f));
-					tempMat = glm::rotate(tempMat, glm::radians(initialVerticesPos[&selectedVertices[i]].x), glm::vec3(0.0f, 0.0f, 1.0f));
+					tempMat = glm::rotate(tempMat, glm::radians(initialDragData[&selectedVertices[i]].x), glm::vec3(0.0f, 0.0f, 1.0f));
 					tempMat = glm::scale(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f));
 
 					glm::vec2 mousePos = glm::inverse(partMap[selectedVertices[i].partName]->parent->transform * tempMat) * mouseToScreen;
 					glm::vec2 mousePosOriginal = glm::inverse(partMap[selectedVertices[i].partName]->parent->transform * tempMat) * glm::vec4(partMap[selectedVertices[i].partName]->vertices[0].position, 0.0f, 1.0f);
 
-					partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].rotation = glm::degrees(std::atan2((mousePos.y - mousePosOriginal.y), (mousePos.x - mousePosOriginal.x))) + initialVerticesPos[&selectedVertices[i]].x - 90.0f;
+					partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].rotation = glm::degrees(std::atan2((mousePos.y - mousePosOriginal.y), (mousePos.x - mousePosOriginal.x))) + initialDragData[&selectedVertices[i]].x - 90.0f;
 				}
 			}
 			else
 			{
-				glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + initialVerticesPos[&selectedVertices[i]], 0.0f, 1.0f));
+				glm::vec2 unwarpedPoint = p->unwarpPoint(glm::inverse(p->transform) * glm::vec4(glm::vec2(mouseToScreen) - originalMouseCoord + initialDragData[&selectedVertices[i]], 0.0f, 1.0f));
 
-				partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].vertices[selectedVertices[i].index] = glm::vec2(glm::inverse(partMap[selectedVertices[i].partName]->localTransform) * glm::vec4(unwarpedPoint, 0.0f, 1.0f));
+				partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].vertices[selectedVertices[i].index] = glm::vec2(glm::inverse(partMap[selectedVertices[i].partName]->localTransform) * glm::vec4(unwarpedPoint, 0.0f, 1.0f)) - partMap[selectedVertices[i].partName]->originalVertexPositions[selectedVertices[i].index];
 			}
 		}
 		else
@@ -276,7 +276,7 @@ void Model::moveSelectedVertices(const glm::vec2 &originalMouseCoord, int dragMo
 				//root selected
 				if (selectedVertices[i].index == 0)
 				{
-					glm::vec2 newPos = glm::vec2(glm::scale(glm::rotate(glm::mat4(1.0f), glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f)), glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f)) * glm::vec4(mousePos - mousePosOriginal, 0.0f, 1.0f)) + initialVerticesPos[&selectedVertices[i]];
+					glm::vec2 newPos = glm::vec2(glm::scale(glm::rotate(glm::mat4(1.0f), glm::radians(partMap[selectedVertices[i].partName]->rotation), glm::vec3(0.0f, 0.0f, 1.0f)), glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f)) * glm::vec4(mousePos - mousePosOriginal, 0.0f, 1.0f)) + initialDragData[&selectedVertices[i]];
 					glm::vec2 oldPos = partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].position;
 					partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].position = newPos;
 
@@ -293,24 +293,24 @@ void Model::moveSelectedVertices(const glm::vec2 &originalMouseCoord, int dragMo
 				{
 					glm::mat4 tempMat = glm::mat4(1.0f);
 					tempMat = glm::translate(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->pos, 0.0f));
-					tempMat = glm::rotate(tempMat, glm::radians(initialVerticesPos[&selectedVertices[i]].x), glm::vec3(0.0f, 0.0f, 1.0f));
+					tempMat = glm::rotate(tempMat, glm::radians(initialDragData[&selectedVertices[i]].x), glm::vec3(0.0f, 0.0f, 1.0f));
 					tempMat = glm::scale(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f));
 
 					mousePos = glm::inverse(partMap[selectedVertices[i].partName]->parent->transform * tempMat) * mouseToScreen;
 					mousePosOriginal = glm::inverse(partMap[selectedVertices[i].partName]->parent->transform * tempMat) * glm::vec4(partMap[selectedVertices[i].partName]->vertices[0].position, 0.0f, 1.0f);
 
-					partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].rotation = glm::degrees(std::atan2((mousePos.y - mousePosOriginal.y), (mousePos.x - mousePosOriginal.x))) + initialVerticesPos[&selectedVertices[i]].x - 90.0f;
+					partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].rotation = glm::degrees(std::atan2((mousePos.y - mousePosOriginal.y), (mousePos.x - mousePosOriginal.x))) + initialDragData[&selectedVertices[i]].x - 90.0f;
 				}
 			}
 			else
-				partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].vertices[selectedVertices[i].index] = mousePos - mousePosOriginal + initialVerticesPos[&selectedVertices[i]];
+				partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].vertices[selectedVertices[i].index] = mousePos - mousePosOriginal + initialDragData[&selectedVertices[i]];
 		}
 	}
 }
 
 void Model::updateOriginalVertexPositions()
 {
-	initialVerticesPos.clear();
+	initialDragData.clear();
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
 		//if rotation deformer, save other data
@@ -318,18 +318,18 @@ void Model::updateOriginalVertexPositions()
 		{
 			if (selectedVertices[i].index == 0)
 				if (partMap[selectedVertices[i].partName]->parent->type == ModelPart::PartType::warpDeformer)
-					initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->vertices[0].position;
+					initialDragData[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->vertices[0].position;
 				else
-					initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->pos;
+					initialDragData[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].position;
 			else
-				initialVerticesPos[&selectedVertices[i]] = glm::vec2(partMap[selectedVertices[i].partName]->rotation, 0.0f);
+				initialDragData[&selectedVertices[i]] = glm::vec2(partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].rotation, 0.0f);
 		}
 		else
 		{
 			if (partMap[selectedVertices[i].partName]->parent->type == ModelPart::PartType::warpDeformer)
-				initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index].position;
+				initialDragData[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index].position;
 			else
-				initialVerticesPos[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index];
+				initialDragData[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->keyforms[partMap[selectedVertices[i].partName]->keyformIndex].vertices[selectedVertices[i].index];
 		}
 	}
 }
@@ -442,7 +442,7 @@ void Model::addWarpDeformer(std::string name, const std::vector<std::string>& se
 	for (int i = 0; i < newDeformer->children.size(); i++)
 	{
 		newDeformer->children[i]->parent = newDeformer;
-		newDeformer->children[i]->pos -= glm::vec2(newDeformer->pos.x, newDeformer->pos.y);
+		newDeformer->children[i]->basePos -= glm::vec2(newDeformer->pos.x, newDeformer->pos.y);
 	}
 
 	partMap[name] = newDeformer;
@@ -507,7 +507,7 @@ void Model::addRotationDeformer(std::string name, const std::vector<std::string>
 	for (int i = 0; i < newDeformer->children.size(); i++)
 	{
 		newDeformer->children[i]->parent = newDeformer;
-		newDeformer->children[i]->pos -= glm::vec2(newDeformer->pos.x, newDeformer->pos.y);
+		newDeformer->children[i]->basePos -= glm::vec2(newDeformer->pos.x, newDeformer->pos.y);
 	}
 
 	partMap[name] = newDeformer;
@@ -578,9 +578,10 @@ void Model::addKeyform(const std::string& partName, const std::string& paramName
 		int keyvalueIndex = static_cast<int>(std::find(partMap[partName]->paramKeyvalues[paramNameIndex].begin(), partMap[partName]->paramKeyvalues[paramNameIndex].end(), keyvalue) - partMap[partName]->paramKeyvalues[paramNameIndex].begin());
 	}
 
-
 	//partMap[partName]->keyforms = newKeyform;
-	partMap[partName]->keyforms.resize(totalKeyformCount, KeyformData(partMap[partName]->pos, partMap[partName]->rotation, partMap[partName]->scale));
+
+	//for first keyform, use this
+	partMap[partName]->keyforms.resize(totalKeyformCount, KeyformData(partMap[partName]->pos - partMap[partName]->basePos, partMap[partName]->rotation - partMap[partName]->baseRotation, partMap[partName]->scale - partMap[partName]->baseScale));
 
 }
 

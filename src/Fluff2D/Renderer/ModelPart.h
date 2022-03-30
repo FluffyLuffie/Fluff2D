@@ -15,7 +15,7 @@ struct KeyformData
 	glm::vec2 scale;
 	std::unordered_map<int, glm::vec2> vertices;
 
-	KeyformData(glm::vec2 p = glm::vec2(), float r = 0.0f, glm::vec2 s = glm::vec2(1.0f, 1.0f))
+	KeyformData(glm::vec2 p = glm::vec2(), float r = 0.0f, glm::vec2 s = glm::vec2())
 	{
 		position = p;
 		rotation = r;
@@ -40,7 +40,7 @@ public:
 
 	glm::vec2 basePos = glm::vec2(0.0f);
 	float baseRotation = 0.0f;
-	glm::vec2 baseScale = glm::vec2(0.0f);
+	glm::vec2 baseScale = glm::vec2(1.0f, 1.0f);
 
 	std::vector<std::string> paramNames;
 	std::vector<std::vector<float>> paramKeyvalues;

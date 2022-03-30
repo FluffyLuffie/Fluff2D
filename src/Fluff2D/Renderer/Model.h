@@ -46,7 +46,7 @@ public:
 	std::unordered_map<std::string, std::shared_ptr<ModelMesh>> meshMap;
 
 	std::vector<VertexSpecifier> selectedVertices;
-	std::unordered_map<VertexSpecifier*, glm::vec2> initialVerticesPos;
+	std::unordered_map<VertexSpecifier*, glm::vec2> initialDragData;
 
 	std::unordered_map<std::string, float> paramValues;
 	std::unordered_map<std::string, std::shared_ptr<Parameter>> paramMap;

@@ -2,6 +2,11 @@
 
 void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramValues)
 {
+	//interpolate the values of the keyforms
+	glm::vec2 finalPos = basePos;
+	float finalRotation = baseRotation;
+	glm::vec2 finalScale = baseScale;
+
 	//update based on parameters
 	if (paramNames.size())
 	{
@@ -36,11 +41,6 @@ void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramVal
 			keyformWeights[i] = std::abs(mult);
 		}
 
-		//interpolate the values of the keyforms
-		glm::vec2 finalPos = glm::vec2();
-		float finalRotation = 0.0f;
-		glm::vec2 finalScale = glm::vec2();
-
 		for (int i = 0; i < keyformWeights.size(); i++)
 		{
 			int keyformIndex = 0;
@@ -54,33 +54,26 @@ void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramVal
 			finalScale += keyforms[keyformIndex].scale * keyformWeights[i];
 		}
 
-		pos = finalPos;
-		rotation = finalRotation;
-		scale = finalScale;
-
 		//for each vertex
 		for (int i = 0; i < localVertexPositions.size(); i++)
 		{
 			glm::vec2 vPos = glm::vec2();
-			float leftoverWeight = 1.0f;
 
 			//for each of the keyforms
 			for (int j = 0; j < keyformIndices.size(); j++)
 			{
 				//if found
 				if (keyforms[keyformIndices[j]].vertices.find(i) != keyforms[keyformIndices[j]].vertices.end())
-				{
 					vPos += keyforms[keyformIndices[j]].vertices[i] * keyformWeights[j];
-					leftoverWeight -= keyformWeights[j];
-				}
 			}
 
-			//leftover weight is the original position's weight
-			vPos += originalVertexPositions[i] * leftoverWeight;
-
-			localVertexPositions[i] = vPos;
+			localVertexPositions[i] = vPos + originalVertexPositions[i];
 		}
 	}
+
+	pos = finalPos;
+	rotation = finalRotation;
+	scale = finalScale;
 
 	//update local transform
 	localTransform = glm::mat4(1.0f);
@@ -98,7 +91,7 @@ void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramVal
 void ModelPart::warpTransform(glm::vec2 delta)
 {
 	localTransform = glm::mat4(1.0f);
-	localTransform = glm::translate(localTransform, glm::vec3(pos + delta, 0.0f));
+	localTransform = glm::translate(localTransform, glm::vec3(delta, 0.0f));
 	localTransform = glm::rotate(localTransform, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 	localTransform = glm::scale(localTransform, glm::vec3(scale, 1.0f));
 

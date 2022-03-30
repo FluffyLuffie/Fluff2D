@@ -487,6 +487,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			model->modelMeshes[imageLayersRead]->name = layerRects[layerNum].layerName;
 			model->modelMeshes[imageLayersRead]->pos = glm::vec2(layerRects[layerNum].x + (layerRects[layerNum].w - model->psdDimension.x) / 2.0f, -layerRects[layerNum].y + (-layerRects[layerNum].h + model->psdDimension.y) / 2.0f);
 			model->modelMeshes[imageLayersRead]->originalPos = model->modelMeshes[imageLayersRead]->pos;
+			model->modelMeshes[imageLayersRead]->basePos = model->modelMeshes[imageLayersRead]->pos;
 			model->modelMeshes[imageLayersRead]->createBasicMesh(rectangles[imageLayersRead].x, rectangles[imageLayersRead].y, rectangles[imageLayersRead].w, rectangles[imageLayersRead].h, rectangles[imageLayersRead].flipped, atlasWidth, atlasHeight);
 
 			//assign a pool of tasks to threads
