@@ -38,6 +38,6 @@ public:
 	inline static glm::vec3 rotationDeformerColor = glm::vec3(0.0f, 0.0f, 0.8f);
 	inline static int rotationDeformerWidth = 3;
 
-	inline static float vertexDetectionDistance = 30.0f;
+	inline static float vertexDetectionDistance = 20.0f;
 };
 

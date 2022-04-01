@@ -106,12 +106,6 @@ void ModelMesh::createBasicMesh(int layerX, int layerY, int layerW, int layerH, 
 		addMeshVertex(glm::vec2(layerH / 2.0f, layerW / 2.0f), atlasWidth, atlasHeight);
 		addMeshVertex(glm::vec2(layerH / 2.0f, layerW / -2.0f), atlasWidth, atlasHeight);
 		addMeshVertex(glm::vec2(layerH / -2.0f, layerW / -2.0f), atlasWidth, atlasHeight);
-		//addVertex(0.0f, 0.0f,						(layerX + layerW / 2.0f) / atlasWidth,		(atlasHeight - layerY - layerH / 2.0f) / atlasHeight);
-		// 
-		//addVertex(layerH / -2.0f, layerW / 2.0f,	(float)layerX / atlasWidth,					(float)(atlasHeight - layerY - layerH) / atlasHeight);
-		//addVertex(layerH / 2.0f, layerW / 2.0f,	(float)layerX / atlasWidth,					(float)(atlasHeight - layerY) / atlasHeight);
-		//addVertex(layerH / 2.0f, layerW / -2.0f,	(float)(layerX + layerW) / atlasWidth,		(float)(atlasHeight - layerY) / atlasHeight);
-		//addVertex(layerH / -2.0f, layerW / -2.0f, (float)(layerX + layerW) / atlasWidth,		(float)(atlasHeight - layerY - layerH) / atlasHeight);
 	}
 	else
 	{
@@ -120,15 +114,6 @@ void ModelMesh::createBasicMesh(int layerX, int layerY, int layerW, int layerH, 
 		addMeshVertex(glm::vec2(layerW / 2.0f, layerH / 2.0f), atlasWidth, atlasHeight);
 		addMeshVertex(glm::vec2(layerW / 2.0f, layerH / -2.0f), atlasWidth, atlasHeight);
 		addMeshVertex(glm::vec2(layerW / -2.0f, layerH / -2.0f), atlasWidth, atlasHeight);
-
-		/*
-		addVertex(0.0f, 0.0f,						(layerX + layerW / 2.0f) / atlasWidth,		(atlasHeight - layerY - layerH / 2.0f) / atlasHeight);
-
-		addVertex(layerW / -2.0f, layerH / 2.0f,	(float)layerX / atlasWidth,					(float)(atlasHeight - layerY) / atlasHeight);
-		addVertex(layerW / 2.0f, layerH / 2.0f,		(float)(layerX + layerW) / atlasWidth,		(float)(atlasHeight - layerY) / atlasHeight);
-		addVertex(layerW / 2.0f, layerH / -2.0f,	(float)(layerX + layerW) / atlasWidth,		(float)(atlasHeight - layerY - layerH) / atlasHeight);
-		addVertex(layerW / -2.0f, layerH / -2.0f,	(float)layerX / atlasWidth,					(float)(atlasHeight - layerY - layerH) / atlasHeight);
-		*/
 	}
 
 	//make indices
@@ -189,4 +174,37 @@ void ModelMesh::startMeshEdit()
 	transform = glm::translate(glm::mat4(1.0f), glm::vec3(originalPos, 0.0f));
 	for (int i = 0; i < localVertexPositions.size(); i++)
 		vertices[i].position = transform * glm::vec4(originalVertexPositions[i], 0.0f, 1.0f);
+}
+
+void ModelMesh::removeVertex(int index)
+{
+	vertices.erase(vertices.begin() + index);
+	localVertexPositions.erase(localVertexPositions.begin() + index);
+	originalVertexPositions.erase(originalVertexPositions.begin() + index);
+
+	for (int i = 0; i < keyforms.size(); i++)
+	{
+		keyforms[i].vertices.erase(index);
+
+		//shift the position of keyforms
+		std::unordered_map<int, glm::vec2> temp;
+		for (auto const &[i, v] : keyforms[i].vertices)
+		{
+			if (i > index)
+				temp[i - 1] = v;
+			else
+				temp[i] = v;
+		}
+		keyforms[i].vertices = temp;
+	}
+
+	Triangulator::triangulate(vertices, indices);
+}
+
+glm::vec2 ModelMesh::posToTexCoord(const glm::vec2& vPos, int atlasWidth, int atlasHeight)
+{
+	if (flipped)
+		return glm::vec2((atlasPositionX + textureWidth / 2.0f - vPos.y) / atlasWidth, (atlasHeight - atlasPositionY - textureHeight / 2.0f + vPos.x) / atlasHeight);
+	else
+		return glm::vec2((atlasPositionX + textureWidth / 2.0f + vPos.x) / atlasWidth, (atlasHeight - atlasPositionY - textureHeight / 2.0f + vPos.y) / atlasHeight);
 }

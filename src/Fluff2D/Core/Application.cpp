@@ -60,9 +60,9 @@ void Application::update()
 				if (Event::isHovered || Event::isFocused)
 				{
 					//if spacebar pressed, move camera
-					if (Event::keyDown(GLFW_KEY_SPACE) && !draggingVertices)
+					if (Event::keyDown(GLFW_KEY_SPACE, true) && !draggingVertices)
 						panningCamera = true;
-					else if (Event::keyReleased(GLFW_KEY_SPACE))
+					else if (Event::keyReleased(GLFW_KEY_SPACE, true))
 						panningCamera = false;
 
 					if (panningCamera)
@@ -95,15 +95,22 @@ void Application::update()
 										model->selectedVertices.clear();
 									}
 
-									//if selected vertex's part has parameters
-									if (model->partMap[selectedParts[selectedPartNum]]->keyforms.size() || editingMesh)
+									//if selected vertex's part has parameters or in mesh edit mode
+									if (model->partMap[selectedParts[selectedPartNum]]->keyforms.size() && !editingMesh)
 									{
 										model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
 										model->updateOriginalVertexPositions();
 									}
+									else if (editingMesh)
+									{
+										model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
+										model->updateOriginalMeshPositions();
+									}
 								}
+								else if (editingMesh && ImGui::IsMouseDown(ImGuiMouseButton_Right) && model->meshMap[selectedParts[0]]->vertices.size() > 3)
+									model->meshMap[selectedParts[0]]->removeVertex(closestVertexIndex);
 							}
-							//if clicked on nothing, clear
+							//if clicked on nothing
 							else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 							{
 								model->selectedVertices.clear();
@@ -114,18 +121,21 @@ void Application::update()
 
 									model->meshMap[selectedParts[0]]->addMeshVertex(lPos - model->meshMap[selectedParts[0]]->originalPos, model->atlasWidth, model->atlasHeight);
 									Triangulator::triangulate(model->meshMap[selectedParts[0]]->vertices, model->meshMap[selectedParts[0]]->indices);
+
+									//model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[0], static_cast<int>(model->meshMap[selectedParts[0]]->vertices.size()) - 1));
+									//model->updateOriginalMeshPositions();
 								}
 							}
 						}
 
-						if (editingMesh)
+						if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != dragMod)
 						{
-							
-						}
-						//move vertices in non editing mode
-						else
-						{
-							if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != dragMod)
+							if (editingMesh)
+							{
+								model->moveMeshVertices(oldMouseCoord, dragMod);
+								draggingVertices = true;
+							}
+							else
 							{
 								if (model->selectedVertices.size())
 								{
@@ -159,7 +169,9 @@ void Application::update()
 
 					if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
 					{
-						//model->updateOriginalVertexPositions();
+						if (draggingVertices && editingMesh)
+							Triangulator::triangulate(model->meshMap[selectedParts[0]]->vertices, model->meshMap[selectedParts[0]]->indices);
+
 						draggingVertices = false;
 						if (!Event::keyDown(GLFW_KEY_SPACE))
 							panningCamera = false;
@@ -814,6 +826,7 @@ void Application::drawImGui()
 			{
 				if (ImGui::Button("Done"))
 				{
+					model->selectedVertices.clear();
 					editingMesh = false;
 				}
 			}
@@ -825,7 +838,6 @@ void Application::drawImGui()
 				if (ImGui::Button("Edit Mesh"))
 				{
 					editingMesh = true;
-					editMeshMode = 0;
 					model->selectedVertices.clear();
 
 					auto m = std::dynamic_pointer_cast<ModelMesh>(model->partMap[selectedParts[0]]);

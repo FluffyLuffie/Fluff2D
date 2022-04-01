@@ -74,7 +74,9 @@ public:
 	void renderHighlightedMesh();
 	void renderSelectedVertices();
 	void moveSelectedVertices(const glm::vec2 &originalMouseCoord, int dragMod);
+	void moveMeshVertices(const glm::vec2& originalMouseCoord, int dragMod);
 	void updateOriginalVertexPositions();
+	void updateOriginalMeshPositions();
 	void renderClosestVertex(const std::string &partName, int vertexIndex);
 
 	void generateTestBoxMesh(std::string partName, int boxSizeX, int boxSizeY);

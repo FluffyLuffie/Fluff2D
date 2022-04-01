@@ -35,6 +35,9 @@ public:
 	void createTriMesh(int boxCountX, int boxCountY, int atlasWidth, int atlasHeight);
 
 	void startMeshEdit();
+	void removeVertex(int index);
+
+	glm::vec2 posToTexCoord(const glm::vec2& vPos, int atlasWidth, int atlasHeight);
 
 private:
 	int atlasPositionX = 0, atlasPositionY = 0, textureWidth = 0, textureHeight = 0;

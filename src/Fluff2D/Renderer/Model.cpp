@@ -196,8 +196,11 @@ void Model::renderSelectedVertices()
 	//might group all the vertices into a single draw call if it becomes slow, just testing for now
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
-		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex), &partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index], GL_DYNAMIC_DRAW);
-		glDrawElements(GL_POINTS, GLsizei(1), GL_UNSIGNED_INT, 0);
+		if (partMap[selectedVertices[i].partName]->vertices.size() > selectedVertices[i].index)
+		{
+			glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex), &partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index], GL_DYNAMIC_DRAW);
+			glDrawElements(GL_POINTS, GLsizei(1), GL_UNSIGNED_INT, 0);
+		}
 	}
 }
 
@@ -304,6 +307,23 @@ void Model::moveSelectedVertices(const glm::vec2 &originalMouseCoord, int dragMo
 	}
 }
 
+void Model::moveMeshVertices(const glm::vec2& originalMouseCoord, int dragMod)
+{
+	ImVec2 vpDim = ImGui::GetContentRegionAvail();
+	glm::vec2 mouseToScreen = glm::inverse(Camera2D::projection) * glm::vec4(Event::viewportMouseCoord.x * 2.0f / vpDim.x - 1.0f, Event::viewportMouseCoord.y * 2.0f / vpDim.y - 1.0f, 0.0f, 1.0f);
+
+	glm::vec2 mouseDelta = mouseToScreen - originalMouseCoord;
+
+	for (int i = 0; i < selectedVertices.size(); i++)
+	{
+		glm::vec2 newPos = initialDragData[&selectedVertices[i]] + mouseDelta;
+		meshMap[selectedVertices[i].partName]->originalVertexPositions[selectedVertices[i].index] = newPos;
+		meshMap[selectedVertices[i].partName]->localVertexPositions[selectedVertices[i].index] = newPos;
+		meshMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index].position = meshMap[selectedVertices[i].partName]->transform * glm::vec4(newPos, 0.0f, 1.0f);
+		meshMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index].texCoord = meshMap[selectedVertices[i].partName]->posToTexCoord(newPos, atlasWidth, atlasHeight);
+	}
+}
+
 void Model::updateOriginalVertexPositions()
 {
 	initialDragData.clear();
@@ -330,21 +350,33 @@ void Model::updateOriginalVertexPositions()
 	}
 }
 
+void Model::updateOriginalMeshPositions()
+{
+	initialDragData.clear();
+	for (int i = 0; i < selectedVertices.size(); i++)
+	{
+		initialDragData[&selectedVertices[i]] = meshMap[selectedVertices[0].partName]->originalVertexPositions[selectedVertices[i].index];
+	}
+}
+
 void Model::renderClosestVertex(const std::string& partName, int vertexIndex)
 {
-	shader.setVec3("uiColor", Settings::meshPointHighlightColor);
+	if (partMap[partName]->vertices.size() > vertexIndex)
+	{
+		shader.setVec3("uiColor", Settings::meshPointHighlightColor);
 
-	glBindVertexArray(vao);
+		glBindVertexArray(vao);
 
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex), &partMap[partName]->vertices[vertexIndex], GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex), &partMap[partName]->vertices[vertexIndex], GL_DYNAMIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int), 0, GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int), 0, GL_DYNAMIC_DRAW);
 
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 
-	glDrawElements(GL_POINTS, GLsizei(1), GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_POINTS, GLsizei(1), GL_UNSIGNED_INT, 0);
+	}
 }
 
 void Model::generateTestBoxMesh(std::string partName, int boxSizeX, int boxSizeY)

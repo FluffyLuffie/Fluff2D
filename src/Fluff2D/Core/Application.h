@@ -53,7 +53,7 @@ private:
 	int dragMod = 0;
 
 	//0 is add points, 1 is delete points, 2 is move points
-	int editMeshMode = 0;
+	//int editMeshMode = 0;
 
 	void checkRunning();
 	

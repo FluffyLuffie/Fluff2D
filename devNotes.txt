@@ -1,5 +1,5 @@
 ***Things to add/fix***
-[Done] Rotation deformers.
+[Changing origin in warp deformers a bit off] Rotation deformers.
 [Concave corners a bit weird but otherwise fine] Moving points inside warp deformers.
 [Done] Clicking on meshes selects them
 [Color and other stuff too?] Parameters actually do something.
@@ -8,6 +8,7 @@ Deleting keyvalues/keyforms.
 Physics.
 Saving model for editor.
 Right clicking stuff does something.
+[Done]Manual vertices placer.
 Auto vertices placer.
 Japanese translation.
 Model exporter.
