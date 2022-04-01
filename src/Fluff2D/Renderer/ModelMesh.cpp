@@ -58,6 +58,8 @@ void ModelMesh::renderInspector()
 		}
 	}
 
+	//ImGui::Text("%s (%d, %d) (%d, %d)", flipped ? "true" : "false", textureWidth, textureHeight, atlasPositionX, atlasPositionY);
+
 	//maybe move this somewhere else
 	if (ImGui::Button("Testing mesh generation"))
 		ImGui::OpenPopup("Auto Mesh Generator");
@@ -69,6 +71,16 @@ void ModelMesh::renderInspector()
 			ImGui::CloseCurrentPopup();
 		ImGui::EndPopup();
 	}
+}
+
+void ModelMesh::addMeshVertex(glm::vec2 vPos, int atlasWidth, int atlasHeight)
+{
+	if (flipped)
+		addVertex(vPos.x, vPos.y, (atlasPositionX + textureWidth / 2.0f - vPos.y) / atlasWidth, (atlasHeight - atlasPositionY - textureHeight / 2.0f + vPos.x) / atlasHeight);
+	else
+		addVertex(vPos.x, vPos.y, (atlasPositionX + textureWidth / 2.0f + vPos.x) / atlasWidth, (atlasHeight - atlasPositionY - textureHeight / 2.0f + vPos.y) / atlasHeight);
+
+	vertices[vertices.size() - 1].position = transform * glm::vec4(vertices[vertices.size() - 1].position, 0.0f, 1.0f);
 }
 
 void ModelMesh::createBasicMesh(int layerX, int layerY, int layerW, int layerH, bool flip, int atlasWidth, int atlasHeight)
@@ -89,19 +101,34 @@ void ModelMesh::createBasicMesh(int layerX, int layerY, int layerW, int layerH, 
 	//order is center, top left, top right, bottom right, bottom left (basically clockwise)
 	if (flip)
 	{
-		addVertex(0.0f, 0.0f, (layerX + layerW / 2.0f) / atlasWidth, (atlasHeight - layerY - layerH / 2.0f) / atlasHeight);
-		addVertex(layerH / -2.0f, layerW / 2.0f, (float)layerX / atlasWidth, (float)(atlasHeight - layerY - layerH) / atlasHeight);
-		addVertex(layerH / 2.0f, layerW / 2.0f, (float)layerX / atlasWidth, (float)(atlasHeight - layerY) / atlasHeight);
-		addVertex(layerH / 2.0f, layerW / -2.0f, (float)(layerX + layerW) / atlasWidth, (float)(atlasHeight - layerY) / atlasHeight);
-		addVertex(layerH / -2.0f, layerW / -2.0f, (float)(layerX + layerW) / atlasWidth, (float)(atlasHeight - layerY - layerH) / atlasHeight);
+		addMeshVertex(glm::vec2(), atlasWidth, atlasHeight);
+		addMeshVertex(glm::vec2(layerH / -2.0f, layerW / 2.0f), atlasWidth, atlasHeight);
+		addMeshVertex(glm::vec2(layerH / 2.0f, layerW / 2.0f), atlasWidth, atlasHeight);
+		addMeshVertex(glm::vec2(layerH / 2.0f, layerW / -2.0f), atlasWidth, atlasHeight);
+		addMeshVertex(glm::vec2(layerH / -2.0f, layerW / -2.0f), atlasWidth, atlasHeight);
+		//addVertex(0.0f, 0.0f,						(layerX + layerW / 2.0f) / atlasWidth,		(atlasHeight - layerY - layerH / 2.0f) / atlasHeight);
+		// 
+		//addVertex(layerH / -2.0f, layerW / 2.0f,	(float)layerX / atlasWidth,					(float)(atlasHeight - layerY - layerH) / atlasHeight);
+		//addVertex(layerH / 2.0f, layerW / 2.0f,	(float)layerX / atlasWidth,					(float)(atlasHeight - layerY) / atlasHeight);
+		//addVertex(layerH / 2.0f, layerW / -2.0f,	(float)(layerX + layerW) / atlasWidth,		(float)(atlasHeight - layerY) / atlasHeight);
+		//addVertex(layerH / -2.0f, layerW / -2.0f, (float)(layerX + layerW) / atlasWidth,		(float)(atlasHeight - layerY - layerH) / atlasHeight);
 	}
 	else
 	{
-		addVertex(0.0f, 0.0f, (layerX + layerW / 2.0f) / atlasWidth, (atlasHeight - layerY - layerH / 2.0f) / atlasHeight);
-		addVertex(layerW / -2.0f, layerH / 2.0f, (float)layerX / atlasWidth, (float)(atlasHeight - layerY) / atlasHeight);
-		addVertex(layerW / 2.0f, layerH / 2.0f, (float)(layerX + layerW) / atlasWidth, (float)(atlasHeight - layerY) / atlasHeight);
-		addVertex(layerW / 2.0f, layerH / -2.0f, (float)(layerX + layerW) / atlasWidth, (float)(atlasHeight - layerY - layerH) / atlasHeight);
-		addVertex(layerW / -2.0f, layerH / -2.0f, (float)layerX / atlasWidth, (float)(atlasHeight - layerY - layerH) / atlasHeight);
+		addMeshVertex(glm::vec2(), atlasWidth, atlasHeight);
+		addMeshVertex(glm::vec2(layerW / -2.0f, layerH / 2.0f), atlasWidth, atlasHeight);
+		addMeshVertex(glm::vec2(layerW / 2.0f, layerH / 2.0f), atlasWidth, atlasHeight);
+		addMeshVertex(glm::vec2(layerW / 2.0f, layerH / -2.0f), atlasWidth, atlasHeight);
+		addMeshVertex(glm::vec2(layerW / -2.0f, layerH / -2.0f), atlasWidth, atlasHeight);
+
+		/*
+		addVertex(0.0f, 0.0f,						(layerX + layerW / 2.0f) / atlasWidth,		(atlasHeight - layerY - layerH / 2.0f) / atlasHeight);
+
+		addVertex(layerW / -2.0f, layerH / 2.0f,	(float)layerX / atlasWidth,					(float)(atlasHeight - layerY) / atlasHeight);
+		addVertex(layerW / 2.0f, layerH / 2.0f,		(float)(layerX + layerW) / atlasWidth,		(float)(atlasHeight - layerY) / atlasHeight);
+		addVertex(layerW / 2.0f, layerH / -2.0f,	(float)(layerX + layerW) / atlasWidth,		(float)(atlasHeight - layerY - layerH) / atlasHeight);
+		addVertex(layerW / -2.0f, layerH / -2.0f,	(float)layerX / atlasWidth,					(float)(atlasHeight - layerY - layerH) / atlasHeight);
+		*/
 	}
 
 	//make indices
@@ -129,23 +156,37 @@ void ModelMesh::createTriMesh(int boxCountX, int boxCountY, int atlasWidth, int 
 	localVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1) + boxCountX * boxCountY);
 	originalVertexPositions.reserve((boxCountX + 1) * (boxCountY + 1) + boxCountX * boxCountY);
 
-	//TODO: add flipped
 	if (flipped)
 	{
+		//normal box
+		for (int y = 0; y <= boxCountY; y++)
+			for (int x = 0; x <= boxCountX; x++)
+				addMeshVertex(glm::vec2(textureHeight * (-0.5f + 1.0f / boxCountX * x), textureWidth * (-0.5f + 1.0f / boxCountY * y)), atlasWidth, atlasHeight);
 
+		//put dot in middle
+		for (int y = 0; y < boxCountY; y++)
+			for (int x = 0; x < boxCountX; x++)
+				addMeshVertex(glm::vec2(textureHeight * (-0.5f + 1.0f / boxCountX * (x + 0.5f)), textureWidth * (-0.5f + 1.0f / boxCountY * (y + 0.5f))), atlasWidth, atlasHeight);
 	}
 	else
 	{
 		//normal box
 		for (int y = 0; y <= boxCountY; y++)
 			for (int x = 0; x <= boxCountX; x++)
-				addVertex(textureWidth * (-0.5f + 1.0f / boxCountX * x), textureHeight * (-0.5f + 1.0f / boxCountY * y), (atlasPositionX + ((float)textureWidth) * x / boxCountX) / atlasWidth, (atlasHeight - atlasPositionY - textureHeight + ((float)textureHeight) * y / boxCountY) / atlasHeight);
+				addMeshVertex(glm::vec2(textureWidth * (-0.5f + 1.0f / boxCountX * x), textureHeight * (-0.5f + 1.0f / boxCountY * y)), atlasWidth, atlasHeight);
 
 		//put dot in middle
 		for (int y = 0; y < boxCountY; y++)
 			for (int x = 0; x < boxCountX; x++)
-				addVertex(textureWidth * (-0.5f + 1.0f / boxCountX * (x + 0.5f)), textureHeight * (-0.5f + 1.0f / boxCountY * (y + 0.5f)), (atlasPositionX + ((float)textureWidth) * (x + 0.5f) / boxCountX) / atlasWidth, (atlasHeight - atlasPositionY - textureHeight + ((float)textureHeight) * (y + 0.5f) / boxCountY) / atlasHeight);
+				addMeshVertex(glm::vec2(textureWidth * (-0.5f + 1.0f / boxCountX * (x + 0.5f)), textureHeight * (-0.5f + 1.0f / boxCountY * (y + 0.5f))), atlasWidth, atlasHeight);
 	}
 
-	Triangulator::triangulate(vertices, indices, atlasPositionX, atlasPositionY, flipped, atlasWidth, atlasHeight);
+	Triangulator::triangulate(vertices, indices);
+}
+
+void ModelMesh::startMeshEdit()
+{
+	transform = glm::translate(glm::mat4(1.0f), glm::vec3(originalPos, 0.0f));
+	for (int i = 0; i < localVertexPositions.size(); i++)
+		vertices[i].position = transform * glm::vec4(originalVertexPositions[i], 0.0f, 1.0f);
 }

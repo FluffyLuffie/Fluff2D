@@ -203,13 +203,9 @@ void Model::renderSelectedVertices()
 
 void Model::moveSelectedVertices(const glm::vec2 &originalMouseCoord, int dragMod)
 {
-	ImVec2 mouseCoord = ImGui::GetMousePos();
 	ImVec2 vpDim = ImGui::GetContentRegionAvail();
-	ImVec2 offset = ImGui::GetWindowPos();
-	mouseCoord.x -= offset.x;
-	mouseCoord.y -= offset.y + ImGui::GetWindowContentRegionMin().y;
 
-	glm::vec4 mouseToScreen = glm::inverse(Camera2D::projection) * glm::vec4(mouseCoord.x * 2.0f / vpDim.x - 1.0f, mouseCoord.y * 2.0f / vpDim.y - 1.0f, 0.0f, 1.0f);
+	glm::vec4 mouseToScreen = glm::inverse(Camera2D::projection) * glm::vec4(Event::viewportMouseCoord.x * 2.0f / vpDim.x - 1.0f, Event::viewportMouseCoord.y * 2.0f / vpDim.y - 1.0f, 0.0f, 1.0f);
 
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
@@ -782,11 +778,6 @@ void Model::render()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
 
-	//clear framebuffer
-	//glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	//glClear(GL_COLOR_BUFFER_BIT);
-
-	//set to invis color
 	updateVertexData();
 	shader.setMat4("projection", glm::mat4(1.0f));
 	shader.setVec3("uiColor", Settings::backgroundColor);
@@ -864,9 +855,40 @@ void Model::render()
 
 	//render the canvas rect
 	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+	shader.setInt("mode", 1);
 	if (Settings::showCanvas)
 	{
-		shader.setInt("mode", 1);
+		glBindVertexArray(canvasVao);
+		shader.setVec3("uiColor", Settings::canvasBorderColor);
+		glLineWidth(static_cast<GLfloat>(Settings::canvasLineWidth));
+		glDrawElements(GL_LINES, static_cast<GLsizei>(8), GL_UNSIGNED_INT, 0);
+	}
+}
+
+void Model::renderEditMesh(const std::string& meshName)
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
+
+	updateVertexData();
+	shader.setMat4("projection", glm::mat4(1.0f));
+	shader.setVec3("uiColor", Settings::backgroundColor);
+	shader.setInt("mode", 1);
+	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+
+	shader.setInt("mode", 0);
+	shader.setMat4("projection", Camera2D::projection);
+
+	shader.setVec4("texColor", glm::vec4(1.0f));
+
+	glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
+	partMap[meshName]->render();
+
+	//render the canvas rect
+	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+	shader.setInt("mode", 1);
+	if (Settings::showCanvas)
+	{
 		glBindVertexArray(canvasVao);
 		shader.setVec3("uiColor", Settings::canvasBorderColor);
 		glLineWidth(static_cast<GLfloat>(Settings::canvasLineWidth));

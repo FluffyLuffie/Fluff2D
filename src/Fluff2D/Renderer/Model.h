@@ -64,6 +64,8 @@ public:
 	void update() override;
 	void render() override;
 
+	void renderEditMesh(const std::string& meshName);
+
 	void generateDefaltParams();
 
 	void reset();

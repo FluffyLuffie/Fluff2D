@@ -313,7 +313,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 
 	//TODO: maybe make texture buffer scale according to each rect's size?
 	int atlasWidth = 0, atlasHeight = 0;
-	int texturePixelBuffer = 5;
+	int texturePixelBuffer = 10;
 	auto rectangles = prepareTextureAtlas(layerRects, texturePixelBuffer, &atlasWidth, &atlasHeight);
 
 	std::vector <unsigned char> atlasBytes;
@@ -585,7 +585,7 @@ std::vector<rect_type> TextureLoader::prepareTextureAtlas(std::vector<LayerRect>
 	const auto max_side = 16384;
 	const auto discard_step = -4;
 	//turn on after testing
-	const auto runtime_flipping_mode = rectpack2D::flipping_option::DISABLED;
+	const auto runtime_flipping_mode = rectpack2D::flipping_option::ENABLED;
 
 	std::vector<rect_type> rectangles;
 

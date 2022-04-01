@@ -27,10 +27,14 @@ public:
 	void render() override;
 	void renderInspector() override;
 
+	void addMeshVertex(glm::vec2 vPos, int atlasWidth, int atlasHeight);
+
 	void createBasicMesh(int layerX, int layerY, int layerW, int layerH, bool flip, int atlasWidth, int atlasHeight);
 
 	//testing, call after making basic mesh
 	void createTriMesh(int boxCountX, int boxCountY, int atlasWidth, int atlasHeight);
+
+	void startMeshEdit();
 
 private:
 	int atlasPositionX = 0, atlasPositionY = 0, textureWidth = 0, textureHeight = 0;

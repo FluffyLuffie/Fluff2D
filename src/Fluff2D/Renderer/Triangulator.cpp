@@ -1,7 +1,9 @@
 #include "Triangulator.h"
 
-void Triangulator::triangulate(std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, int atlasPositionX, int atlasPositionY, bool flipped, int atlasWidth, int atlasHeight)
+void Triangulator::triangulate(std::vector<Vertex>& vertices, std::vector<unsigned int>& indices)
 {
+    indices.clear();
+
     float xMin = vertices[0].position.x;
     float yMin = vertices[0].position.y;
     float xMax = xMin;

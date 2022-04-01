@@ -7,7 +7,7 @@
 class Triangulator
 {
 public:
-	static void triangulate(std::vector<Vertex> &vertices, std::vector<unsigned int>& indices, int atlasPositionX, int atlasPositionY, bool flipped, int atlasWidth, int atlasHeight);
+	static void triangulate(std::vector<Vertex> &vertices, std::vector<unsigned int>& indices);
 private:
 	class Triangle
 	{

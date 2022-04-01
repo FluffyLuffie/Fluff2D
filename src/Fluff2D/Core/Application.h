@@ -43,6 +43,7 @@ private:
 	bool queueFontChange = false;
 	bool draggingVertices = false;
 	bool panningCamera = false;
+	bool editingMesh = false;
 
 	const int EVENT_FRAMES = 3;
 	int eventFramesCount = 0;
@@ -50,6 +51,9 @@ private:
 	int manualKeyIndex = -1;
 	float manualKeyvalue = 0.0f;
 	int dragMod = 0;
+
+	//0 is add points, 1 is delete points, 2 is move points
+	int editMeshMode = 0;
 
 	void checkRunning();
 	

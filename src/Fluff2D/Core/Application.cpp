@@ -57,7 +57,7 @@ void Application::update()
 
 				int closestVertexIndex = -1;
 				int selectedPartNum = -1;
-				if (Event::isFocused)
+				if (Event::isHovered || Event::isFocused)
 				{
 					//if spacebar pressed, move camera
 					if (Event::keyDown(GLFW_KEY_SPACE) && !draggingVertices)
@@ -96,7 +96,7 @@ void Application::update()
 									}
 
 									//if selected vertex's part has parameters
-									if (model->partMap[selectedParts[selectedPartNum]]->keyforms.size())
+									if (model->partMap[selectedParts[selectedPartNum]]->keyforms.size() || editingMesh)
 									{
 										model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
 										model->updateOriginalVertexPositions();
@@ -107,36 +107,51 @@ void Application::update()
 							else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 							{
 								model->selectedVertices.clear();
+
+								if (editingMesh)
+								{
+									glm::vec2 lPos = glm::inverse(Camera2D::projection) * glm::vec4(Event::viewportMouseCoord.x * 2.0f / currentFbSize.x - 1.0f, Event::viewportMouseCoord.y * 2.0f / currentFbSize.y - 1.0f, 0.0f, 1.0f);;
+
+									model->meshMap[selectedParts[0]]->addMeshVertex(lPos - model->meshMap[selectedParts[0]]->originalPos, model->atlasWidth, model->atlasHeight);
+									Triangulator::triangulate(model->meshMap[selectedParts[0]]->vertices, model->meshMap[selectedParts[0]]->indices);
+								}
 							}
 						}
 
-						//move vertices
-						if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != dragMod)
+						if (editingMesh)
 						{
-							if (model->selectedVertices.size())
+							
+						}
+						//move vertices in non editing mode
+						else
+						{
+							if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != dragMod)
 							{
-								//check if keyvalues are on keyforms of all parts
-								bool onKeyform = true;
-
-								//for each selected part
-								for (int i = 0; i < selectedParts.size() && onKeyform; i++)
+								if (model->selectedVertices.size())
 								{
-									//for each param name in part
-									for (int j = 0; j < model->partMap[selectedParts[i]]->paramNames.size(); j++)
+									//check if keyvalues are on keyforms of all parts
+									bool onKeyform = true;
+
+									//for each selected part
+									for (int i = 0; i < selectedParts.size() && onKeyform; i++)
 									{
-										//check if paramValue is in the keyvalues
-										if (std::find(model->partMap[selectedParts[i]]->paramKeyvalues[j].begin(), model->partMap[selectedParts[i]]->paramKeyvalues[j].end(), model->paramValues[model->partMap[selectedParts[i]]->paramNames[j]]) == model->partMap[selectedParts[i]]->paramKeyvalues[j].end())
+										//for each param name in part
+										for (int j = 0; j < model->partMap[selectedParts[i]]->paramNames.size(); j++)
 										{
-											onKeyform = false;
-											break;
+											//check if paramValue is in the keyvalues
+											if (std::find(model->partMap[selectedParts[i]]->paramKeyvalues[j].begin(), model->partMap[selectedParts[i]]->paramKeyvalues[j].end(), model->paramValues[model->partMap[selectedParts[i]]->paramNames[j]]) == model->partMap[selectedParts[i]]->paramKeyvalues[j].end())
+											{
+												onKeyform = false;
+												break;
+											}
 										}
 									}
-								}
 
-								if (onKeyform)
-								{
-									model->moveSelectedVertices(oldMouseCoord, dragMod);
-									draggingVertices = true;
+									if (onKeyform)
+									{
+										model->moveSelectedVertices(oldMouseCoord, dragMod);
+										draggingVertices = true;
+									}
 								}
 							}
 						}
@@ -157,40 +172,51 @@ void Application::update()
 						model->detectMouseHover = false;
 				}
 
-				model->update();
-				model->render();
-
-				//render lines and points
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-				//if hovering over mesh that is not selected, and no closest vertex
-				if (Event::isFocused && Event::isHovered && model->mouseHoveredID > -1 && std::find(selectedParts.begin(), selectedParts.end(), model->modelMeshes[model->mouseHoveredID]->name) == selectedParts.end() && closestVertexIndex == -1)
+				if (editingMesh)
 				{
-					model->renderHighlightedMesh();
-					if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-					{
-						model->selectedVertices.clear();
-						selectedParts.clear();
+					model->renderEditMesh(selectedParts[0]);
 
-						selectedParts.push_back(model->modelMeshes[model->mouseHoveredID]->name);
-					}
-
-				}
-
-				if (selectedParts.size())
-				{
-					model->shader.setInt("mode", 1);
-
-					for (int i = 0; i < selectedParts.size(); i++)
-					{
-						model->renderMeshVertice(selectedParts[i]);
-					}
-
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+					model->renderMeshVertice(selectedParts[0]);
 					model->renderSelectedVertices();
-
 					if (closestVertexIndex != -1)
 						model->renderClosestVertex(selectedParts[selectedPartNum], closestVertexIndex);
+				}
+				else
+				{
+					model->update();
+					model->render();
 
+					//render lines and points
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+					//if hovering over mesh that is not selected, and no closest vertex
+					if (Event::isFocused && Event::isHovered && model->mouseHoveredID > -1 && std::find(selectedParts.begin(), selectedParts.end(), model->modelMeshes[model->mouseHoveredID]->name) == selectedParts.end() && closestVertexIndex == -1)
+					{
+						model->renderHighlightedMesh();
+						if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+						{
+							model->selectedVertices.clear();
+							selectedParts.clear();
+
+							selectedParts.push_back(model->modelMeshes[model->mouseHoveredID]->name);
+						}
+
+					}
+
+					if (selectedParts.size())
+					{
+						for (int i = 0; i < selectedParts.size(); i++)
+						{
+							model->renderMeshVertice(selectedParts[i]);
+						}
+
+						model->renderSelectedVertices();
+
+						if (closestVertexIndex != -1)
+							model->renderClosestVertex(selectedParts[selectedPartNum], closestVertexIndex);
+
+					}
 				}
 
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -323,7 +349,7 @@ void Application::createModelTree(std::shared_ptr<ModelPartUI> currentPart)
 			nodeFlags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 			ImGui::TreeNodeEx(currentPart->name.c_str(), nodeFlags);
 
-			if (ImGui::IsItemClicked())
+			if (ImGui::IsItemClicked() && !editingMesh)
 			{
 				if (GLFW_MOD_CONTROL != Event::mod)
 				{
@@ -344,7 +370,7 @@ void Application::createModelTree(std::shared_ptr<ModelPartUI> currentPart)
 		case ModelPartUI::PartType::warpDeformer:
 		case ModelPartUI::PartType::rotationDeformer:
 			nodeOpen = ImGui::TreeNodeEx(currentPart->name.c_str(), nodeFlags);
-			if (ImGui::IsItemClicked())
+			if (ImGui::IsItemClicked() && !editingMesh)
 			{
 				if (GLFW_MOD_CONTROL != Event::mod && !ImGui::IsItemToggledOpen())
 				{
@@ -407,7 +433,7 @@ void Application::createModelTree(std::shared_ptr<ModelPart> currentPart)
 
 	nodeOpen = ImGui::TreeNodeEx((header + currentPart->name).c_str(), nodeFlags);
 
-	if (ImGui::IsItemClicked())
+	if (ImGui::IsItemClicked() && !editingMesh)
 	{
 		if (GLFW_MOD_CONTROL != Event::mod)
 		{
@@ -480,7 +506,6 @@ void Application::drawImGui()
 				initializeModelFromPsd("tempPsdTest/testModel.psd");
 
 				//simple test
-				/*
 				model->update();
 
 				selectedParts.push_back(model->modelMeshes[model->modelMeshes.size() - 1]->name);
@@ -498,10 +523,6 @@ void Application::drawImGui()
 				model->partMap["headMain"]->keyforms[1].position = glm::vec2(100.0f, 0.0f);
 				model->partMap["headMain"]->keyforms[2].position = glm::vec2(0.0f, 100.0f);
 				model->partMap["headMain"]->keyforms[3].position = glm::vec2(100.0f, 100.0f);
-				model->addKeyform("mouthTop", "headX", 0.0f);
-				model->addKeyform("mouthBottom", "headX", model->paramMap["headX"]->maxValue);
-				model->addKeyform("mouthBottom", "headX", 10.0f);
-				*/
 
 				//testing keyform values
 				/*
@@ -610,7 +631,7 @@ void Application::drawImGui()
 			ImGui::EndPopup();
 		}
 
-		if (model && ImGui::Button("Test Button"))
+		if (model && ImGui::Button("Screenshot"))
 			model->screenshot = true;
 	}
 	ImGui::End();
@@ -789,11 +810,32 @@ void Application::drawImGui()
 	{
 		if (selectedParts.size() == 1 && (model->partMap.find(selectedParts[0]) != model->partMap.end()))
 		{
-			model->partMap[selectedParts[0]]->renderInspector();
-
-			if (model->partMap[selectedParts[0]]->type == ModelPart::PartType::mesh)
+			if (editingMesh)
 			{
-				model->showMeshClippingMenu(selectedParts[0]);
+				if (ImGui::Button("Done"))
+				{
+					editingMesh = false;
+				}
+			}
+			else
+			{
+				model->partMap[selectedParts[0]]->renderInspector();
+
+				ImGui::SameLine();
+				if (ImGui::Button("Edit Mesh"))
+				{
+					editingMesh = true;
+					editMeshMode = 0;
+					model->selectedVertices.clear();
+
+					auto m = std::dynamic_pointer_cast<ModelMesh>(model->partMap[selectedParts[0]]);
+					m->startMeshEdit();
+				}
+
+				if (model->partMap[selectedParts[0]]->type == ModelPart::PartType::mesh)
+				{
+					model->showMeshClippingMenu(selectedParts[0]);
+				}
 			}
 		}
 		else
