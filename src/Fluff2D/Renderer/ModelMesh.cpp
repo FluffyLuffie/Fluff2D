@@ -57,6 +57,8 @@ void ModelMesh::renderInspector()
 			baseScale = scale;
 		}
 	}
+
+	ImGui::Combo("Blend Mode", &blendMode, blendModes, IM_ARRAYSIZE(blendModes));
 }
 
 void ModelMesh::addMeshVertex(glm::vec2 vPos, int atlasWidth, int atlasHeight)

@@ -12,6 +12,8 @@
 class ModelMesh : public ModelPart
 {
 public:
+	inline static const char* blendModes[] = { "normal", "add", "multiply" };
+
 	ModelMesh();
 	~ModelMesh();
 
@@ -23,6 +25,9 @@ public:
 
 	bool visible = true;
 	int renderOrder = 0;
+
+	//0 is normal, 1 is add, 2 is multiply
+	int blendMode = 0;
 
 	void render() override;
 	void renderInspector() override;

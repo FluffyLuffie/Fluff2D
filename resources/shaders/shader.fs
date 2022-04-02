@@ -55,6 +55,16 @@ void main()
 				discard;
 			meshID = ID;
 			break;
+		case(4):
+			fragColor = texture(atlasTex, texCoord) * texColor;
+			fragColor.r *= texColor.a / fragColor.a;
+			fragColor.g *= texColor.a / fragColor.a;
+			fragColor.b *= texColor.a / fragColor.a;
+			
+			fragColor.r = 1.0f - fragColor.r;
+			fragColor.g = 1.0f - fragColor.g;
+			fragColor.b = 1.0f - fragColor.b;
+			break;
 		default:
 			break;
 	}

@@ -821,17 +821,35 @@ void Model::renderMaskedMesh(int meshNum)
 
 	//set the alpha to clipping amount
 	shader.setVec4("texColor", modelMeshes[meshNum]->color);
-
 	if (modelMeshes[meshNum]->invertClip)
 		glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE_MINUS_DST_ALPHA, GL_ZERO);
 	else
 		glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_SRC_ALPHA);
-	
+	modelMeshes[meshNum]->render();
+
 	//render the mesh
-	modelMeshes[meshNum]->render();
-	shader.setInt("mode", 2);
-	glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ZERO);
-	modelMeshes[meshNum]->render();
+	switch (modelMeshes[meshNum]->blendMode)
+	{
+		//add
+		case 1:
+			glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE, GL_ZERO, GL_ZERO);
+			modelMeshes[meshNum]->render();
+			break;
+			//multiply
+		case 2:
+			shader.setInt("mode", 4);
+			glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE, GL_ZERO, GL_ZERO);
+			glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+			modelMeshes[meshNum]->render();
+			glBlendEquation(GL_FUNC_ADD);
+			break;
+		//normal or if it doesn't exist
+		default:
+			shader.setInt("mode", 2);
+			glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ZERO);
+			modelMeshes[meshNum]->render();
+			break;
+	}
 
 	//reset alpha
 	shader.setInt("mode", 0);
@@ -866,8 +884,21 @@ void Model::render()
 			else
 			{
 				shader.setVec4("texColor", modelMeshes[meshIndex]->color);
-
-				glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ZERO);
+				switch (modelMeshes[meshIndex]->blendMode)
+				{
+					//add
+					case 1:
+						glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ZERO, GL_ZERO);
+						break;
+					//multiply
+					case 2:
+						glBlendFuncSeparate(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ZERO);
+						break;
+					//normal or if it doesn't exist
+					default:
+						glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ZERO);
+						break;
+				}
 				modelMeshes[meshIndex]->render();
 			}
 		}

@@ -30,8 +30,6 @@ void Application::update()
 		ImGui::NewFrame();
 
 		drawImGui();
-
-		//testing
 		//ImGui::ShowDemoWindow();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
