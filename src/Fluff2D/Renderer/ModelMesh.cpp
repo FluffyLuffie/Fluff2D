@@ -57,20 +57,6 @@ void ModelMesh::renderInspector()
 			baseScale = scale;
 		}
 	}
-
-	//ImGui::Text("%s (%d, %d) (%d, %d)", flipped ? "true" : "false", textureWidth, textureHeight, atlasPositionX, atlasPositionY);
-
-	//maybe move this somewhere else
-	if (ImGui::Button("Testing mesh generation"))
-		ImGui::OpenPopup("Auto Mesh Generator");
-
-	if (ImGui::BeginPopupModal("Auto Mesh Generator", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-	{
-		ImGui::Text("Not done yet, come back later");
-		if (ImGui::Button("Close"))
-			ImGui::CloseCurrentPopup();
-		ImGui::EndPopup();
-	}
 }
 
 void ModelMesh::addMeshVertex(glm::vec2 vPos, int atlasWidth, int atlasHeight)

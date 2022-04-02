@@ -71,7 +71,7 @@ void Application::update()
 							oldMouseCoord = Event::viewportMouseCoord;
 						if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 						{
-							Camera2D::pos += glm::vec2(-Event::viewportMouseCoord.x + oldMouseCoord.x, Event::viewportMouseCoord.y - oldMouseCoord.y);
+							Camera2D::pos += glm::vec2(-Event::viewportMouseCoord.x + oldMouseCoord.x, Event::viewportMouseCoord.y - oldMouseCoord.y) / Camera2D::scale;
 							oldMouseCoord = Event::viewportMouseCoord;
 						}
 					}
@@ -95,16 +95,11 @@ void Application::update()
 										model->selectedVertices.clear();
 									}
 
-									//if selected vertex's part has parameters or in mesh edit mode
-									if (model->partMap[selectedParts[selectedPartNum]]->keyforms.size() && !editingMesh)
+									//if selected vertex's part has parameters or is a rotation deformer, or in mesh edit mode
+									if (model->partMap[selectedParts[selectedPartNum]]->keyforms.size() || model->partMap[selectedParts[selectedPartNum]]->type == ModelPart::PartType::rotationDeformer || editingMesh)
 									{
 										model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
 										model->updateOriginalVertexPositions();
-									}
-									else if (editingMesh)
-									{
-										model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
-										model->updateOriginalMeshPositions();
 									}
 								}
 								else if (editingMesh && ImGui::IsMouseDown(ImGuiMouseButton_Right) && model->meshMap[selectedParts[0]]->vertices.size() > 3)
@@ -145,6 +140,10 @@ void Application::update()
 									//for each selected part
 									for (int i = 0; i < selectedParts.size() && onKeyform; i++)
 									{
+										//if rotation deformer with no keyforms, skip
+										if (model->partMap[selectedParts[i]]->type == ModelPart::PartType::rotationDeformer && model->partMap[selectedParts[i]]->keyforms.size() == 0)
+											continue;
+
 										//for each param name in part
 										for (int j = 0; j < model->partMap[selectedParts[i]]->paramNames.size(); j++)
 										{
@@ -268,6 +267,9 @@ void Application::initializeModelFromPsd(const char* fileName)
 {
 	Event::anyAction = true;
 	selectedParts.clear();
+	editingMesh = false;
+	draggingVertices = false;
+	panningCamera = false;
 
 	double startTime = glfwGetTime();
 	model = std::make_shared<Model>();
@@ -479,7 +481,7 @@ void Application::createModelTree(std::shared_ptr<ModelPart> currentPart)
 
 			//translates position, rotation not implemented
 			glm::vec2 temp = glm::inverse(currentPart->parent->transform) * (model->partMap[partName]->parent->transform * glm::vec4(model->partMap[partName]->pos, 0.0f, 1.0f));
-			model->partMap[partName]->pos = temp;
+			model->partMap[partName]->basePos = temp;
 
 			//remove dropped from parent and assign to new parent
 			model->partMap[partName]->parent->children.erase(
@@ -834,18 +836,30 @@ void Application::drawImGui()
 			{
 				model->partMap[selectedParts[0]]->renderInspector();
 
-				ImGui::SameLine();
-				if (ImGui::Button("Edit Mesh"))
-				{
-					editingMesh = true;
-					model->selectedVertices.clear();
-
-					auto m = std::dynamic_pointer_cast<ModelMesh>(model->partMap[selectedParts[0]]);
-					m->startMeshEdit();
-				}
-
 				if (model->partMap[selectedParts[0]]->type == ModelPart::PartType::mesh)
 				{
+					//maybe move this somewhere else
+					if (ImGui::Button("Testing mesh generation"))
+						ImGui::OpenPopup("Auto Mesh Generator");
+
+					if (ImGui::BeginPopupModal("Auto Mesh Generator", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+					{
+						ImGui::Text("Not done yet, come back later");
+						if (ImGui::Button("Close"))
+							ImGui::CloseCurrentPopup();
+						ImGui::EndPopup();
+					}
+
+					ImGui::SameLine();
+					if (ImGui::Button("Edit Mesh"))
+					{
+						editingMesh = true;
+						model->selectedVertices.clear();
+
+						auto m = std::dynamic_pointer_cast<ModelMesh>(model->partMap[selectedParts[0]]);
+						m->startMeshEdit();
+					}
+
 					model->showMeshClippingMenu(selectedParts[0]);
 				}
 			}
