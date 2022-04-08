@@ -10,16 +10,22 @@
 
 struct KeyformData
 {
-	glm::vec2 position;
-	float rotation;
-	glm::vec2 scale;
-	std::unordered_map<int, glm::vec2> vertices;
+	glm::vec2 deltaPosition;
+	float deltaRotation;
+	glm::vec2 deltaScale;
+	std::unordered_map<int, glm::vec2> deltaVertices;
 
-	KeyformData(glm::vec2 p = glm::vec2(), float r = 0.0f, glm::vec2 s = glm::vec2())
+	//only for meshes
+	int deltaRenderOrder;
+	glm::vec4 deltaColor;
+
+	KeyformData(glm::vec2 p = glm::vec2(), float r = 0.0f, glm::vec2 s = glm::vec2(), int ro = 0, glm::vec4 c = glm::vec4(1.0f))
 	{
-		position = p;
-		rotation = r;
-		scale = s;
+		deltaPosition = p;
+		deltaRotation = r;
+		deltaScale = s;
+		deltaRenderOrder = ro;
+		deltaColor = c;
 	}
 
 	~KeyformData() {}
@@ -41,6 +47,11 @@ public:
 	glm::vec2 basePos = glm::vec2(0.0f);
 	float baseRotation = 0.0f;
 	glm::vec2 baseScale = glm::vec2(1.0f, 1.0f);
+	int baseRenderOrder = 0;
+	glm::vec4 baseColor = glm::vec4(1.0f);
+
+	int renderOrder = 0;
+	glm::vec4 color = glm::vec4(1.0f);
 
 	std::vector<std::string> paramNames;
 	std::vector<std::vector<float>> paramKeyvalues;

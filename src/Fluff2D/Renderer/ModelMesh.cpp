@@ -46,15 +46,19 @@ void ModelMesh::renderInspector()
 	{
 		if (keyformIndex != -1)
 		{
-			keyforms[keyformIndex].position = pos - basePos;
-			keyforms[keyformIndex].rotation = rotation - baseRotation;
-			keyforms[keyformIndex].scale = scale - baseScale;
+			keyforms[keyformIndex].deltaPosition = pos - basePos;
+			keyforms[keyformIndex].deltaRotation = rotation - baseRotation;
+			keyforms[keyformIndex].deltaScale = scale - baseScale;
+			keyforms[keyformIndex].deltaRenderOrder = renderOrder - baseRenderOrder;
+			keyforms[keyformIndex].deltaColor = color - baseColor;
 		}
 		else
 		{
 			basePos = pos;
 			baseRotation = rotation;
 			baseScale = scale;
+			baseRenderOrder = renderOrder;
+			baseColor = color;
 		}
 	}
 
@@ -172,18 +176,18 @@ void ModelMesh::removeVertex(int index)
 
 	for (int i = 0; i < keyforms.size(); i++)
 	{
-		keyforms[i].vertices.erase(index);
+		keyforms[i].deltaVertices.erase(index);
 
 		//shift the position of keyforms
 		std::unordered_map<int, glm::vec2> temp;
-		for (auto const &[i, v] : keyforms[i].vertices)
+		for (auto const &[i, v] : keyforms[i].deltaVertices)
 		{
 			if (i > index)
 				temp[i - 1] = v;
 			else
 				temp[i] = v;
 		}
-		keyforms[i].vertices = temp;
+		keyforms[i].deltaVertices = temp;
 	}
 
 	Triangulator::triangulate(vertices, indices);

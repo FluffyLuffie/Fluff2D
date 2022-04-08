@@ -1,4 +1,5 @@
 #include "ModelPart.h"
+#include "ModelMesh.h"
 
 void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramValues)
 {
@@ -6,6 +7,8 @@ void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramVal
 	glm::vec2 finalPos = basePos;
 	float finalRotation = baseRotation;
 	glm::vec2 finalScale = baseScale;
+	float finalRenderOrder = (float)baseRenderOrder;
+	glm::vec4 finalColor = baseColor;
 
 	//update based on parameters
 	if (paramNames.size())
@@ -49,9 +52,11 @@ void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramVal
 			keyformIndex = std::min(keyformIndex, static_cast<int>(keyforms.size() - 1));
 			keyformIndices[i] = keyformIndex;
 
-			finalPos += keyforms[keyformIndex].position * keyformWeights[i];
-			finalRotation += keyforms[keyformIndex].rotation * keyformWeights[i];
-			finalScale += keyforms[keyformIndex].scale * keyformWeights[i];
+			finalPos += keyforms[keyformIndex].deltaPosition * keyformWeights[i];
+			finalRotation += keyforms[keyformIndex].deltaRotation * keyformWeights[i];
+			finalScale += keyforms[keyformIndex].deltaScale * keyformWeights[i];
+			finalRenderOrder += keyforms[keyformIndex].deltaRenderOrder * keyformWeights[i];
+			finalColor += keyforms[keyformIndex].deltaColor * keyformWeights[i];
 		}
 
 		//for each vertex
@@ -63,8 +68,8 @@ void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramVal
 			for (int j = 0; j < keyformIndices.size(); j++)
 			{
 				//if found
-				if (keyforms[keyformIndices[j]].vertices.find(i) != keyforms[keyformIndices[j]].vertices.end())
-					vPos += keyforms[keyformIndices[j]].vertices[i] * keyformWeights[j];
+				if (keyforms[keyformIndices[j]].deltaVertices.find(i) != keyforms[keyformIndices[j]].deltaVertices.end())
+					vPos += keyforms[keyformIndices[j]].deltaVertices[i] * keyformWeights[j];
 			}
 
 			localVertexPositions[i] = vPos + originalVertexPositions[i];
@@ -74,6 +79,8 @@ void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramVal
 	pos = finalPos;
 	rotation = finalRotation;
 	scale = finalScale;
+	renderOrder = (int)finalRenderOrder;
+	color = finalColor;
 
 	//update local transform
 	localTransform = glm::mat4(1.0f);

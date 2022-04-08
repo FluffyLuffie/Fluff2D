@@ -2,23 +2,24 @@
 [Changing origin in warp deformers a bit off] Rotation deformers.
 [Concave corners a bit weird but otherwise fine] Moving points inside warp deformers.
 [Done] Clicking on meshes selects them
-[Color and other stuff too?] Parameters actually do something.
+[Done] Parameters actually do something.
 Adding new keyvalues to existing keyforms.
 Deleting keyvalues/keyforms.
 Physics.
 Saving model for editor.
 Right clicking stuff does something.
-[Done]Manual vertices placer.
+[Done] Manual vertices placer.
 Auto vertices placer.
 Japanese translation.
 Model exporter.
-Model view window/tab instead of rending to main frame.
+[Done] Model view window/tab instead of rending to main frame.
 
 ***If have time***
 [Done] Inverse clipping.
+[Add and multiply done. Maybe overlay?] Blending modes.
 Bezier for warp transforms.
 Save settings in a file and read when launched.
-[good enough] Moving model object hierarchy by dragging.
+[very buggy] Moving model object hierarchy by dragging.
 Make psd importer more reliable.
 [Done] Clean up fragment shader code.
 Code documentation.

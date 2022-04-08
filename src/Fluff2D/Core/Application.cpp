@@ -531,10 +531,10 @@ void Application::drawImGui()
 				model->addKeyform("headMain", "headX", model->paramMap["headX"]->maxValue);
 				model->addKeyform("headMain", "headY", 0.0f);
 				model->addKeyform("headMain", "headY", model->paramMap["headY"]->maxValue);
-				model->partMap["headMain"]->keyforms[0].position = glm::vec2(0.0f, 0.0f);
-				model->partMap["headMain"]->keyforms[1].position = glm::vec2(100.0f, 0.0f);
-				model->partMap["headMain"]->keyforms[2].position = glm::vec2(0.0f, 100.0f);
-				model->partMap["headMain"]->keyforms[3].position = glm::vec2(100.0f, 100.0f);
+				model->partMap["headMain"]->keyforms[0].deltaPosition = glm::vec2(0.0f, 0.0f);
+				model->partMap["headMain"]->keyforms[1].deltaPosition = glm::vec2(100.0f, 0.0f);
+				model->partMap["headMain"]->keyforms[2].deltaPosition = glm::vec2(0.0f, 100.0f);
+				model->partMap["headMain"]->keyforms[3].deltaPosition = glm::vec2(100.0f, 100.0f);
 
 				//testing keyform values
 				/*

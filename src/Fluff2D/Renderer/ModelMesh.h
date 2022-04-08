@@ -17,14 +17,10 @@ public:
 	ModelMesh();
 	~ModelMesh();
 
-	int layerOrder = 0;
-	glm::vec4 color = glm::vec4(1.0f);
-
 	bool invertClip = false;
 	std::vector<std::string> clipMeshes;
 
 	bool visible = true;
-	int renderOrder = 0;
 
 	//0 is normal, 1 is add, 2 is multiply
 	int blendMode = 0;

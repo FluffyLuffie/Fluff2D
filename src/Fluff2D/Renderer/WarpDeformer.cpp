@@ -115,9 +115,9 @@ void WarpDeformer::renderInspector()
 	{
 		if (keyformIndex != -1)
 		{
-			keyforms[keyformIndex].position = pos - basePos;
-			keyforms[keyformIndex].rotation = rotation - baseRotation;
-			keyforms[keyformIndex].scale = scale - baseScale;
+			keyforms[keyformIndex].deltaPosition = pos - basePos;
+			keyforms[keyformIndex].deltaRotation = rotation - baseRotation;
+			keyforms[keyformIndex].deltaScale = scale - baseScale;
 		}
 		else
 		{
