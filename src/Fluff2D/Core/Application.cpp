@@ -273,7 +273,7 @@ void Application::initializeModelFromPsd(const char* fileName)
 	model = std::make_shared<Model>();
 	if (TextureLoader::loadPsdFile(fileName, model))
 	{
-		TextureLoader::loadTexture(&model->textureID, "saves/testExports/textureAtlas.png", &model->atlasWidth, &model->atlasHeight, &model->atlasNrChannels);
+		//TextureLoader::loadTexture(&model->textureID, "saves/testExports/textureAtlas.png", &model->atlasWidth, &model->atlasHeight, &model->atlasNrChannels);
 		Log::logInfo("Took %f seconds to load PSD", glfwGetTime() - startTime);
 
 		model->generateDefaltParams();
@@ -315,6 +315,7 @@ void Application::init()
 	glfwSetKeyCallback(window.getWindow(), Event::key_callback);
 
 	stbi_set_flip_vertically_on_load(true);
+	stbi_flip_vertically_on_write(true);
 
 	//imgui thing
 	ImGui::CreateContext();
@@ -563,6 +564,8 @@ void Application::drawImGui()
 				initializeModelFromPsd("tempPsdTest/testModelKrita.psd");
 			if (ImGui::MenuItem("Open fluffy"))
 				initializeModelFromPsd("tempPsdTest/fluffy.psd");
+			if (ImGui::MenuItem("Open mini test 2"))
+				initializeModelFromPsd("tempPsdTest/miniTest2.psd");
 			if (ImGui::MenuItem("Save"))
 				saveModel();
 			ImGui::EndMenu();

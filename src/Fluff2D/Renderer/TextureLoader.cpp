@@ -11,6 +11,7 @@ void TextureLoader::loadTexture(unsigned int* texture, const char* fileName, int
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	unsigned char *data = stbi_load(fileName, width, height, nrChannels, 0);
+
 	if (data)
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, *width, *height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -312,12 +313,11 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	}
 
 	//TODO: maybe make texture buffer scale according to each rect's size?
-	int atlasWidth = 0, atlasHeight = 0;
 	int texturePixelBuffer = 10;
-	auto rectangles = prepareTextureAtlas(layerRects, texturePixelBuffer, &atlasWidth, &atlasHeight);
+	auto rectangles = prepareTextureAtlas(layerRects, texturePixelBuffer, &model->atlasWidth, &model->atlasHeight);
 
 	std::vector <unsigned char> atlasBytes;
-	atlasBytes.resize(atlasWidth * atlasHeight * 4);
+	atlasBytes.resize(model->atlasWidth * model->atlasHeight * 4);
 
 	for (int i = 0; i < rectangles.size(); i++)
 	{
@@ -393,8 +393,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 
 							for (int i = 0; i < -buffer[0] + 1; i++)
 							{
-								layerBytes[imageLayersRead][(pixelsRead / layerRects[layerNum].w +
-									+(layerRects[layerNum].w - 1 - pixelsRead % layerRects[layerNum].w) * layerRects[layerNum].h)
+								layerBytes[imageLayersRead][(pixelsRead / layerRects[layerNum].w
+									+ (layerRects[layerNum].w - 1 - pixelsRead % layerRects[layerNum].w) * layerRects[layerNum].h)
 									* 4 + channelOffset] = buffer[1];
 								pixelsRead++;
 							}
@@ -407,8 +407,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 								pf.read(buffer + 1, 1);
 								channelBytesLeft--;
 
-								layerBytes[imageLayersRead][(pixelsRead / layerRects[layerNum].w +
-									+(layerRects[layerNum].w - 1 - pixelsRead % layerRects[layerNum].w) * (layerRects[layerNum].h))
+								layerBytes[imageLayersRead][(pixelsRead / layerRects[layerNum].w
+									+ (layerRects[layerNum].w - 1 - pixelsRead % layerRects[layerNum].w) * (layerRects[layerNum].h))
 									* 4 + channelOffset] = buffer[1];
 								pixelsRead++;
 							}
@@ -453,8 +453,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 							channelBytesLeft--;
 							for (int i = 0; i < -buffer[0] + 1; i++)
 							{
-								layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w +
-									+(pixelsRead / layerRects[layerNum].w) * layerRects[layerNum].w)
+								layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w
+									+ (pixelsRead / layerRects[layerNum].w) * layerRects[layerNum].w)
 									* 4 + channelOffset] = buffer[1];
 								pixelsRead++;
 							}
@@ -467,8 +467,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 								pf.read(buffer + 1, 1);
 								channelBytesLeft--;
 
-								layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w +
-									+(pixelsRead / layerRects[layerNum].w) * layerRects[layerNum].w)
+								layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w
+									+ (pixelsRead / layerRects[layerNum].w) * layerRects[layerNum].w)
 									* 4 + channelOffset] = buffer[1];
 								pixelsRead++;
 							}
@@ -488,7 +488,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			model->modelMeshes[imageLayersRead]->pos = glm::vec2(layerRects[layerNum].x + (layerRects[layerNum].w - model->psdDimension.x) / 2.0f, -layerRects[layerNum].y + (-layerRects[layerNum].h + model->psdDimension.y) / 2.0f);
 			model->modelMeshes[imageLayersRead]->originalPos = model->modelMeshes[imageLayersRead]->pos;
 			model->modelMeshes[imageLayersRead]->basePos = model->modelMeshes[imageLayersRead]->pos;
-			model->modelMeshes[imageLayersRead]->createBasicMesh(rectangles[imageLayersRead].x, rectangles[imageLayersRead].y, rectangles[imageLayersRead].w, rectangles[imageLayersRead].h, rectangles[imageLayersRead].flipped, atlasWidth, atlasHeight);
+			model->modelMeshes[imageLayersRead]->createBasicMesh(rectangles[imageLayersRead].x, rectangles[imageLayersRead].y, rectangles[imageLayersRead].w, rectangles[imageLayersRead].h, rectangles[imageLayersRead].flipped, model->atlasWidth, model->atlasHeight);
 
 			//assign a pool of tasks to threads
 			texPtr = &layerBytes[imageLayersRead][0];
@@ -540,7 +540,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 				{
 					memcpy(&atlasBytes[0]
 						+ (rectangles[imageLayer].x
-							+ (rectangles[imageLayer].y + row) * atlasWidth)
+							+ (model->atlasHeight - rectangles[imageLayer].y - row - 1) * model->atlasWidth)
 						* 4,
 						&layerBytes[imageLayer][row * layerRects[i].w * 4], layerRects[i].w * 4);
 				}
@@ -552,7 +552,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 				{
 					memcpy(&atlasBytes[0]
 						+ (rectangles[imageLayer].x
-							+ (rectangles[imageLayer].y + row) * atlasWidth)
+							+ (model->atlasHeight - rectangles[imageLayer].y - row - 1) * model->atlasWidth)
 						* 4,
 						&layerBytes[imageLayer][row * layerRects[i].h * 4], layerRects[i].h * 4);
 				}
@@ -565,9 +565,21 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	//for (size_t i = 3; i < atlasBytes.size(); i += 4)
 	//	atlasBytes[i] = 255;
 
-	//create texture atlas
-	stbi_write_png("saves/testExports/textureAtlas.png", atlasWidth, atlasHeight, 4, &(atlasBytes[0]), atlasWidth * 4);
-	Log::logInfo("Finished generating texture atlas (%d %d)", atlasWidth, atlasHeight);
+	//test not having to make png
+	glGenTextures(1, &model->textureID);
+	glBindTexture(GL_TEXTURE_2D, model->textureID);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, model->atlasWidth, model->atlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, &atlasBytes[0]);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	//writing to png
+	//stbi_write_png("saves/testExports/textureAtlas.png", model->atlasWidth, model->atlasHeight, 4, &(atlasBytes[0]), model->atlasWidth * 4);
+	//Log::logInfo("Finished generating texture atlas (%d %d)", model->atlasWidth, model->atlasHeight);
 	return true;
 }
 
