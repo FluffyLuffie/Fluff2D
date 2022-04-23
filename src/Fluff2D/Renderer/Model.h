@@ -87,6 +87,7 @@ public:
 	void addRotationDeformer(std::string name, const std::vector<std::string>& selectedParts);
 
 	void resetParams();
+	void calculateModelParam();
 	void addKeyform(const std::string& partName, const std::string& paramName, float keyvalue);
 
 	void updatePartMap();

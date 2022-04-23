@@ -583,6 +583,30 @@ void Model::resetParams()
 	}
 }
 
+void Model::calculateModelParam()
+{
+	paramNames.clear();
+	paramKeyvalues.clear();
+
+	for (int i = 0; i < children.size(); i++)
+	{
+		for (int j = 0; j < children[i]->paramNames.size(); j++)
+		{
+			//if paramName not found, add
+			if (std::find(paramNames.begin(), paramNames.end(), children[i]->paramNames[j]) == paramNames.end())
+				paramNames.push_back(children[i]->paramNames[j]);
+
+			for (int k = 0; k < children[i]->paramKeyvalues[j].size(); k++)
+			{
+				//if value not found, add
+				int index = static_cast<int>(std::find(paramNames.begin(), paramNames.end(), children[i]->paramNames[j]) - paramNames.begin());
+				if (std::find(paramKeyvalues[index].begin(), paramKeyvalues[index].end(), children[i]->paramKeyvalues[j][k]) == paramKeyvalues[index].end())
+					paramKeyvalues[index].push_back(children[i]->paramKeyvalues[j][k]);
+			}
+		}
+	}
+}
+
 void Model::addKeyform(const std::string& partName, const std::string& paramName, float keyvalue)
 {
 	//might come up with system to deal with duplicate/deleted keyforms

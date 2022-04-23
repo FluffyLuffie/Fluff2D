@@ -94,10 +94,15 @@ void Application::update()
 									}
 
 									//if selected vertex's part has parameters or is a rotation deformer, or in mesh edit mode
-									if (model->partMap[selectedParts[selectedPartNum]]->keyforms.size() || model->partMap[selectedParts[selectedPartNum]]->type == ModelPart::PartType::rotationDeformer || editingMesh)
+									if ((model->partMap[selectedParts[selectedPartNum]]->keyforms.size() || model->partMap[selectedParts[selectedPartNum]]->type == ModelPart::PartType::rotationDeformer) && !editingMesh)
 									{
 										model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
 										model->updateOriginalVertexPositions();
+									}
+									else if (editingMesh)
+									{
+										model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
+										model->updateOriginalMeshPositions();
 									}
 								}
 								else if (editingMesh && ImGui::IsMouseDown(ImGuiMouseButton_Right) && model->meshMap[selectedParts[0]]->vertices.size() > 3)
