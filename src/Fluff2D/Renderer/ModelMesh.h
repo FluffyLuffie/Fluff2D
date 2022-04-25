@@ -22,6 +22,8 @@ public:
 
 	bool visible = true;
 
+	std::vector<bool> texAlpha;
+
 	//0 is normal, 1 is add, 2 is multiply
 	int blendMode = 0;
 
@@ -37,6 +39,7 @@ public:
 
 	void startMeshEdit();
 	void removeVertex(int index);
+	void autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeIn, int edgeSpacing, int insideSpacing);
 
 	glm::vec2 posToTexCoord(const glm::vec2& vPos, int atlasWidth, int atlasHeight);
 

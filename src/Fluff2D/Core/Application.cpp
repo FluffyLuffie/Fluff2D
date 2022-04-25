@@ -853,7 +853,11 @@ void Application::drawImGui()
 
 					if (ImGui::BeginPopupModal("Auto Mesh Generator", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 					{
-						ImGui::Text("Not done yet, come back later");
+						if (ImGui::Button("Auto Mesh Test"))
+						{
+							model->meshMap[selectedParts[0]]->autoMesh(model->atlasWidth, model->atlasHeight, 5, 5, 5, 30);
+							ImGui::CloseCurrentPopup();
+						}
 						if (ImGui::Button("Close"))
 							ImGui::CloseCurrentPopup();
 						ImGui::EndPopup();

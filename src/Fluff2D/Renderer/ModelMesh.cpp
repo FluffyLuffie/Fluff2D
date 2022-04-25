@@ -193,6 +193,170 @@ void ModelMesh::removeVertex(int index)
 	Triangulator::triangulate(vertices, indices);
 }
 
+void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeIn, int edgeSpacing, int insideSpacing)
+{
+	clearMeshData();
+
+	int offsets[][2] = { { 0, -1}, {-1,  0}, { 1,  0}, { 0,  1} };
+
+	const int width = textureWidth + 2 * edgeOut;
+	const int height = textureHeight + 2 * edgeOut;
+	const int N = width * height;
+
+	std::vector<bool> originalAlpha;
+	originalAlpha.resize(N);
+
+	for (int y = 0; y < textureHeight; y++)
+		std::copy(texAlpha.begin() + textureWidth * y, texAlpha.begin() + textureWidth * y + textureWidth, originalAlpha.begin() + edgeOut + width * (height - edgeOut - y - 1));
+
+	std::vector<bool> filled = originalAlpha;
+	std::vector<bool> queued = originalAlpha;
+
+	std::vector<int> pending;
+	std::vector<int> pendingNext;
+
+	pending.reserve(N);
+	pendingNext.reserve(N);
+
+	//outer edge
+	for (int y = edgeOut - 1; y < height - edgeOut + 1; y++)
+		for (int x = edgeOut - 1; x < width - edgeOut + 1; x++)
+			if (!originalAlpha[x + y * width])
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					int adjX = x + offsets[i][0], adjY = y + offsets[i][1];
+					if (originalAlpha[adjX + adjY * width])
+					{
+						pending.push_back(x + y * width);
+						break;
+					}
+				}
+			}
+
+	for (int loop = 0; loop < edgeOut - 1; loop++)
+	{
+		pendingNext.clear();
+
+		for (int i = 0; i < pending.size(); i++)
+		{
+			filled[pending[i]] = true;
+			int x = pending[i] % width;
+			int y = pending[i] / width;
+
+			for (int j = 0; j < 4; j++)
+			{
+				int adjX = x + offsets[j][0], adjY = y + offsets[j][1];
+				if (!queued[adjX + adjY * width])
+				{
+					queued[adjX + adjY * width] = true;
+					pendingNext.push_back(adjX + adjY * width);
+				}
+			}
+		}
+		pending.swap(pendingNext);
+	}
+
+	for (int i = 0; i < pending.size(); i++)
+	{
+		if (flipped)
+			addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2, pending[i] % width - textureWidth / 2), atlasWidth, atlasHeight);
+		else
+			addMeshVertex(glm::vec2(pending[i] % width - textureWidth / 2 - edgeOut, pending[i] / width - textureHeight / 2 - edgeOut), atlasWidth, atlasHeight);
+	}
+
+	//inner edge
+	filled = originalAlpha;
+	queued = originalAlpha;
+	pending.clear();
+
+	for (int y = edgeOut - 1; y < height - edgeOut + 1; y++)
+		for (int x = edgeOut - 1; x < width - edgeOut + 1; x++)
+			if (originalAlpha[x + y * width])
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					int adjX = x + offsets[i][0], adjY = y + offsets[i][1];
+					if (!originalAlpha[adjX + adjY * width])
+					{
+						pending.push_back(x + y * width);
+						queued[x + y * width] = false;
+						break;
+					}
+				}
+			}
+
+	for (int loop = 0; loop < edgeIn - 1; loop++)
+	{
+		pendingNext.clear();
+
+		for (int i = 0; i < pending.size(); i++)
+		{
+			filled[pending[i]] = false;
+			queued[pending[i]] = false;
+			int x = pending[i] % width;
+			int y = pending[i] / width;
+
+			for (int j = 0; j < 4; j++)
+			{
+				int adjX = x + offsets[j][0], adjY = y + offsets[j][1];
+				if (queued[adjX + adjY * width])
+				{
+					queued[adjX + adjY * width] = false;
+					pendingNext.push_back(adjX + adjY * width);
+				}
+			}
+		}
+		pending.swap(pendingNext);
+	}
+
+	for (int i = 0; i < pending.size(); i++)
+	{
+		if (flipped)
+			addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2, pending[i] % width - textureWidth / 2), atlasWidth, atlasHeight);
+		else
+			addMeshVertex(glm::vec2(pending[i] % width - textureWidth / 2 - edgeOut, pending[i] / width - textureHeight / 2 - edgeOut), atlasWidth, atlasHeight);
+	}
+
+	//inside
+	while (pending.size())
+	{
+		for (int loop = 0; loop < insideSpacing - 1; loop++)
+		{
+			pendingNext.clear();
+
+			for (int i = 0; i < pending.size(); i++)
+			{
+				filled[pending[i]] = false;
+				queued[pending[i]] = false;
+				int x = pending[i] % width;
+				int y = pending[i] / width;
+
+				for (int j = 0; j < 4; j++)
+				{
+					int adjX = x + offsets[j][0], adjY = y + offsets[j][1];
+					if (queued[adjX + adjY * width])
+					{
+						queued[adjX + adjY * width] = false;
+						pendingNext.push_back(adjX + adjY * width);
+					}
+				}
+			}
+			pending.swap(pendingNext);
+		}
+
+		for (int i = 0; i < pending.size(); i++)
+		{
+			if (flipped)
+				addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2, pending[i] % width - textureWidth / 2), atlasWidth, atlasHeight);
+			else
+				addMeshVertex(glm::vec2(pending[i] % width - textureWidth / 2 - edgeOut, pending[i] / width - textureHeight / 2 - edgeOut), atlasWidth, atlasHeight);
+		}
+	}
+
+	Triangulator::triangulate(vertices, indices);
+}
+
 glm::vec2 ModelMesh::posToTexCoord(const glm::vec2& vPos, int atlasWidth, int atlasHeight)
 {
 	if (flipped)

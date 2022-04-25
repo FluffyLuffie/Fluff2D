@@ -361,7 +361,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 		//only happens in image layers, I hope
 		case 1:
 			layerBytes[imageLayersRead].resize(layerRects[layerNum].w * layerRects[layerNum].h * 4);
-			//not done yet
+			model->modelMeshes[imageLayersRead]->texAlpha.resize(layerRects[layerNum].w * layerRects[layerNum].h);
+
 			if (rectangles[imageLayersRead].flipped)
 			{
 				//channel order is ARGB in psd, RGBA in png
@@ -396,6 +397,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 								layerBytes[imageLayersRead][(pixelsRead / layerRects[layerNum].w
 									+ (layerRects[layerNum].w - 1 - pixelsRead % layerRects[layerNum].w) * layerRects[layerNum].h)
 									* 4 + channelOffset] = buffer[1];
+								if (channelOffset == 3)
+									model->modelMeshes[imageLayersRead]->texAlpha[pixelsRead] = buffer[1];
 								pixelsRead++;
 							}
 						}
@@ -410,6 +413,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 								layerBytes[imageLayersRead][(pixelsRead / layerRects[layerNum].w
 									+ (layerRects[layerNum].w - 1 - pixelsRead % layerRects[layerNum].w) * (layerRects[layerNum].h))
 									* 4 + channelOffset] = buffer[1];
+								if (channelOffset == 3)
+									model->modelMeshes[imageLayersRead]->texAlpha[pixelsRead] = buffer[1];
 								pixelsRead++;
 							}
 						}
@@ -456,6 +461,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 								layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w
 									+ (pixelsRead / layerRects[layerNum].w) * layerRects[layerNum].w)
 									* 4 + channelOffset] = buffer[1];
+								if (channelOffset == 3)
+									model->modelMeshes[imageLayersRead]->texAlpha[pixelsRead] = buffer[1];
 								pixelsRead++;
 							}
 						}
@@ -470,6 +477,8 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 								layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w
 									+ (pixelsRead / layerRects[layerNum].w) * layerRects[layerNum].w)
 									* 4 + channelOffset] = buffer[1];
+								if (channelOffset == 3)
+									model->modelMeshes[imageLayersRead]->texAlpha[pixelsRead] = buffer[1];
 								pixelsRead++;
 							}
 						}
@@ -504,7 +513,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			}
 
 			results.emplace_back(
-				pool.enqueue([texPtr, imageLayersRead, texW, texH]
+				pool.enqueue([texPtr, texW, texH]
 					{
 						premultAlpha(texPtr, texW, texH);
 						return true;
@@ -597,7 +606,7 @@ std::vector<rect_type> TextureLoader::prepareTextureAtlas(std::vector<LayerRect>
 	const auto max_side = 16384;
 	const auto discard_step = -4;
 	//turn on after testing
-	const auto runtime_flipping_mode = rectpack2D::flipping_option::ENABLED;
+	const auto runtime_flipping_mode = rectpack2D::flipping_option::DISABLED;
 
 	std::vector<rect_type> rectangles;
 

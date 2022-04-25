@@ -1041,6 +1041,15 @@ void Model::renderEditMesh(const std::string& meshName)
 	glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
 	partMap[meshName]->render();
 
+	//render true colors
+	glBindFramebuffer(GL_FRAMEBUFFER, modelTrueFbo);
+	updateVertexData();
+	shader.setInt("mode", 5);
+	shader.setMat4("projection", glm::mat4(1.0f));
+	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+	shader.setMat4("projection", Camera2D::projection);
+
 	//render the canvas rect
 	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
 	shader.setInt("mode", 1);
