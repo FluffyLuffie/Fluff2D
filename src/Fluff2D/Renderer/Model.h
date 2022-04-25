@@ -57,7 +57,7 @@ public:
 	int mouseHoveredID = -1;
 	bool screenshot = false;
 
-	unsigned int modelTexColorBuffer = 0;
+	unsigned int modelTexColorBuffer = 0, modelTexTrueColorBuffer = 0;
 	glm::vec2 fbDimension = glm::vec2();
 	int fbX = 0, fbY = 0;
 
@@ -104,10 +104,13 @@ public:
 private:
 	void updatePartMapRecursive(std::shared_ptr<ModelPart> part);
 
-	unsigned int modelFbo = 0, mousePickBuffer = 0;
+	unsigned int modelFbo = 0, modelTrueFbo = 0, mousePickBuffer = 0;
 	unsigned int canvasVao = 0, canvasVbo = 0, canvasEbo = 0;
+	unsigned int selectedVertexVao = 0, selectedVertexVbo = 0, selectedVertexEbo = 0;
+	unsigned int closestVertexVao = 0, closestVertexVbo = 0, closestVertexEbo = 0;
 	glm::vec2 canvasCoords[4] = { glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f), glm::vec2(0.0f) };
 
+	//also used to just render a point with index 0
 	unsigned int rectLineIndices[8] = { 0, 1, 1, 2, 2, 3, 3, 0 };
 
 	std::multimap<int, int> renderOrderMap;

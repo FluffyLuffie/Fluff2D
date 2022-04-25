@@ -65,6 +65,11 @@ void main()
 			fragColor.g = 1.0f - fragColor.g;
 			fragColor.b = 1.0f - fragColor.b;
 			break;
+		case(5):
+			vec4 v = texture(modelTex, texCoord);
+			fragColor = v / v.a;
+			fragColor.a = v.a;
+			break;
 		default:
 			break;
 	}

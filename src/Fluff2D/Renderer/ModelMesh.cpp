@@ -52,7 +52,7 @@ void ModelMesh::renderInspector()
 			keyforms[keyformIndex].deltaRenderOrder = renderOrder - baseRenderOrder;
 			keyforms[keyformIndex].deltaColor = color - baseColor;
 		}
-		else
+		else if (!keyforms.size())
 		{
 			basePos = pos;
 			baseRotation = rotation;

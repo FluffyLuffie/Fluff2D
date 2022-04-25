@@ -16,11 +16,12 @@ public:
 	inline static int fontSize = 15;
 	inline static std::string fontFile = "C:/Windows/Fonts/Meiryob.ttc";
 
-	inline static glm::vec3 backgroundColor = glm::vec3(0.75f);
+	inline static glm::vec3 canvasColor = glm::vec3(0.8f);
+	inline static glm::vec3 backgroundColor = glm::vec3(0.6f);
 
-	inline static bool showCanvas = true;
-	inline static int canvasLineWidth = 1;
-	inline static glm::vec3 canvasBorderColor = glm::vec3(0.0f);
+	inline static bool showFrame = true;
+	inline static int frameLineWidth = 1;
+	inline static glm::vec3 frameBorderColor = glm::vec3(0.0f);
 
 	inline static int meshPointSize = 2;
 	inline static glm::vec3 meshPointColor = glm::vec3(1.0f, 1.0f, 1.0f);

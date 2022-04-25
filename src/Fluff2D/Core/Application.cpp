@@ -33,6 +33,8 @@ void Application::update()
 		//ImGui::ShowDemoWindow();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImVec4 winColor = style->Colors[ImGuiCol_WindowBg];
+		style->Colors[ImGuiCol_WindowBg] = { Settings::canvasColor.r, Settings::canvasColor.g, Settings::canvasColor.b, 1.0f };
 		//ImGui::PushStyleColor(ImGuiCol_WindowBg, *(ImVec4*)&Settings::backgroundColor);
 		if (ImGui::Begin("Model Viewport"))
 		{
@@ -229,18 +231,18 @@ void Application::update()
 
 						if (closestVertexIndex != -1)
 							model->renderClosestVertex(selectedParts[selectedPartNum], closestVertexIndex);
-
 					}
 				}
 
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-				ImGui::Image((void*)(size_t)model->modelTexColorBuffer, currentFbSize);
+				ImGui::Image((void*)(size_t)model->modelTexTrueColorBuffer, currentFbSize);
 			}
 		}
 		ImGui::End();
 		ImGui::PopStyleVar();
+		style->Colors[ImGuiCol_WindowBg] = winColor;
 		//ImGui::PopStyleColor();
 
 		ImGui::EndFrame();
@@ -319,8 +321,8 @@ void Application::init()
 	glfwSetScrollCallback(window.getWindow(), Event::scroll_callback);
 	glfwSetKeyCallback(window.getWindow(), Event::key_callback);
 
-	stbi_set_flip_vertically_on_load(true);
-	stbi_flip_vertically_on_write(true);
+	//stbi_set_flip_vertically_on_load(true);
+	//stbi_flip_vertically_on_write(true);
 
 	//imgui thing
 	ImGui::CreateContext();
@@ -340,9 +342,9 @@ void Application::init()
 	//popup bg color
 	//also changed fade speed to instant
 	//in imgui.cpp in ImGui::NewFrame(), search for "Background darkening/whitening"
-	ImGuiStyle& style = ImGui::GetStyle();
-	style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.9f, 0.9f, 0.9f, 0.2f);
-	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.0f);
+	style = &ImGui::GetStyle();
+	style->Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.9f, 0.9f, 0.9f, 0.2f);
+	style->Colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.0f);
 }
 
 void Application::checkRunning()
@@ -685,12 +687,13 @@ void Application::drawImGui()
 			queueFontChange = true;
 		ImGui::Separator();
 
+		ImGui::ColorEdit3("Canvas Color", (float*)&Settings::canvasColor);
 		ImGui::ColorEdit3("Background", (float*)&Settings::backgroundColor);
 		ImGui::Separator();
 
-		ImGui::Checkbox("Show Canvas", &Settings::showCanvas);
-		ImGui::DragInt("Canvas Line Width", &Settings::canvasLineWidth);
-		ImGui::ColorEdit3("Canvas Border Color", (float*)&Settings::canvasBorderColor);
+		ImGui::Checkbox("Show Frame", &Settings::showFrame);
+		ImGui::DragInt("Frame Line Width", &Settings::frameLineWidth);
+		ImGui::ColorEdit3("Frame Border Color", (float*)&Settings::frameBorderColor);
 		ImGui::Separator();
 
 		ImGui::DragInt("Mesh Point Size", &Settings::meshPointSize);

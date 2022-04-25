@@ -67,7 +67,7 @@ void RotationDeformer::renderInspector()
 			keyforms[keyformIndex].deltaRotation = rotation - baseRotation;
 			keyforms[keyformIndex].deltaScale = scale - baseScale;
 		}
-		else
+		else if (!keyforms.size())
 		{
 			basePos = pos;
 			baseRotation = rotation;

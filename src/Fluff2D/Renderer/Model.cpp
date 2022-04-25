@@ -36,6 +36,20 @@ Model::Model()
 	glBindVertexArray(canvasVao);
 	glEnableVertexAttribArray(0);
 
+	glGenVertexArrays(1, (GLuint*)(&selectedVertexVao));
+	glGenBuffers(1, (GLuint*)(&selectedVertexVbo));
+	glGenBuffers(1, (GLuint*)(&selectedVertexEbo));
+
+	glBindVertexArray(selectedVertexVao);
+	glEnableVertexAttribArray(0);
+
+	glGenVertexArrays(1, (GLuint*)(&closestVertexVao));
+	glGenBuffers(1, (GLuint*)(&closestVertexVbo));
+	glGenBuffers(1, (GLuint*)(&closestVertexEbo));
+
+	glBindVertexArray(closestVertexVao);
+	glEnableVertexAttribArray(0);
+
 	glBindVertexArray(vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -52,7 +66,9 @@ Model::Model()
 
 	//framebuffer stuff
 	glGenFramebuffers(1, &modelFbo);
+	glGenFramebuffers(1, &modelTrueFbo);
 	glGenTextures(1, &modelTexColorBuffer);
+	glGenTextures(1, &modelTexTrueColorBuffer);
 	glGenTextures(1, &mousePickBuffer);
 }
 
@@ -68,9 +84,19 @@ Model::~Model()
 	glDeleteBuffers(1, &canvasVbo);
 	glDeleteBuffers(1, &canvasEbo);
 
+	glDeleteVertexArrays(1, &selectedVertexVao);
+	glDeleteBuffers(1, &selectedVertexVbo);
+	glDeleteBuffers(1, &selectedVertexEbo);
+
+	glDeleteVertexArrays(1, &closestVertexVao);
+	glDeleteBuffers(1, &closestVertexVbo);
+	glDeleteBuffers(1, &closestVertexEbo);
+
 	glDeleteFramebuffers(1, &modelFbo);
+	glDeleteFramebuffers(1, &modelTrueFbo);
 
 	glDeleteTextures(1, &modelTexColorBuffer);
+	glDeleteTextures(1, &modelTexTrueColorBuffer);
 	glDeleteTextures(1, &mousePickBuffer);
 }
 
@@ -187,11 +213,11 @@ void Model::renderSelectedVertices()
 	shader.setVec3("uiColor", Settings::meshPointSelectedColor);
 	shader.setFloat("pointSize", static_cast<float>(Settings::meshPointSize));
 
-	glBindVertexArray(vao);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBindVertexArray(selectedVertexVao);
+	glBindBuffer(GL_ARRAY_BUFFER, selectedVertexVbo);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int), 0, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, selectedVertexEbo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int), rectLineIndices, GL_DYNAMIC_DRAW);
 
 	//might group all the vertices into a single draw call if it becomes slow, just testing for now
 	for (int i = 0; i < selectedVertices.size(); i++)
@@ -353,6 +379,9 @@ void Model::updateOriginalVertexPositions()
 	initialDragData.clear();
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
+		if (partMap[selectedVertices[i].partName]->keyformIndex == -1)
+			continue;
+
 		//if rotation deformer, save other data
 		if (partMap[selectedVertices[i].partName]->type == ModelPart::PartType::rotationDeformer)
 		{
@@ -399,13 +428,13 @@ void Model::renderClosestVertex(const std::string& partName, int vertexIndex)
 	{
 		shader.setVec3("uiColor", Settings::meshPointHighlightColor);
 
-		glBindVertexArray(vao);
+		glBindVertexArray(closestVertexVao);
 
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, closestVertexVbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex), &partMap[partName]->vertices[vertexIndex], GL_DYNAMIC_DRAW);
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int), 0, GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, closestVertexEbo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int), rectLineIndices, GL_DYNAMIC_DRAW);
 
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 
@@ -755,6 +784,12 @@ void Model::bindUniformTextures()
 {
 	shader.use();
 
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 1);
+	glBindTexture(GL_TEXTURE_2D, modelTexTrueColorBuffer);
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 	glActiveTexture(GL_TEXTURE1);
@@ -779,6 +814,7 @@ void Model::updateFrameBufferSize(int x, int y)
 {
 	fbX = x;
 	fbY = y;
+
 	glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
 	glBindTexture(GL_TEXTURE_2D, modelTexColorBuffer);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, fbX, fbY, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -794,17 +830,21 @@ void Model::updateFrameBufferSize(int x, int y)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mousePickBuffer, 0);
 	glViewport(0, 0, x, y);
-
 	glDrawBuffers(2, bufs);
-
 	//read mesh id for default
 	glReadBuffer(GL_COLOR_ATTACHMENT1);
 
+	//true color
+	glBindFramebuffer(GL_FRAMEBUFFER, modelTrueFbo);
+	glBindTexture(GL_TEXTURE_2D, modelTexTrueColorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, fbX, fbY, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, modelTexTrueColorBuffer, 0);
+	glViewport(0, 0, x, y);
+
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		Log::logError("ERROR::FRAMEBUFFER:: Model framebuffer is not complete!");
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glBindTexture(GL_TEXTURE_2D, textureID);
 
 	bindUniformTextures();
 }
@@ -886,15 +926,10 @@ void Model::render()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
 
-	updateVertexData();
-	shader.setMat4("projection", glm::mat4(1.0f));
-	shader.setVec3("uiColor", Settings::backgroundColor);
-	shader.setInt("mode", 1);
-	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ZERO);
-	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	shader.setInt("mode", 0);
-	shader.setMat4("projection", Camera2D::projection);
 
 	//render each mesh
 	for (auto const &[meshRenderOrder, meshIndex] : renderOrderMap)
@@ -928,17 +963,9 @@ void Model::render()
 		}
 	}
 
-	//set alpha to 1
-	updateVertexData();
-	shader.setMat4("projection", glm::mat4(1.0f));
-	shader.setInt("mode", 1);
-	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ZERO);
-	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
-
 	//mouse picking
-	shader.setMat4("projection", Camera2D::projection);
 	shader.setInt("mode", 3);
-	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_ONE);
+	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	for (auto const& [meshRenderOrder, meshIndex] : renderOrderMap)
 	{
 		shader.setInt("ID", meshIndex + 1);
@@ -947,21 +974,6 @@ void Model::render()
 		{
 			modelMeshes[meshIndex]->render();
 		}
-	}
-
-	if (screenshot)
-	{
-		screenshot = false;
-
-		std::vector<unsigned char> data;
-		data.resize(fbX * fbY * 4);
-
-		glReadBuffer(GL_COLOR_ATTACHMENT0);
-		glReadPixels(0, 0, fbX, fbY, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
-		glReadBuffer(GL_COLOR_ATTACHMENT1);
-
-		//stbi_flip_vertically_on_write(true);
-		stbi_write_png("saves/testExports/testFbo.png", fbX, fbY, 4, &data[0], fbX * 4);
 	}
 
 	//mouse hovering mesh
@@ -974,14 +986,38 @@ void Model::render()
 	else
 		mouseHoveredID = -1;
 
+	//render true colors
+	glBindFramebuffer(GL_FRAMEBUFFER, modelTrueFbo);
+	updateVertexData();
+	shader.setInt("mode", 5);
+	shader.setMat4("projection", glm::mat4(1.0f));
+	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+	shader.setMat4("projection", Camera2D::projection);
+
+	if (screenshot)
+	{
+		screenshot = false;
+
+		std::vector<unsigned char> data;
+		data.resize(fbX * fbY * 4);
+
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glReadPixels(0, 0, fbX, fbY, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
+		glReadBuffer(GL_COLOR_ATTACHMENT1);
+
+		//stbi_flip_vertically_on_write(false);
+		stbi_write_png("saves/testExports/testFbo.png", fbX, fbY, 4, &data[0], fbX * 4);
+	}
+
 	//render the canvas rect
 	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
 	shader.setInt("mode", 1);
-	if (Settings::showCanvas)
+	if (Settings::showFrame)
 	{
 		glBindVertexArray(canvasVao);
-		shader.setVec3("uiColor", Settings::canvasBorderColor);
-		glLineWidth(static_cast<GLfloat>(Settings::canvasLineWidth));
+		shader.setVec3("uiColor", Settings::frameBorderColor);
+		glLineWidth(static_cast<GLfloat>(Settings::frameLineWidth));
 		glDrawElements(GL_LINES, static_cast<GLsizei>(8), GL_UNSIGNED_INT, 0);
 	}
 }
@@ -1008,11 +1044,11 @@ void Model::renderEditMesh(const std::string& meshName)
 	//render the canvas rect
 	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
 	shader.setInt("mode", 1);
-	if (Settings::showCanvas)
+	if (Settings::showFrame)
 	{
 		glBindVertexArray(canvasVao);
-		shader.setVec3("uiColor", Settings::canvasBorderColor);
-		glLineWidth(static_cast<GLfloat>(Settings::canvasLineWidth));
+		shader.setVec3("uiColor", Settings::frameBorderColor);
+		glLineWidth(static_cast<GLfloat>(Settings::frameLineWidth));
 		glDrawElements(GL_LINES, static_cast<GLsizei>(8), GL_UNSIGNED_INT, 0);
 	}
 }
