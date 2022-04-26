@@ -5,16 +5,6 @@ LayerRect::LayerRect()
 	y = x = w = h = 0;
 }
 
-/*
-LayerRect::LayerRect(int _x, int _y, int _w, int _h)
-{
-	x = _x;
-	y = _y;
-	w = _w;
-	h = _h;
-}
-*/
-
 LayerRect::LayerRect(const LayerRect& layerRect)
 {
 	x = layerRect.x;

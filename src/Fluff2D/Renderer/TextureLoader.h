@@ -28,7 +28,7 @@ public:
 private:
 	static std::vector<rect_type> prepareTextureAtlas(std::vector <LayerRect>& layerRects, int texturePixelBuffer, int *atlasWidth, int *atlasHeight);
 
-	static void premultAlpha(unsigned char* image, int width, int height);
+	static void premultAlpha(unsigned char* image, unsigned char* meshAlpha, int width, int height);
 	static int nextPower2(int num);
 };
 

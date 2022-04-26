@@ -150,7 +150,7 @@ void Model::updatePartMap()
 		updatePartMapRecursive(children[i]);
 }
 
-void Model::renderMeshVertice(const std::string &meshName)
+void Model::renderMeshVertices(const std::string &meshName)
 {
 	if (partMap.find(meshName) == partMap.end())
 		return;

@@ -52,7 +52,7 @@ private:
 	float manualKeyvalue = 0.0f;
 	int dragMod = 0;
 
-	ImGuiStyle* style;
+	ImGuiStyle* style = nullptr;
 
 	//0 is add points, 1 is delete points, 2 is move points
 	//int editMeshMode = 0;

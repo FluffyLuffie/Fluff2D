@@ -11,6 +11,7 @@ public:
 	int x, y, w, h;
 	std::string layerName = "";
 	LayerType layerType = LayerType::image;
+	bool visible = true;
 
 	LayerRect();
 	//LayerRect(int _x, int _y, int _w, int _h);

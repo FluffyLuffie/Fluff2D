@@ -26,6 +26,7 @@ void ModelMesh::render()
 
 void ModelMesh::renderInspector()
 {
+	ImGui::Text("flipped: %s", flipped ? "true" : "false");
 	ImGui::Text(name.c_str());
 	bool dataChanged = false;
 
@@ -193,7 +194,7 @@ void ModelMesh::removeVertex(int index)
 	Triangulator::triangulate(vertices, indices);
 }
 
-void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeIn, int edgeSpacing, int insideSpacing)
+void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeIn, int edgeSpacing, int insideSpacing, unsigned char threshold)
 {
 	clearMeshData();
 
@@ -203,14 +204,13 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 	const int height = textureHeight + 2 * edgeOut;
 	const int N = width * height;
 
-	std::vector<bool> originalAlpha;
+	std::vector<unsigned char> originalAlpha;
 	originalAlpha.resize(N);
-
 	for (int y = 0; y < textureHeight; y++)
 		std::copy(texAlpha.begin() + textureWidth * y, texAlpha.begin() + textureWidth * y + textureWidth, originalAlpha.begin() + edgeOut + width * (height - edgeOut - y - 1));
 
-	std::vector<bool> filled = originalAlpha;
-	std::vector<bool> queued = originalAlpha;
+	std::vector<unsigned char> filled = originalAlpha;
+	std::vector<unsigned char> queued = originalAlpha;
 
 	std::vector<int> pending;
 	std::vector<int> pendingNext;
@@ -221,35 +221,34 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 	//outer edge
 	for (int y = edgeOut - 1; y < height - edgeOut + 1; y++)
 		for (int x = edgeOut - 1; x < width - edgeOut + 1; x++)
-			if (!originalAlpha[x + y * width])
+			if (originalAlpha[x + y * width] >= threshold)
 			{
 				for (int i = 0; i < 4; i++)
 				{
 					int adjX = x + offsets[i][0], adjY = y + offsets[i][1];
-					if (originalAlpha[adjX + adjY * width])
+					if (originalAlpha[adjX + adjY * width] < threshold)
 					{
 						pending.push_back(x + y * width);
 						break;
 					}
 				}
 			}
-
 	for (int loop = 0; loop < edgeOut - 1; loop++)
 	{
 		pendingNext.clear();
 
 		for (int i = 0; i < pending.size(); i++)
 		{
-			filled[pending[i]] = true;
+			filled[pending[i]] = 255;
 			int x = pending[i] % width;
 			int y = pending[i] / width;
 
 			for (int j = 0; j < 4; j++)
 			{
 				int adjX = x + offsets[j][0], adjY = y + offsets[j][1];
-				if (!queued[adjX + adjY * width])
+				if (queued[adjX + adjY * width] < threshold)
 				{
-					queued[adjX + adjY * width] = true;
+					queued[adjX + adjY * width] = 255;
 					pendingNext.push_back(adjX + adjY * width);
 				}
 			}
@@ -260,7 +259,7 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 	for (int i = 0; i < pending.size(); i++)
 	{
 		if (flipped)
-			addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2, pending[i] % width - textureWidth / 2), atlasWidth, atlasHeight);
+			addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2 - edgeOut, width - 1 - pending[i] % width - textureWidth / 2 - edgeOut), atlasWidth, atlasHeight);
 		else
 			addMeshVertex(glm::vec2(pending[i] % width - textureWidth / 2 - edgeOut, pending[i] / width - textureHeight / 2 - edgeOut), atlasWidth, atlasHeight);
 	}
@@ -272,15 +271,15 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 
 	for (int y = edgeOut - 1; y < height - edgeOut + 1; y++)
 		for (int x = edgeOut - 1; x < width - edgeOut + 1; x++)
-			if (originalAlpha[x + y * width])
+			if (originalAlpha[x + y * width] >= threshold)
 			{
 				for (int i = 0; i < 4; i++)
 				{
 					int adjX = x + offsets[i][0], adjY = y + offsets[i][1];
-					if (!originalAlpha[adjX + adjY * width])
+					if (originalAlpha[adjX + adjY * width] < threshold)
 					{
 						pending.push_back(x + y * width);
-						queued[x + y * width] = false;
+						queued[x + y * width] = 0;
 						break;
 					}
 				}
@@ -292,8 +291,8 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 
 		for (int i = 0; i < pending.size(); i++)
 		{
-			filled[pending[i]] = false;
-			queued[pending[i]] = false;
+			filled[pending[i]] = 0;
+			queued[pending[i]] = 0;
 			int x = pending[i] % width;
 			int y = pending[i] / width;
 
@@ -302,7 +301,7 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 				int adjX = x + offsets[j][0], adjY = y + offsets[j][1];
 				if (queued[adjX + adjY * width])
 				{
-					queued[adjX + adjY * width] = false;
+					queued[adjX + adjY * width] = 0;
 					pendingNext.push_back(adjX + adjY * width);
 				}
 			}
@@ -313,7 +312,7 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 	for (int i = 0; i < pending.size(); i++)
 	{
 		if (flipped)
-			addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2, pending[i] % width - textureWidth / 2), atlasWidth, atlasHeight);
+			addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2 - edgeOut, width - 1 - pending[i] % width - textureWidth / 2 - edgeOut), atlasWidth, atlasHeight);
 		else
 			addMeshVertex(glm::vec2(pending[i] % width - textureWidth / 2 - edgeOut, pending[i] / width - textureHeight / 2 - edgeOut), atlasWidth, atlasHeight);
 	}
@@ -327,8 +326,8 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 
 			for (int i = 0; i < pending.size(); i++)
 			{
-				filled[pending[i]] = false;
-				queued[pending[i]] = false;
+				filled[pending[i]] = 0;
+				queued[pending[i]] = 0;
 				int x = pending[i] % width;
 				int y = pending[i] / width;
 
@@ -337,7 +336,7 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 					int adjX = x + offsets[j][0], adjY = y + offsets[j][1];
 					if (queued[adjX + adjY * width])
 					{
-						queued[adjX + adjY * width] = false;
+						queued[adjX + adjY * width] = 0;
 						pendingNext.push_back(adjX + adjY * width);
 					}
 				}
@@ -348,7 +347,7 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 		for (int i = 0; i < pending.size(); i++)
 		{
 			if (flipped)
-				addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2, pending[i] % width - textureWidth / 2), atlasWidth, atlasHeight);
+				addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2 - edgeOut, width - 1 - pending[i] % width - textureWidth / 2 - edgeOut), atlasWidth, atlasHeight);
 			else
 				addMeshVertex(glm::vec2(pending[i] % width - textureWidth / 2 - edgeOut, pending[i] / width - textureHeight / 2 - edgeOut), atlasWidth, atlasHeight);
 		}

@@ -193,7 +193,7 @@ void Application::update()
 					model->renderEditMesh(selectedParts[0]);
 
 					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-					model->renderMeshVertice(selectedParts[0]);
+					model->renderMeshVertices(selectedParts[0]);
 					model->renderSelectedVertices();
 					if (closestVertexIndex != -1)
 						model->renderClosestVertex(selectedParts[selectedPartNum], closestVertexIndex);
@@ -207,7 +207,7 @@ void Application::update()
 					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 					//if hovering over mesh that is not selected, and no closest vertex
-					if (Event::isFocused && Event::isHovered && model->mouseHoveredID > -1 && std::find(selectedParts.begin(), selectedParts.end(), model->modelMeshes[model->mouseHoveredID]->name) == selectedParts.end() && closestVertexIndex == -1)
+					if (Event::isHovered && model->mouseHoveredID > -1 && std::find(selectedParts.begin(), selectedParts.end(), model->modelMeshes[model->mouseHoveredID]->name) == selectedParts.end() && closestVertexIndex == -1)
 					{
 						model->renderHighlightedMesh();
 						if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
@@ -220,11 +220,14 @@ void Application::update()
 
 					}
 
+					if (model->mouseHoveredID == -1 && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !Event::keyDown(GLFW_KEY_SPACE, true))
+						selectedParts.clear();
+
 					if (selectedParts.size())
 					{
 						for (int i = 0; i < selectedParts.size(); i++)
 						{
-							model->renderMeshVertice(selectedParts[i]);
+							model->renderMeshVertices(selectedParts[i]);
 						}
 
 						model->renderSelectedVertices();
@@ -567,6 +570,8 @@ void Application::drawImGui()
 				model->partMap["headMain"]->keyforms[7].scale = glm::vec2(1.0f, 2.0f);
 				*/
 			}
+			if (ImGui::MenuItem("Open test dog"))
+				initializeModelFromPsd("tempPsdTest/testDog.psd");
 			if (ImGui::MenuItem("Open test model krita"))
 				initializeModelFromPsd("tempPsdTest/testModelKrita.psd");
 			if (ImGui::MenuItem("Open fluffy"))
@@ -771,6 +776,9 @@ void Application::drawImGui()
 
 		if (ImGui::BeginPopupModal("New Deformer", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 		{
+			if (openDeformerMenu)
+				ImGui::SetKeyboardFocusHere();
+
 			static int boxCount[2] = { 5, 5 };
 			switch (deformerType)
 			{
@@ -853,11 +861,21 @@ void Application::drawImGui()
 
 					if (ImGui::BeginPopupModal("Auto Mesh Generator", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 					{
+						static int edgeOut = 5, edgeIn = 5, edgeSpacing = 15, insideSpacing = 30, alphaThreshold = 255;
+						ImGui::InputInt("Outer Edge", &edgeOut);
+						ImGui::InputInt("Inner Edge", &edgeIn);
+						ImGui::InputInt("Edge Spacing", &edgeSpacing);
+						ImGui::InputInt("Inside Spacing", &insideSpacing);
+						ImGui::InputInt("Alpha Threshold", &alphaThreshold);
+
+						if (edgeOut < 1) edgeOut = 1;
+						if (edgeIn < 1) edgeIn = 1;
+						if (edgeSpacing < 1) edgeSpacing = 1;
+						if (insideSpacing < 1) insideSpacing = 1;
+						alphaThreshold = std::clamp(alphaThreshold, 1, 255);
+
 						if (ImGui::Button("Auto Mesh Test"))
-						{
-							model->meshMap[selectedParts[0]]->autoMesh(model->atlasWidth, model->atlasHeight, 5, 5, 5, 30);
-							ImGui::CloseCurrentPopup();
-						}
+							model->meshMap[selectedParts[0]]->autoMesh(model->atlasWidth, model->atlasHeight, edgeOut, edgeIn, edgeSpacing, insideSpacing, alphaThreshold);
 						if (ImGui::Button("Close"))
 							ImGui::CloseCurrentPopup();
 						ImGui::EndPopup();

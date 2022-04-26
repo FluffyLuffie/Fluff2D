@@ -41,6 +41,8 @@ public:
 	std::shared_ptr<ModelPart> parent;
 	std::vector<std::shared_ptr<ModelPart>> children;
 
+	bool visible = true;
+
 	//position in psd
 	glm::vec2 originalPos = glm::vec2(0.0f);
 
