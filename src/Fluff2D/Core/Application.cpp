@@ -57,136 +57,134 @@ void Application::update()
 
 				int closestVertexIndex = -1;
 				int selectedPartNum = -1;
-				if (Event::isHovered || Event::isFocused)
+				
+				//if spacebar pressed, move camera
+				if (Event::keyDown(GLFW_KEY_SPACE) && !draggingVertices)
+					panningCamera = true;
+				else if (Event::keyReleased(GLFW_KEY_SPACE))
+					panningCamera = false;
+
+				if (panningCamera)
 				{
-					//if spacebar pressed, move camera
-					if (Event::keyDown(GLFW_KEY_SPACE, true) && !draggingVertices)
-						panningCamera = true;
-					else if (Event::keyReleased(GLFW_KEY_SPACE, true))
-						panningCamera = false;
-
-					if (panningCamera)
+					if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+						oldMouseCoord = Event::viewportMouseCoord;
+					if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 					{
-						if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-							oldMouseCoord = Event::viewportMouseCoord;
-						if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
-						{
-							Camera2D::pos += glm::vec2(-Event::viewportMouseCoord.x + oldMouseCoord.x, Event::viewportMouseCoord.y - oldMouseCoord.y) / Camera2D::scale;
-							oldMouseCoord = Event::viewportMouseCoord;
-						}
+						Camera2D::pos += glm::vec2(-Event::viewportMouseCoord.x + oldMouseCoord.x, Event::viewportMouseCoord.y - oldMouseCoord.y) / Camera2D::scale;
+						oldMouseCoord = Event::viewportMouseCoord;
 					}
-					else
+				}
+				else
+				{
+					if (Event::isHovered && selectedParts.size())
 					{
-						if (selectedParts.size())
+						//testing stuff, move somewhere else later
+						closestVertexIndex = model->findClosestVertex(selectedParts, &selectedPartNum);
+						if (closestVertexIndex != -1)
 						{
-							//testing stuff, move somewhere else later
-							closestVertexIndex = model->findClosestVertex(selectedParts, &selectedPartNum);
-							if (closestVertexIndex != -1)
+							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 							{
-								if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+								dragMod = Event::mod;
+
+								oldMouseCoord = glm::inverse(Camera2D::projection) * glm::vec4(Event::viewportMouseCoord.x * 2.0f / currentFbSize.x - 1.0f, Event::viewportMouseCoord.y * 2.0f / currentFbSize.y - 1.0f, 0.0f, 1.0f);;
+
+								//if clicked vertex is not in selected vertices, clear
+								if (GLFW_MOD_CONTROL != dragMod && std::find(model->selectedVertices.begin(), model->selectedVertices.end(), VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex)) == model->selectedVertices.end())
 								{
-									dragMod = Event::mod;
-
-									oldMouseCoord = glm::inverse(Camera2D::projection) * glm::vec4(Event::viewportMouseCoord.x * 2.0f / currentFbSize.x - 1.0f, Event::viewportMouseCoord.y * 2.0f / currentFbSize.y - 1.0f, 0.0f, 1.0f);;
-
-									//if clicked vertex is not in selected vertices, clear
-									if (GLFW_MOD_CONTROL != dragMod && std::find(model->selectedVertices.begin(), model->selectedVertices.end(), VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex)) == model->selectedVertices.end())
-									{
-										model->selectedVertices.clear();
-									}
-
-									//if selected vertex's part has parameters or is a rotation deformer, or in mesh edit mode
-									if ((model->partMap[selectedParts[selectedPartNum]]->keyforms.size() || model->partMap[selectedParts[selectedPartNum]]->type == ModelPart::PartType::rotationDeformer) && !editingMesh)
-									{
-										model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
-										model->updateOriginalVertexPositions();
-									}
-									else if (editingMesh)
-									{
-										model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
-										model->updateOriginalMeshPositions();
-									}
+									model->selectedVertices.clear();
 								}
-								else if (editingMesh && ImGui::IsMouseDown(ImGuiMouseButton_Right) && model->meshMap[selectedParts[0]]->vertices.size() > 3)
-									model->meshMap[selectedParts[0]]->removeVertex(closestVertexIndex);
-							}
-							//if clicked on nothing
-							else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-							{
-								model->selectedVertices.clear();
 
-								if (editingMesh)
+								//if selected vertex's part has parameters or is a rotation deformer, or in mesh edit mode
+								if ((model->partMap[selectedParts[selectedPartNum]]->keyforms.size() || model->partMap[selectedParts[selectedPartNum]]->type == ModelPart::PartType::rotationDeformer) && !editingMesh)
 								{
-									glm::vec2 lPos = glm::inverse(Camera2D::projection) * glm::vec4(Event::viewportMouseCoord.x * 2.0f / currentFbSize.x - 1.0f, Event::viewportMouseCoord.y * 2.0f / currentFbSize.y - 1.0f, 0.0f, 1.0f);;
-
-									model->meshMap[selectedParts[0]]->addMeshVertex(lPos - model->meshMap[selectedParts[0]]->originalPos, model->atlasWidth, model->atlasHeight);
-									Triangulator::triangulate(model->meshMap[selectedParts[0]]->vertices, model->meshMap[selectedParts[0]]->indices);
-
-									//model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[0], static_cast<int>(model->meshMap[selectedParts[0]]->vertices.size()) - 1));
-									//model->updateOriginalMeshPositions();
+									model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
+									model->updateOriginalVertexPositions();
+								}
+								else if (editingMesh)
+								{
+									model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
+									model->updateOriginalMeshPositions();
 								}
 							}
+							else if (editingMesh && ImGui::IsMouseDown(ImGuiMouseButton_Right) && model->meshMap[selectedParts[0]]->vertices.size() > 3)
+								model->meshMap[selectedParts[0]]->removeVertex(closestVertexIndex);
 						}
-
-						if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != dragMod)
+						//if clicked on nothing
+						else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 						{
+							model->selectedVertices.clear();
+
 							if (editingMesh)
 							{
-								model->moveMeshVertices(oldMouseCoord, dragMod);
-								draggingVertices = true;
-							}
-							else
-							{
-								if (model->selectedVertices.size())
-								{
-									//check if keyvalues are on keyforms of all parts
-									bool onKeyform = true;
+								glm::vec2 lPos = glm::inverse(Camera2D::projection) * glm::vec4(Event::viewportMouseCoord.x * 2.0f / currentFbSize.x - 1.0f, Event::viewportMouseCoord.y * 2.0f / currentFbSize.y - 1.0f, 0.0f, 1.0f);;
 
-									//for each selected part
-									for (int i = 0; i < selectedParts.size() && onKeyform; i++)
-									{
-										//if rotation deformer with no keyforms, skip
-										if (model->partMap[selectedParts[i]]->type == ModelPart::PartType::rotationDeformer && model->partMap[selectedParts[i]]->keyforms.size() == 0)
-											continue;
+								model->meshMap[selectedParts[0]]->addMeshVertex(lPos - model->meshMap[selectedParts[0]]->originalPos, model->atlasWidth, model->atlasHeight);
+								Triangulator::triangulate(model->meshMap[selectedParts[0]]->vertices, model->meshMap[selectedParts[0]]->indices);
 
-										//for each param name in part
-										for (int j = 0; j < model->partMap[selectedParts[i]]->paramNames.size(); j++)
-										{
-											//check if paramValue is in the keyvalues
-											if (std::find(model->partMap[selectedParts[i]]->paramKeyvalues[j].begin(), model->partMap[selectedParts[i]]->paramKeyvalues[j].end(), model->paramValues[model->partMap[selectedParts[i]]->paramNames[j]]) == model->partMap[selectedParts[i]]->paramKeyvalues[j].end())
-											{
-												onKeyform = false;
-												break;
-											}
-										}
-									}
-
-									if (onKeyform)
-									{
-										model->moveSelectedVertices(oldMouseCoord, dragMod);
-										draggingVertices = true;
-									}
-								}
+								//model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[0], static_cast<int>(model->meshMap[selectedParts[0]]->vertices.size()) - 1));
+								//model->updateOriginalMeshPositions();
 							}
 						}
 					}
 
-					if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+					if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != dragMod)
 					{
-						if (draggingVertices && editingMesh)
-							Triangulator::triangulate(model->meshMap[selectedParts[0]]->vertices, model->meshMap[selectedParts[0]]->indices);
+						if (editingMesh)
+						{
+							model->moveMeshVertices(oldMouseCoord, dragMod);
+							draggingVertices = true;
+						}
+						else
+						{
+							if (model->selectedVertices.size())
+							{
+								//check if keyvalues are on keyforms of all parts
+								bool onKeyform = true;
 
-						draggingVertices = false;
-						if (!Event::keyDown(GLFW_KEY_SPACE))
-							panningCamera = false;
+								//for each selected part
+								for (int i = 0; i < selectedParts.size() && onKeyform; i++)
+								{
+									//if rotation deformer with no keyforms, skip
+									if (model->partMap[selectedParts[i]]->type == ModelPart::PartType::rotationDeformer && model->partMap[selectedParts[i]]->keyforms.size() == 0)
+										continue;
+
+									//for each param name in part
+									for (int j = 0; j < model->partMap[selectedParts[i]]->paramNames.size(); j++)
+									{
+										//check if paramValue is in the keyvalues
+										if (std::find(model->partMap[selectedParts[i]]->paramKeyvalues[j].begin(), model->partMap[selectedParts[i]]->paramKeyvalues[j].end(), model->paramValues[model->partMap[selectedParts[i]]->paramNames[j]]) == model->partMap[selectedParts[i]]->paramKeyvalues[j].end())
+										{
+											onKeyform = false;
+											break;
+										}
+									}
+								}
+
+								if (onKeyform)
+								{
+									model->moveSelectedVertices(oldMouseCoord, dragMod);
+									draggingVertices = true;
+								}
+							}
+						}
 					}
-
-					//check if mouse should detect which mesh it is on
-					if (!draggingVertices && !panningCamera)
-						model->detectMouseHover = true;
-					else
-						model->detectMouseHover = false;
 				}
+
+				if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+				{
+					if (draggingVertices && editingMesh)
+						Triangulator::triangulate(model->meshMap[selectedParts[0]]->vertices, model->meshMap[selectedParts[0]]->indices);
+
+					draggingVertices = false;
+					if (!Event::keyDown(GLFW_KEY_SPACE))
+						panningCamera = false;
+				}
+
+				//check if mouse should detect which mesh it is on
+				if (!draggingVertices && !panningCamera && Event::isHovered)
+					model->detectMouseHover = true;
+				else
+					model->detectMouseHover = false;
 
 				if (editingMesh)
 				{
@@ -207,21 +205,28 @@ void Application::update()
 					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 					//if hovering over mesh that is not selected, and no closest vertex
-					if (Event::isHovered && model->mouseHoveredID > -1 && std::find(selectedParts.begin(), selectedParts.end(), model->modelMeshes[model->mouseHoveredID]->name) == selectedParts.end() && closestVertexIndex == -1)
+					if (Event::isHovered && !panningCamera)
 					{
-						model->renderHighlightedMesh();
-						if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+						if (model->mouseHoveredID > -1 && std::find(selectedParts.begin(), selectedParts.end(), model->modelMeshes[model->mouseHoveredID]->name) == selectedParts.end() && closestVertexIndex == -1)
+						{
+							model->renderHighlightedMesh();
+							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+							{
+								model->selectedVertices.clear();
+								selectedParts.clear();
+
+								selectedParts.push_back(model->modelMeshes[model->mouseHoveredID]->name);
+							}
+						}
+						else if (model->mouseHoveredID == -1 && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 						{
 							model->selectedVertices.clear();
 							selectedParts.clear();
-
-							selectedParts.push_back(model->modelMeshes[model->mouseHoveredID]->name);
 						}
+
 
 					}
 
-					if (model->mouseHoveredID == -1 && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !Event::keyDown(GLFW_KEY_SPACE, true))
-						selectedParts.clear();
 
 					if (selectedParts.size())
 					{
@@ -861,18 +866,18 @@ void Application::drawImGui()
 
 					if (ImGui::BeginPopupModal("Auto Mesh Generator", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 					{
-						static int edgeOut = 5, edgeIn = 5, edgeSpacing = 15, insideSpacing = 30, alphaThreshold = 255;
+						static int edgeOut = 3, edgeIn = 8, edgeSpacing = 15, insideSpacing = 50, alphaThreshold = 0;
 						ImGui::InputInt("Outer Edge", &edgeOut);
 						ImGui::InputInt("Inner Edge", &edgeIn);
 						ImGui::InputInt("Edge Spacing", &edgeSpacing);
 						ImGui::InputInt("Inside Spacing", &insideSpacing);
 						ImGui::InputInt("Alpha Threshold", &alphaThreshold);
 
-						if (edgeOut < 1) edgeOut = 1;
+						if (edgeOut < 2) edgeOut = 2;
 						if (edgeIn < 1) edgeIn = 1;
 						if (edgeSpacing < 1) edgeSpacing = 1;
 						if (insideSpacing < 1) insideSpacing = 1;
-						alphaThreshold = std::clamp(alphaThreshold, 1, 255);
+						alphaThreshold = std::clamp(alphaThreshold, 0, 254);
 
 						if (ImGui::Button("Auto Mesh Test"))
 							model->meshMap[selectedParts[0]]->autoMesh(model->atlasWidth, model->atlasHeight, edgeOut, edgeIn, edgeSpacing, insideSpacing, alphaThreshold);

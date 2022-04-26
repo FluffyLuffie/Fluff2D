@@ -21,9 +21,9 @@ public:
 
 	inline static glm::vec2 viewportMouseCoord = glm::vec2();
 
-	static bool keyDown(int key, bool force = false);
-	static bool keyPressed(int key, bool force = false);
-	static bool keyReleased(int key, bool force = false);
+	static bool keyDown(int key);
+	static bool keyPressed(int key);
+	static bool keyReleased(int key);
 	static float getScroll();
 	static void update();
 

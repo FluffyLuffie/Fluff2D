@@ -1,9 +1,9 @@
 #include "Event.h"
 
 //any frame
-bool Event::keyDown(int key, bool force)
+bool Event::keyDown(int key)
 {
-	if (((!io->WantCaptureKeyboard && isFocused) || force) && glfwGetKey(GLFWWin, key) == GLFW_PRESS)
+	if (!io->WantTextInput && glfwGetKey(GLFWWin, key) == GLFW_PRESS)
 	{
 		anyAction = true;
 		return true;
@@ -12,9 +12,9 @@ bool Event::keyDown(int key, bool force)
 }
 
 //first frame
-bool Event::keyPressed(int key, bool force)
+bool Event::keyPressed(int key)
 {
-	if (((!io->WantCaptureKeyboard && isFocused) || force) && keysCheckFrame.find(key) != keysCheckFrame.end())
+	if (!io->WantTextInput && keysCheckFrame.find(key) != keysCheckFrame.end())
 	{
 		anyAction = true;
 		return keysCheckFrame[key];
@@ -22,9 +22,9 @@ bool Event::keyPressed(int key, bool force)
 	return false;
 }
 
-bool Event::keyReleased(int key, bool force)
+bool Event::keyReleased(int key)
 {
-	if (((!io->WantCaptureKeyboard && isFocused) || force) && keysCheckFrame.find(key) != keysCheckFrame.end())
+	if (!io->WantTextInput && keysCheckFrame.find(key) != keysCheckFrame.end())
 	{
 		anyAction = true;
 		return !keysCheckFrame[key];

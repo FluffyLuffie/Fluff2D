@@ -194,8 +194,12 @@ void ModelMesh::removeVertex(int index)
 	Triangulator::triangulate(vertices, indices);
 }
 
+//TODO: find a better way for reducing the number of vertices
 void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeIn, int edgeSpacing, int insideSpacing, unsigned char threshold)
 {
+	std::vector<glm::vec2> backupVertices = originalVertexPositions;
+	std::vector<unsigned int> backupIndices = indices;
+
 	clearMeshData();
 
 	int offsets[][2] = { { 0, -1}, {-1,  0}, { 1,  0}, { 0,  1} };
@@ -221,12 +225,12 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 	//outer edge
 	for (int y = edgeOut - 1; y < height - edgeOut + 1; y++)
 		for (int x = edgeOut - 1; x < width - edgeOut + 1; x++)
-			if (originalAlpha[x + y * width] >= threshold)
+			if (originalAlpha[x + y * width] <= threshold)
 			{
 				for (int i = 0; i < 4; i++)
 				{
 					int adjX = x + offsets[i][0], adjY = y + offsets[i][1];
-					if (originalAlpha[adjX + adjY * width] < threshold)
+					if (originalAlpha[adjX + adjY * width] > threshold)
 					{
 						pending.push_back(x + y * width);
 						break;
@@ -246,7 +250,7 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 			for (int j = 0; j < 4; j++)
 			{
 				int adjX = x + offsets[j][0], adjY = y + offsets[j][1];
-				if (queued[adjX + adjY * width] < threshold)
+				if (queued[adjX + adjY * width] <= threshold)
 				{
 					queued[adjX + adjY * width] = 255;
 					pendingNext.push_back(adjX + adjY * width);
@@ -258,6 +262,9 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 
 	for (int i = 0; i < pending.size(); i++)
 	{
+		if (i % edgeSpacing)
+			continue;
+
 		if (flipped)
 			addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2 - edgeOut, width - 1 - pending[i] % width - textureWidth / 2 - edgeOut), atlasWidth, atlasHeight);
 		else
@@ -271,12 +278,12 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 
 	for (int y = edgeOut - 1; y < height - edgeOut + 1; y++)
 		for (int x = edgeOut - 1; x < width - edgeOut + 1; x++)
-			if (originalAlpha[x + y * width] >= threshold)
+			if (originalAlpha[x + y * width] > threshold)
 			{
 				for (int i = 0; i < 4; i++)
 				{
 					int adjX = x + offsets[i][0], adjY = y + offsets[i][1];
-					if (originalAlpha[adjX + adjY * width] < threshold)
+					if (originalAlpha[adjX + adjY * width] <= threshold)
 					{
 						pending.push_back(x + y * width);
 						queued[x + y * width] = 0;
@@ -299,7 +306,7 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 			for (int j = 0; j < 4; j++)
 			{
 				int adjX = x + offsets[j][0], adjY = y + offsets[j][1];
-				if (queued[adjX + adjY * width])
+				if (queued[adjX + adjY * width] > threshold)
 				{
 					queued[adjX + adjY * width] = 0;
 					pendingNext.push_back(adjX + adjY * width);
@@ -311,6 +318,9 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 
 	for (int i = 0; i < pending.size(); i++)
 	{
+		if (i % edgeSpacing)
+			continue;
+
 		if (flipped)
 			addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2 - edgeOut, width - 1 - pending[i] % width - textureWidth / 2 - edgeOut), atlasWidth, atlasHeight);
 		else
@@ -334,7 +344,7 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 				for (int j = 0; j < 4; j++)
 				{
 					int adjX = x + offsets[j][0], adjY = y + offsets[j][1];
-					if (queued[adjX + adjY * width])
+					if (queued[adjX + adjY * width] > threshold)
 					{
 						queued[adjX + adjY * width] = 0;
 						pendingNext.push_back(adjX + adjY * width);
@@ -346,6 +356,9 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 
 		for (int i = 0; i < pending.size(); i++)
 		{
+			if (i % insideSpacing)
+				continue;
+
 			if (flipped)
 				addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2 - edgeOut, width - 1 - pending[i] % width - textureWidth / 2 - edgeOut), atlasWidth, atlasHeight);
 			else
@@ -353,7 +366,15 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 		}
 	}
 
-	Triangulator::triangulate(vertices, indices);
+	if (vertices.size() > 2)
+		Triangulator::triangulate(vertices, indices);
+	else
+	{
+		Log::logError("Auto Mesh Failed");
+		for (int i = 0; i < backupVertices.size(); i++)
+			addMeshVertex(backupVertices[i], atlasWidth, atlasHeight);
+		indices = backupIndices;
+	}
 }
 
 glm::vec2 ModelMesh::posToTexCoord(const glm::vec2& vPos, int atlasWidth, int atlasHeight)
