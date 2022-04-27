@@ -337,8 +337,10 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	//keeps track of how many image layers read
 	int imageLayersRead = 0;
 
-	std::vector <std::vector <unsigned char>> layerBytes;
-	layerBytes.resize(rectangles.size());
+	std::vector<std::vector<unsigned char>> premultBytes;
+	premultBytes.resize(rectangles.size());
+	model->layerBytes.resize(rectangles.size());
+
 	//idk how many threads to create
 	progschj::ThreadPool pool(std::thread::hardware_concurrency() - 1);
 	std::vector<std::future<bool>> results;
@@ -347,7 +349,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	//get rects for each layer
 	for (int layerNum = 0; layerNum < layerRects.size(); layerNum++)
 	{
-		unsigned char* meshAlpha;
+		unsigned char* premultPtr;
 
 		//figure out compression method
 		pf.read(buffer, 2);
@@ -366,9 +368,9 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 		//RLE Compression
 		//only happens in image layers, I hope
 		case 1:
-			layerBytes[imageLayersRead].resize(layerRects[layerNum].w * layerRects[layerNum].h * 4);
-			model->modelMeshes[imageLayersRead]->texAlpha.resize(layerRects[layerNum].w * layerRects[layerNum].h);
-			meshAlpha = &model->modelMeshes[imageLayersRead]->texAlpha[0];
+			model->layerBytes[imageLayersRead].resize(layerRects[layerNum].w * layerRects[layerNum].h * 4);
+			premultBytes[imageLayersRead].resize(layerRects[layerNum].w * layerRects[layerNum].h * 4);
+			premultPtr = &premultBytes[imageLayersRead][0];
 
 			if (rectangles[imageLayersRead].flipped)
 			{
@@ -401,7 +403,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 
 							for (int i = 0; i < -buffer[0] + 1; i++)
 							{
-								layerBytes[imageLayersRead][(pixelsRead / layerRects[layerNum].w
+								model->layerBytes[imageLayersRead][(pixelsRead / layerRects[layerNum].w
 									+ (layerRects[layerNum].w - 1 - pixelsRead % layerRects[layerNum].w) * layerRects[layerNum].h)
 									* 4 + channelOffset] = buffer[1];
 								pixelsRead++;
@@ -415,7 +417,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 								pf.read(buffer + 1, 1);
 								channelBytesLeft--;
 
-								layerBytes[imageLayersRead][(pixelsRead / layerRects[layerNum].w
+								model->layerBytes[imageLayersRead][(pixelsRead / layerRects[layerNum].w
 									+ (layerRects[layerNum].w - 1 - pixelsRead % layerRects[layerNum].w) * (layerRects[layerNum].h))
 									* 4 + channelOffset] = buffer[1];
 								pixelsRead++;
@@ -461,7 +463,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 							channelBytesLeft--;
 							for (int i = 0; i < -buffer[0] + 1; i++)
 							{
-								layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w
+								model->layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w
 									+ (pixelsRead / layerRects[layerNum].w) * layerRects[layerNum].w)
 									* 4 + channelOffset] = buffer[1];
 								pixelsRead++;
@@ -475,7 +477,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 								pf.read(buffer + 1, 1);
 								channelBytesLeft--;
 
-								layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w
+								model->layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w
 									+ (pixelsRead / layerRects[layerNum].w) * layerRects[layerNum].w)
 									* 4 + channelOffset] = buffer[1];
 								pixelsRead++;
@@ -493,6 +495,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			}
 
 			model->modelMeshes[imageLayersRead]->name = layerRects[layerNum].layerName;
+			model->modelMeshes[imageLayersRead]->textureIndex = imageLayersRead;
 			model->modelMeshes[imageLayersRead]->visible = layerRects[layerNum].visible;
 			model->modelMeshes[imageLayersRead]->pos = glm::vec2(layerRects[layerNum].x + (layerRects[layerNum].w - model->psdDimension.x) / 2.0f, -layerRects[layerNum].y + (-layerRects[layerNum].h + model->psdDimension.y) / 2.0f);
 			model->modelMeshes[imageLayersRead]->originalPos = model->modelMeshes[imageLayersRead]->pos;
@@ -500,7 +503,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			model->modelMeshes[imageLayersRead]->createBasicMesh(rectangles[imageLayersRead].x, rectangles[imageLayersRead].y, rectangles[imageLayersRead].w, rectangles[imageLayersRead].h, rectangles[imageLayersRead].flipped, model->atlasWidth, model->atlasHeight);
 
 			//assign a pool of tasks to threads
-			texPtr = &layerBytes[imageLayersRead][0];
+			texPtr = &model->layerBytes[imageLayersRead][0];
 			if (rectangles[imageLayersRead].flipped)
 			{
 				texW = layerRects[layerNum].h;
@@ -513,9 +516,9 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			}
 
 			results.emplace_back(
-				pool.enqueue([texPtr, meshAlpha, texW, texH]
+				pool.enqueue([texPtr, premultPtr, texW, texH]
 					{
-						premultAlpha(texPtr, meshAlpha, texW, texH);
+						premultAlpha(texPtr, premultPtr, texW, texH);
 						return true;
 					})
 			);
@@ -551,7 +554,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 						+ (rectangles[imageLayer].x
 							+ (model->atlasHeight - rectangles[imageLayer].y - row - 1) * model->atlasWidth)
 						* 4,
-						&layerBytes[imageLayer][row * layerRects[i].w * 4], layerRects[i].w * 4);
+						&premultBytes[imageLayer][row * layerRects[i].w * 4], layerRects[i].w * 4);
 				}
 			}
 			else
@@ -563,7 +566,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 						+ (rectangles[imageLayer].x
 							+ (model->atlasHeight - rectangles[imageLayer].y - row - 1) * model->atlasWidth)
 						* 4,
-						&layerBytes[imageLayer][row * layerRects[i].h * 4], layerRects[i].h * 4);
+						&premultBytes[imageLayer][row * layerRects[i].h * 4], layerRects[i].h * 4);
 				}
 			}
 			imageLayer++;
@@ -642,17 +645,16 @@ std::vector<rect_type> TextureLoader::prepareTextureAtlas(std::vector<LayerRect>
 	return rectangles;
 }
 
-void TextureLoader::premultAlpha(unsigned char* image, unsigned char* meshAlpha, int width, int height)
+void TextureLoader::premultAlpha(unsigned char* image, unsigned char* premultImage, int width, int height)
 {
 	const int N = width * height;
 
 	for (size_t i = 0, j = 3; i < N; i++, j += 4)
 	{
-		image[j - 1] = (unsigned char)(image[j - 1] * (image[j] / 255.0f));
-		image[j - 2] = (unsigned char)(image[j - 2] * (image[j] / 255.0f));
-		image[j - 3] = (unsigned char)(image[j - 3] * (image[j] / 255.0f));
-
-		meshAlpha[i] = image[j];
+		premultImage[j] = image[j];
+		premultImage[j - 1] = (unsigned char)(image[j - 1] * (image[j] / 255.0f));
+		premultImage[j - 2] = (unsigned char)(image[j - 2] * (image[j] / 255.0f));
+		premultImage[j - 3] = (unsigned char)(image[j - 3] * (image[j] / 255.0f));
 	}
 }
 

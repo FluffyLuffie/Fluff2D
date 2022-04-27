@@ -638,7 +638,7 @@ void Application::drawImGui()
 		if (ImGui::Button("Temp Mesh Test") && meshGeneratorValid && model)
 		{
 			for (int i = 0; i < selectedParts.size(); i++)
-				model->meshMap[selectedParts[i]]->autoMesh(model->atlasWidth, model->atlasHeight, 3, 5, 10, 30, 0);
+				model->meshMap[selectedParts[i]]->autoMesh(model->layerBytes[model->meshMap[selectedParts[0]]->textureIndex], model->atlasWidth, model->atlasHeight, 3, 5, 10, 30, 0);
 		}
 
 		static int boxCount[2] = { 5, 5 };
@@ -889,7 +889,7 @@ void Application::drawImGui()
 						alphaThreshold = std::clamp(alphaThreshold, 0, 254);
 
 						if (ImGui::Button("Auto Mesh Test"))
-							model->meshMap[selectedParts[0]]->autoMesh(model->atlasWidth, model->atlasHeight, edgeOut, edgeIn, edgeSpacing, insideSpacing, alphaThreshold);
+							model->meshMap[selectedParts[0]]->autoMesh(model->layerBytes[model->meshMap[selectedParts[0]]->textureIndex], model->atlasWidth, model->atlasHeight, edgeOut, edgeIn, edgeSpacing, insideSpacing, alphaThreshold);
 						if (ImGui::Button("Close"))
 							ImGui::CloseCurrentPopup();
 						ImGui::EndPopup();
