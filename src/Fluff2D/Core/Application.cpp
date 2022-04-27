@@ -127,7 +127,7 @@ void Application::update()
 						}
 					}
 
-					if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != dragMod)
+					if (Event::isFocused && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != dragMod)
 					{
 						if (editingMesh)
 						{
@@ -218,7 +218,7 @@ void Application::update()
 								selectedParts.push_back(model->modelMeshes[model->mouseHoveredID]->name);
 							}
 						}
-						else if (model->mouseHoveredID == -1 && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+						else if (model->mouseHoveredID == -1 && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && closestVertexIndex == -1)
 						{
 							model->selectedVertices.clear();
 							selectedParts.clear();
@@ -382,6 +382,7 @@ void Application::createModelTree(std::shared_ptr<ModelPartUI> currentPart)
 				if (GLFW_MOD_CONTROL != Event::mod)
 				{
 					selectedParts.clear();
+					model->selectedVertices.clear();
 					alreadySelected = false;
 				}
 				if (alreadySelected)
@@ -466,6 +467,7 @@ void Application::createModelTree(std::shared_ptr<ModelPart> currentPart)
 		if (GLFW_MOD_CONTROL != Event::mod)
 		{
 			selectedParts.clear();
+			model->selectedVertices.clear();
 			alreadySelected = false;
 		}
 		if (alreadySelected)
@@ -633,11 +635,18 @@ void Application::drawImGui()
 				meshGeneratorValid = false;
 		}
 
+		if (ImGui::Button("Temp Mesh Test") && meshGeneratorValid && model)
+		{
+			for (int i = 0; i < selectedParts.size(); i++)
+				model->meshMap[selectedParts[i]]->autoMesh(model->atlasWidth, model->atlasHeight, 3, 5, 10, 30, 0);
+		}
+
 		static int boxCount[2] = { 5, 5 };
 		if (ImGui::Button("Test Box Vertices") && meshGeneratorValid && model)
 		{
 			ImGui::OpenPopup("Generate Box Vertices");
 		}
+
 
 		if (ImGui::BeginPopupModal("Generate Box Vertices", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 		{
@@ -866,7 +875,7 @@ void Application::drawImGui()
 
 					if (ImGui::BeginPopupModal("Auto Mesh Generator", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 					{
-						static int edgeOut = 3, edgeIn = 8, edgeSpacing = 15, insideSpacing = 50, alphaThreshold = 0;
+						static int edgeOut = 3, edgeIn = 8, edgeSpacing = 30, insideSpacing = 50, alphaThreshold = 0;
 						ImGui::InputInt("Outer Edge", &edgeOut);
 						ImGui::InputInt("Inner Edge", &edgeIn);
 						ImGui::InputInt("Edge Spacing", &edgeSpacing);

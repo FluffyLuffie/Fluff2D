@@ -8,8 +8,8 @@ Deleting keyvalues/keyforms.
 Physics.
 Saving model for editor.
 Right clicking stuff does something.
-[Done] Manual vertices placer.
-Auto vertices placer.
+[Maunal triangles] Manual vertices placer.
+[Invisible triangle remover] Auto vertices placer.
 Japanese translation.
 Model exporter.
 [Done] Model view window/tab instead of rending to main frame.
@@ -19,7 +19,7 @@ Model exporter.
 [Add and multiply done. Maybe overlay?] Blending modes.
 Bezier for warp transforms.
 Save settings in a file and read when launched.
-[very buggy] Moving model object hierarchy by dragging.
+[Very buggy] Moving model object hierarchy by dragging.
 Make psd importer more reliable.
 [Done] Clean up fragment shader code.
 Code documentation.
@@ -43,8 +43,3 @@ Vertex positions(int, vec2)
 *Mesh*
 Render order (int)
 Color (vec4)
-
-***Brain dump***
-Auto vertices:
-https://github.com/godotengine/godot/blob/master/editor/plugins/sprite_2d_editor_plugin.h
-https://www.youtube.com/watch?v=vuWSVm_vx9c

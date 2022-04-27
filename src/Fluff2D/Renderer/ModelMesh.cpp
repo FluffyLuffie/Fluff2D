@@ -197,10 +197,7 @@ void ModelMesh::removeVertex(int index)
 //TODO: find a better way for reducing the number of vertices
 void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeIn, int edgeSpacing, int insideSpacing, unsigned char threshold)
 {
-	std::vector<glm::vec2> backupVertices = originalVertexPositions;
-	std::vector<unsigned int> backupIndices = indices;
-
-	clearMeshData();
+	std::vector<glm::vec2> tempVertices, finalVertices;
 
 	int offsets[][2] = { { 0, -1}, {-1,  0}, { 1,  0}, { 0,  1} };
 
@@ -261,15 +258,16 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 	}
 
 	for (int i = 0; i < pending.size(); i++)
-	{
-		if (i % edgeSpacing)
-			continue;
-
 		if (flipped)
-			addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2 - edgeOut, width - 1 - pending[i] % width - textureWidth / 2 - edgeOut), atlasWidth, atlasHeight);
+			tempVertices.push_back(glm::vec2(pending[i] / width - textureHeight / 2 - edgeOut, width - 1 - pending[i] % width - textureWidth / 2 - edgeOut));
 		else
-			addMeshVertex(glm::vec2(pending[i] % width - textureWidth / 2 - edgeOut, pending[i] / width - textureHeight / 2 - edgeOut), atlasWidth, atlasHeight);
-	}
+			tempVertices.push_back(glm::vec2(pending[i] % width - textureWidth / 2 - edgeOut, pending[i] / width - textureHeight / 2 - edgeOut));
+
+	std::sort(tempVertices.begin(), tempVertices.end(), compareAngle);
+	for (int i = 0; i < tempVertices.size(); i++)
+		if (i % edgeSpacing == 0)
+			finalVertices.push_back(tempVertices[i]);
+	tempVertices.clear();
 
 	//inner edge
 	filled = originalAlpha;
@@ -317,15 +315,16 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 	}
 
 	for (int i = 0; i < pending.size(); i++)
-	{
-		if (i % edgeSpacing)
-			continue;
-
 		if (flipped)
-			addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2 - edgeOut, width - 1 - pending[i] % width - textureWidth / 2 - edgeOut), atlasWidth, atlasHeight);
+			tempVertices.push_back(glm::vec2(pending[i] / width - textureHeight / 2 - edgeOut, width - 1 - pending[i] % width - textureWidth / 2 - edgeOut));
 		else
-			addMeshVertex(glm::vec2(pending[i] % width - textureWidth / 2 - edgeOut, pending[i] / width - textureHeight / 2 - edgeOut), atlasWidth, atlasHeight);
-	}
+			tempVertices.push_back(glm::vec2(pending[i] % width - textureWidth / 2 - edgeOut, pending[i] / width - textureHeight / 2 - edgeOut));
+
+	std::sort(tempVertices.begin(), tempVertices.end(), compareAngle);
+	for (int i = 0; i < tempVertices.size(); i++)
+		if (i % edgeSpacing == 0)
+			finalVertices.push_back(tempVertices[i]);
+	tempVertices.clear();
 
 	//inside
 	while (pending.size())
@@ -355,26 +354,27 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 		}
 
 		for (int i = 0; i < pending.size(); i++)
-		{
-			if (i % insideSpacing)
-				continue;
-
 			if (flipped)
-				addMeshVertex(glm::vec2(pending[i] / width - textureHeight / 2 - edgeOut, width - 1 - pending[i] % width - textureWidth / 2 - edgeOut), atlasWidth, atlasHeight);
+				tempVertices.push_back(glm::vec2(pending[i] / width - textureHeight / 2 - edgeOut, width - 1 - pending[i] % width - textureWidth / 2 - edgeOut));
 			else
-				addMeshVertex(glm::vec2(pending[i] % width - textureWidth / 2 - edgeOut, pending[i] / width - textureHeight / 2 - edgeOut), atlasWidth, atlasHeight);
-		}
+				tempVertices.push_back(glm::vec2(pending[i] % width - textureWidth / 2 - edgeOut, pending[i] / width - textureHeight / 2 - edgeOut));
+
+		std::sort(tempVertices.begin(), tempVertices.end(), compareAngle);
+		for (int i = 0; i < tempVertices.size(); i++)
+			if (i % insideSpacing == 0)
+				finalVertices.push_back(tempVertices[i]);
+		tempVertices.clear();
 	}
 
-	if (vertices.size() > 2)
-		Triangulator::triangulate(vertices, indices);
-	else
+	if (finalVertices.size() > 2)
 	{
-		Log::logError("Auto Mesh Failed");
-		for (int i = 0; i < backupVertices.size(); i++)
-			addMeshVertex(backupVertices[i], atlasWidth, atlasHeight);
-		indices = backupIndices;
+		clearMeshData();
+		for (int i = 0; i < finalVertices.size(); i++)
+			addMeshVertex(finalVertices[i], atlasWidth, atlasHeight);
+		Triangulator::triangulate(vertices, indices);
 	}
+	else
+		Log::logError("Auto Mesh Failed");
 }
 
 glm::vec2 ModelMesh::posToTexCoord(const glm::vec2& vPos, int atlasWidth, int atlasHeight)

@@ -44,5 +44,8 @@ public:
 private:
 	int atlasPositionX = 0, atlasPositionY = 0, textureWidth = 0, textureHeight = 0;
 	bool flipped = false;
+
+	//for automesh
+	inline static bool compareAngle(glm::vec2 p1, glm::vec2 p2) { return atan2(p1.y, p1.x) < atan2(p2.y, p2.x); }
 };
 
