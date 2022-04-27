@@ -289,7 +289,7 @@ void Application::initializeModelFromPsd(const char* fileName)
 	if (TextureLoader::loadPsdFile(fileName, model))
 	{
 		//TextureLoader::loadTexture(&model->textureID, "saves/testExports/textureAtlas.png", &model->atlasWidth, &model->atlasHeight, &model->atlasNrChannels);
-		Log::logInfo("Took %f seconds to load PSD", glfwGetTime() - startTime);
+		Log::info("Took %f seconds to load PSD", glfwGetTime() - startTime);
 
 		model->generateDefaltParams();
 		model->updatePartMap();
@@ -299,7 +299,7 @@ void Application::initializeModelFromPsd(const char* fileName)
 		Camera2D::scale = 1.0f;
 	}
 	else
-		Log::logError("Failed to load psd");
+		Log::error("Failed to load psd");
 }
 
 void Application::saveModel()
@@ -320,6 +320,9 @@ int Application::loadModel(const char* filePath)
 
 void Application::init()
 {
+	//temporary files for mesh texture
+	TextureLoader::tempDirectory = std::filesystem::temp_directory_path();
+
 	window.init();
 	Event::GLFWWin = window.getWindow();
 
@@ -482,8 +485,6 @@ void Application::createModelTree(std::shared_ptr<ModelPart> currentPart)
 	//drag and drop stuff
 	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
 	{
-		//std::cout << "Source: " << currentPart->name << std::endl;
-
 		ImGui::SetDragDropPayload("ModelPart", currentPart->name.c_str(), currentPart->name.length() + 1);
 		ImGui::EndDragDropSource();
 	}
@@ -606,7 +607,7 @@ void Application::drawImGui()
 			initializeModelFromPsd(fileName.c_str());
 		//if .ftd file
 		else
-			Log::logWarning("Implementing reading ftd files later");
+			Log::warning("Implementing reading ftd files later");
 		fileBrowser.ClearSelected();
 	}
 
@@ -638,7 +639,7 @@ void Application::drawImGui()
 		if (ImGui::Button("Temp Mesh Test") && meshGeneratorValid && model)
 		{
 			for (int i = 0; i < selectedParts.size(); i++)
-				model->meshMap[selectedParts[i]]->autoMesh(model->atlasWidth, model->atlasHeight, 3, 5, 10, 30, 0);
+				model->meshMap[selectedParts[i]]->autoMesh(TextureLoader::tempDirectory, model->atlasWidth, model->atlasHeight, 3, 5, 10, 30, 0);
 		}
 
 		static int boxCount[2] = { 5, 5 };
@@ -889,7 +890,7 @@ void Application::drawImGui()
 						alphaThreshold = std::clamp(alphaThreshold, 0, 254);
 
 						if (ImGui::Button("Auto Mesh Test"))
-							model->meshMap[selectedParts[0]]->autoMesh(model->atlasWidth, model->atlasHeight, edgeOut, edgeIn, edgeSpacing, insideSpacing, alphaThreshold);
+							model->meshMap[selectedParts[0]]->autoMesh(TextureLoader::tempDirectory, model->atlasWidth, model->atlasHeight, edgeOut, edgeIn, edgeSpacing, insideSpacing, alphaThreshold);
 						if (ImGui::Button("Close"))
 							ImGui::CloseCurrentPopup();
 						ImGui::EndPopup();

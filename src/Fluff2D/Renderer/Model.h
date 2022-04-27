@@ -33,9 +33,6 @@ public:
 
 	glm::ivec2 psdDimension = glm::ivec2(0);
 
-	float scale = 1.0f;
-	glm::mat4 projection = glm::mat4(1.0f);
-
 	unsigned int textureID = 0;
 	Shader shader;
 

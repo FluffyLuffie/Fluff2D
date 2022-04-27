@@ -1,8 +1,6 @@
 #pragma once
 
 #include <iostream>
-#include <fstream>
-#include <sstream>
 #include <vector>
 #include <thread>
 
@@ -22,13 +20,15 @@ using rect_type = rectpack2D::output_rect_t<spaces_type>;
 class TextureLoader
 {
 public:
+	inline static std::filesystem::path tempDirectory;
+
 	static void loadTexture(unsigned int* texture, const char* fileName, int* width, int* height, int* nrChannels);
 	static bool loadPsdFile(const char* fileName, std::shared_ptr<Model> model);
 
 private:
 	static std::vector<rect_type> prepareTextureAtlas(std::vector <LayerRect>& layerRects, int texturePixelBuffer, int *atlasWidth, int *atlasHeight);
 
-	static void premultAlpha(unsigned char* image, unsigned char* meshAlpha, int width, int height);
+	static void premultAlpha(unsigned char* image, int width, int height);
 	static int nextPower2(int num);
 };
 

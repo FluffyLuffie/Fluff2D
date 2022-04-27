@@ -18,7 +18,7 @@ void TextureLoader::loadTexture(unsigned int* texture, const char* fileName, int
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else
-		Log::logError("Failed to load texture");
+		Log::error("Failed to load texture");
 	stbi_image_free(data);
 }
 
@@ -31,13 +31,13 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	//might move this to a class variable later
 	std::vector <LayerRect> layerRects;
 
-	Log::logInfo("Opening %s", fileName);
+	Log::info("Opening %s", fileName);
 
 	//check if file successfully opened
 	std::ifstream pf (fileName, std::ios::binary);
 	if (!pf.is_open())
 	{
-		Log::logError("Error opening psd file");
+		Log::error("Error opening psd file");
 		return false;
 	}
 
@@ -49,7 +49,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	pf.read(buffer, 4);
 	if (std::strncmp(buffer, "8BPS", 4) != 0)
 	{
-		Log::logError("PSD file has incorrect signature");
+		Log::error("PSD file has incorrect signature");
 		return false;
 	}
 
@@ -57,7 +57,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	pf.read(buffer, 2);
 	if (buffer[0] != 0 || buffer[1] != 1)
 	{
-		Log::logError("PSD file is incorrect version");
+		Log::error("PSD file is incorrect version");
 		return false;
 	}
 
@@ -309,7 +309,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 					}
 					break;
 				default:
-					Log::logError("Unsupported layer code: %c%c%c%c", buffer[0], buffer[1], buffer[2], buffer[3]);
+					Log::error("Unsupported layer code: %c%c%c%c", buffer[0], buffer[1], buffer[2], buffer[3]);
 					return false ;
 			}
 			
@@ -343,12 +343,11 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	progschj::ThreadPool pool(std::thread::hardware_concurrency() - 1);
 	std::vector<std::future<bool>> results;
 	unsigned char* texPtr;
+	std::ofstream textureFile;
 
 	//get rects for each layer
 	for (int layerNum = 0; layerNum < layerRects.size(); layerNum++)
 	{
-		unsigned char* meshAlpha;
-
 		//figure out compression method
 		pf.read(buffer, 2);
 		int compression = ((buffer[0] & 0xFF) << 8) | (buffer[1] & 0xFF);
@@ -367,8 +366,6 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 		//only happens in image layers, I hope
 		case 1:
 			layerBytes[imageLayersRead].resize(layerRects[layerNum].w * layerRects[layerNum].h * 4);
-			model->modelMeshes[imageLayersRead]->texAlpha.resize(layerRects[layerNum].w * layerRects[layerNum].h);
-			meshAlpha = &model->modelMeshes[imageLayersRead]->texAlpha[0];
 
 			if (rectangles[imageLayersRead].flipped)
 			{
@@ -493,6 +490,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			}
 
 			model->modelMeshes[imageLayersRead]->name = layerRects[layerNum].layerName;
+			model->modelMeshes[imageLayersRead]->textureIndex = imageLayersRead;
 			model->modelMeshes[imageLayersRead]->visible = layerRects[layerNum].visible;
 			model->modelMeshes[imageLayersRead]->pos = glm::vec2(layerRects[layerNum].x + (layerRects[layerNum].w - model->psdDimension.x) / 2.0f, -layerRects[layerNum].y + (-layerRects[layerNum].h + model->psdDimension.y) / 2.0f);
 			model->modelMeshes[imageLayersRead]->originalPos = model->modelMeshes[imageLayersRead]->pos;
@@ -512,10 +510,14 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 				texH = layerRects[layerNum].h;
 			}
 
+			textureFile = std::ofstream(tempDirectory / (("f2d_") + std::to_string(imageLayersRead) + ".tmp"), std::ios::binary);
+			textureFile.write((char*)&layerBytes[imageLayersRead][0], layerBytes[imageLayersRead].size());
+			textureFile.close();
+
 			results.emplace_back(
-				pool.enqueue([texPtr, meshAlpha, texW, texH]
+				pool.enqueue([texPtr, texW, texH]
 					{
-						premultAlpha(texPtr, meshAlpha, texW, texH);
+						premultAlpha(texPtr, texW, texH);
 						return true;
 					})
 			);
@@ -523,20 +525,20 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			imageLayersRead++;
 			break;
 		default:
-			Log::logError("Compression method not supported: %d", compression);
+			Log::error("Compression method not supported: %d", compression);
 			return false;
 		}
 	}
 
 #pragma endregion
 
-	Log::logInfo("Finished reading PSD");
+	Log::info("Finished reading PSD");
 	pf.close();
 
 	int imageLayer = 0;
 
 	//shove all layer textures into a single texture atlas
-	Log::logInfo("Generating texture atlas");
+	Log::info("Generating texture atlas");
 	//for each texture
 	for (int i = 0; i < layerRects.size(); i++)
 	{
@@ -642,7 +644,7 @@ std::vector<rect_type> TextureLoader::prepareTextureAtlas(std::vector<LayerRect>
 	return rectangles;
 }
 
-void TextureLoader::premultAlpha(unsigned char* image, unsigned char* meshAlpha, int width, int height)
+void TextureLoader::premultAlpha(unsigned char* image, int width, int height)
 {
 	const int N = width * height;
 
@@ -651,8 +653,6 @@ void TextureLoader::premultAlpha(unsigned char* image, unsigned char* meshAlpha,
 		image[j - 1] = (unsigned char)(image[j - 1] * (image[j] / 255.0f));
 		image[j - 2] = (unsigned char)(image[j - 2] * (image[j] / 255.0f));
 		image[j - 3] = (unsigned char)(image[j - 3] * (image[j] / 255.0f));
-
-		meshAlpha[i] = image[j];
 	}
 }
 

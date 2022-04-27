@@ -79,7 +79,7 @@ void Log::draw(const char* title)
     ImGui::End();
 }
 
-void Log::logInfo(const char* fmt, ...)
+void Log::info(const char* fmt, ...)
 {
     addLog("[INFO] ");
 
@@ -92,7 +92,7 @@ void Log::logInfo(const char* fmt, ...)
     addLog("\n");
 }
 
-void Log::logWarning(const char* fmt, ...)
+void Log::warning(const char* fmt, ...)
 {
     addLog("[WARN] ");
 
@@ -105,7 +105,7 @@ void Log::logWarning(const char* fmt, ...)
     addLog("\n");
 }
 
-void Log::logError(const char* fmt, ...)
+void Log::error(const char* fmt, ...)
 {
     addLog("[ERROR] ");
 

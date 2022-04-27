@@ -2,12 +2,12 @@
 
 void SaveSystem::saveModel(std::shared_ptr<Model> model, int version)
 {
-	Log::logInfo("Saving model");
+	Log::info("Saving model");
 
 	std::ofstream output("saves/testExports/fluffModel.ftd", std::ios::binary);
 	if (!output.is_open())
 	{
-		Log::logError("Failed to initialize output save file");
+		Log::error("Failed to initialize output save file");
 		return;
 	}
 

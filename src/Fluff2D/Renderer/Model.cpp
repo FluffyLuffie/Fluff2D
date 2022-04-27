@@ -102,7 +102,7 @@ Model::~Model()
 
 void Model::generateDefaltParams()
 {
-	Log::logInfo("Generating default parameters");
+	Log::info("Generating default parameters");
 
 	paramNames = {
 		"headX", "headY", "headZ",
@@ -138,7 +138,6 @@ void Model::reset()
 {
 	pos.x = 0.0f;
 	pos.y = 0.0f;
-	scale = 1.0f;
 	rotation = 0.0f;
 }
 
@@ -844,7 +843,7 @@ void Model::updateFrameBufferSize(int x, int y)
 	glViewport(0, 0, x, y);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		Log::logError("ERROR::FRAMEBUFFER:: Model framebuffer is not complete!");
+		Log::error("ERROR::FRAMEBUFFER:: Model framebuffer is not complete!");
 
 	bindUniformTextures();
 }

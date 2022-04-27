@@ -3,6 +3,9 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <fstream>
+#include <sstream>
+#include <filesystem>
 
 #include "ModelPart.h"
 #include "../UI/ModelPartUI.h"
@@ -17,10 +20,10 @@ public:
 	ModelMesh();
 	~ModelMesh();
 
+	int textureIndex = 0;
+
 	bool invertClip = false;
 	std::vector<std::string> clipMeshes;
-
-	std::vector<unsigned char> texAlpha;
 
 	//0 is normal, 1 is add, 2 is multiply
 	int blendMode = 0;
@@ -37,7 +40,7 @@ public:
 
 	void startMeshEdit();
 	void removeVertex(int index);
-	void autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeIn, int edgeSpacing, int insideSpacing, unsigned char threshold);
+	void autoMesh(std::filesystem::path texturePath, int atlasWidth, int atlasHeight, int edgeOut, int edgeIn, int edgeSpacing, int insideSpacing, unsigned char threshold);
 
 	glm::vec2 posToTexCoord(const glm::vec2& vPos, int atlasWidth, int atlasHeight);
 

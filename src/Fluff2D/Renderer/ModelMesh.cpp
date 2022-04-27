@@ -195,9 +195,11 @@ void ModelMesh::removeVertex(int index)
 }
 
 //TODO: find a better way for reducing the number of vertices
-void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeIn, int edgeSpacing, int insideSpacing, unsigned char threshold)
+void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, int atlasHeight, int edgeOut, int edgeIn, int edgeSpacing, int insideSpacing, unsigned char threshold)
 {
-	std::vector<glm::vec2> tempVertices, finalVertices;
+	std::ifstream textureFile = std::ifstream(directoryPath / (("f2d_") + std::to_string(textureIndex) + ".tmp"), std::ios::binary);
+	if (!textureFile.is_open())
+		Log::error("Temporary texture path not found");
 
 	int offsets[][2] = { { 0, -1}, {-1,  0}, { 1,  0}, { 0,  1} };
 
@@ -205,10 +207,17 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 	const int height = textureHeight + 2 * edgeOut;
 	const int N = width * height;
 
+	std::vector<unsigned char> texBytes(N * 4);
+
+	textureFile.read((char*)&texBytes[0], N * 4);
+
+	std::vector<glm::vec2> tempVertices, finalVertices;
+
 	std::vector<unsigned char> originalAlpha;
 	originalAlpha.resize(N);
 	for (int y = 0; y < textureHeight; y++)
-		std::copy(texAlpha.begin() + textureWidth * y, texAlpha.begin() + textureWidth * y + textureWidth, originalAlpha.begin() + edgeOut + width * (height - edgeOut - y - 1));
+		for (int x = 0; x < textureWidth; x++)
+			originalAlpha[x + edgeOut + width * (height - edgeOut - y - 1)] = texBytes[(x + y * textureWidth) * 4 + 3];
 
 	std::vector<unsigned char> filled = originalAlpha;
 	std::vector<unsigned char> queued = originalAlpha;
@@ -374,7 +383,7 @@ void ModelMesh::autoMesh(int atlasWidth, int atlasHeight, int edgeOut, int edgeI
 		Triangulator::triangulate(vertices, indices);
 	}
 	else
-		Log::logError("Auto Mesh Failed");
+		Log::error("Auto Mesh Failed");
 }
 
 glm::vec2 ModelMesh::posToTexCoord(const glm::vec2& vPos, int atlasWidth, int atlasHeight)

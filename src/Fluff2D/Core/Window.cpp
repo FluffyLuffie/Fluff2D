@@ -80,5 +80,5 @@ void Window::init()
 	glEnable(GL_PROGRAM_POINT_SIZE);
 
 	//hope nothing exploded
-	Log::logInfo("Window creation successful");
+	Log::info("Window creation successful");
 }

@@ -17,8 +17,8 @@ public:
     static void addLog(const char* fmt, ...) IM_FMTARGS(2);
     static void draw(const char* title);
 
-    static void logInfo(const char* fmt, ...) IM_FMTARGS(2);
-    static void logWarning(const char* fmt, ...) IM_FMTARGS(2);
-    static void logError(const char* fmt, ...) IM_FMTARGS(2);
+    static void info(const char* fmt, ...) IM_FMTARGS(2);
+    static void warning(const char* fmt, ...) IM_FMTARGS(2);
+    static void error(const char* fmt, ...) IM_FMTARGS(2);
 };
 
