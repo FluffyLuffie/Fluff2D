@@ -138,7 +138,7 @@ void Model::reset()
 {
 	pos.x = 0.0f;
 	pos.y = 0.0f;
-	scale = glm::vec2();
+	scale = 1.0f;
 	rotation = 0.0f;
 }
 
