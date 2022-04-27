@@ -10,7 +10,6 @@
 #include "LayerRect.h"
 #include "../UI/ModelPartUI.h"
 #include "../Core/Window.h"
-#include "threadPool/ThreadPool.h"
 
 #include "rectpack2D/finders_interface.h"
 
@@ -28,7 +27,7 @@ public:
 private:
 	static std::vector<rect_type> prepareTextureAtlas(std::vector <LayerRect>& layerRects, int texturePixelBuffer, int *atlasWidth, int *atlasHeight);
 
-	static void premultAlpha(unsigned char* image, int width, int height);
+	static void premultAlpha(unsigned char* image, int pixelsCount);
 	static int nextPower2(int num);
 };
 

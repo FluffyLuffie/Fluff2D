@@ -639,7 +639,7 @@ void Application::drawImGui()
 		if (ImGui::Button("Temp Mesh Test") && meshGeneratorValid && model)
 		{
 			for (int i = 0; i < selectedParts.size(); i++)
-				model->meshMap[selectedParts[i]]->autoMesh(TextureLoader::tempDirectory, model->atlasWidth, model->atlasHeight, 3, 5, 10, 30, 0);
+				model->meshMap[selectedParts[i]]->autoMesh(TextureLoader::tempDirectory, model->atlasWidth, model->atlasHeight, 3, 8, 30, 50, 0);
 		}
 
 		static int boxCount[2] = { 5, 5 };

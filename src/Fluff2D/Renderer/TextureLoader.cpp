@@ -339,20 +339,17 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 
 	std::vector <std::vector <unsigned char>> layerBytes;
 	layerBytes.resize(rectangles.size());
-	//idk how many threads to create
-	progschj::ThreadPool pool(std::thread::hardware_concurrency() - 1);
-	std::vector<std::future<bool>> results;
-	unsigned char* texPtr;
-	std::ofstream textureFile;
 
 	//get rects for each layer
 	for (int layerNum = 0; layerNum < layerRects.size(); layerNum++)
 	{
+		std::ofstream textureFile;
+
 		//figure out compression method
 		pf.read(buffer, 2);
 		int compression = ((buffer[0] & 0xFF) << 8) | (buffer[1] & 0xFF);
 
-		int channelBytesLeft = 0, channelOffset = 0, pixelsRead = 0, texW, texH;
+		int channelBytesLeft = 0, channelOffset = 0, pixelsRead = 0;
 
 		switch (compression)
 		{
@@ -497,30 +494,11 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			model->modelMeshes[imageLayersRead]->basePos = model->modelMeshes[imageLayersRead]->pos;
 			model->modelMeshes[imageLayersRead]->createBasicMesh(rectangles[imageLayersRead].x, rectangles[imageLayersRead].y, rectangles[imageLayersRead].w, rectangles[imageLayersRead].h, rectangles[imageLayersRead].flipped, model->atlasWidth, model->atlasHeight);
 
-			//assign a pool of tasks to threads
-			texPtr = &layerBytes[imageLayersRead][0];
-			if (rectangles[imageLayersRead].flipped)
-			{
-				texW = layerRects[layerNum].h;
-				texH = layerRects[layerNum].w;
-			}
-			else
-			{
-				texW = layerRects[layerNum].w;
-				texH = layerRects[layerNum].h;
-			}
-
 			textureFile = std::ofstream(tempDirectory / (("f2d_") + std::to_string(imageLayersRead) + ".tmp"), std::ios::binary);
 			textureFile.write((char*)&layerBytes[imageLayersRead][0], layerBytes[imageLayersRead].size());
 			textureFile.close();
 
-			results.emplace_back(
-				pool.enqueue([texPtr, texW, texH]
-					{
-						premultAlpha(texPtr, texW, texH);
-						return true;
-					})
-			);
+			premultAlpha(&layerBytes[imageLayersRead][0], layerRects[layerNum].w * layerRects[layerNum].h);
 
 			imageLayersRead++;
 			break;
@@ -644,11 +622,9 @@ std::vector<rect_type> TextureLoader::prepareTextureAtlas(std::vector<LayerRect>
 	return rectangles;
 }
 
-void TextureLoader::premultAlpha(unsigned char* image, int width, int height)
+void TextureLoader::premultAlpha(unsigned char* image, int pixelsCount)
 {
-	const int N = width * height;
-
-	for (size_t i = 0, j = 3; i < N; i++, j += 4)
+	for (size_t i = 0, j = 3; i < pixelsCount; i++, j += 4)
 	{
 		image[j - 1] = (unsigned char)(image[j - 1] * (image[j] / 255.0f));
 		image[j - 2] = (unsigned char)(image[j - 2] * (image[j] / 255.0f));

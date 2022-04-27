@@ -191,7 +191,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dependencies\include\imgui\imgui_impl_opengl3_loader.h" />
-    <ClInclude Include="dependencies\include\threadPool\ThreadPool.h" />
     <ClInclude Include="src\Fluff2D\Renderer\RenderGroup.h" />
     <ClInclude Include="src\Fluff2D\Renderer\Camera2D.h" />
     <ClInclude Include="dependencies\include\imgui\imconfig.h" />

@@ -210,6 +210,7 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 	std::vector<unsigned char> texBytes(N * 4);
 
 	textureFile.read((char*)&texBytes[0], N * 4);
+	textureFile.close();
 
 	std::vector<glm::vec2> tempVertices, finalVertices;
 
