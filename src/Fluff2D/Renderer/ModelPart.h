@@ -71,6 +71,8 @@ public:
 	std::vector<float> keyformWeights;
 	int keyformIndex = -1;
 
+	unsigned int vao = 0;
+
 	void updateTransform(std::unordered_map<std::string, float>& paramValues);
 	void warpTransform(glm::vec2 delta);
 
@@ -90,12 +92,7 @@ public:
 	void removeKeyform(std::string paramName, float keyvalue);
 	void removeParameter(std::string paramName);
 
-	//move functions that use these stuff into derived classes later
-	unsigned int getVao() { return vao; }
-	unsigned int getVbo() { return vbo; }
-	unsigned int getEbo() { return ebo; }
-
 protected:
-	unsigned int vao = 0, vbo = 0, ebo = 0;
+	unsigned int vbo = 0, ebo = 0;
 };
 

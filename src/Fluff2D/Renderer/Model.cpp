@@ -154,7 +154,7 @@ void Model::renderMeshVertices(const std::string &meshName)
 	if (partMap.find(meshName) == partMap.end())
 		return;
 
-	partMap[meshName]->updateVertexData();
+	glBindVertexArray(partMap[meshName]->vao);
 
 	switch (partMap[meshName]->type)
 	{
@@ -199,7 +199,7 @@ void Model::renderHighlightedMesh()
 {
 	glLineWidth(static_cast<GLfloat>(Settings::meshLineWidth));
 
-	modelMeshes[mouseHoveredID]->updateVertexData();
+	glBindVertexArray(modelMeshes[mouseHoveredID]->vao);
 	shader.setVec3("uiColor", Settings::meshHighlightColor);
 	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(modelMeshes[mouseHoveredID]->indices.size()), GL_UNSIGNED_INT, 0);
 
@@ -281,8 +281,9 @@ void Model::moveSelectedVertices(const glm::vec2 &originalMouseCoord, int dragMo
 				else
 				{
 					glm::mat4 tempMat = glm::mat4(1.0f);
-					tempMat = glm::translate(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->pos.x, partMap[selectedVertices[i].partName]->pos.y, 0.0f));
-					tempMat = glm::rotate(tempMat, glm::radians(initialDragData[&selectedVertices[i]].x), glm::vec3(0.0f, 0.0f, 1.0f));
+					tempMat = glm::translate(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->pos, 0.0f));
+					if (partMap[selectedVertices[i].partName]->keyforms.size())
+						tempMat = glm::rotate(tempMat, glm::radians(initialDragData[&selectedVertices[i]].x + partMap[selectedVertices[i].partName]->baseRotation), glm::vec3(0.0f, 0.0f, 1.0f));
 					tempMat = glm::scale(tempMat, glm::vec3(partMap[selectedVertices[i].partName]->scale, 1.0f));
 
 					glm::vec2 mousePos = glm::inverse(partMap[selectedVertices[i].partName]->parent->transform * tempMat) * mouseToScreen;
@@ -378,13 +379,15 @@ void Model::updateOriginalVertexPositions()
 	initialDragData.clear();
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
-		if (partMap[selectedVertices[i].partName]->keyformIndex == -1)
-			continue;
-
 		//if rotation deformer, save other data
 		if (partMap[selectedVertices[i].partName]->type == ModelPart::PartType::rotationDeformer)
 		{
+			if (partMap[selectedVertices[i].partName]->keyforms.size() && partMap[selectedVertices[i].partName]->keyformIndex == -1)
+				continue;
+
+			//if root selected
 			if (selectedVertices[i].index == 0)
+			{
 				if (partMap[selectedVertices[i].partName]->parent->type == ModelPart::PartType::warpDeformer)
 					initialDragData[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->vertices[0].position;
 				else
@@ -394,6 +397,8 @@ void Model::updateOriginalVertexPositions()
 					else
 						initialDragData[&selectedVertices[i]] = glm::vec2(partMap[selectedVertices[i].partName]->basePos);
 				}
+			}
+			//if end selected
 			else
 			{
 				if (partMap[selectedVertices[i].partName]->keyforms.size())
@@ -404,6 +409,9 @@ void Model::updateOriginalVertexPositions()
 		}
 		else
 		{
+			if (partMap[selectedVertices[i].partName]->keyformIndex == -1)
+				continue;
+
 			if (partMap[selectedVertices[i].partName]->parent->type == ModelPart::PartType::warpDeformer)
 				initialDragData[&selectedVertices[i]] = partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index].position;
 			else
@@ -863,6 +871,7 @@ void Model::update()
 	{
 		children[i]->updateTransform(paramValues);
 		children[i]->modelUpdate(paramValues);
+		children[i]->updateVertexData();
 	}
 
 	renderOrderMap.clear();
@@ -987,7 +996,7 @@ void Model::render()
 
 	//render true colors
 	glBindFramebuffer(GL_FRAMEBUFFER, modelTrueFbo);
-	updateVertexData();
+	glBindVertexArray(vao);
 	shader.setInt("mode", 5);
 	shader.setMat4("projection", glm::mat4(1.0f));
 	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
@@ -1025,7 +1034,7 @@ void Model::renderEditMesh(const std::string& meshName)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, modelFbo);
 
-	updateVertexData();
+	glBindVertexArray(vao);
 	shader.setMat4("projection", glm::mat4(1.0f));
 	shader.setVec3("uiColor", Settings::backgroundColor);
 	shader.setInt("mode", 1);
@@ -1042,7 +1051,7 @@ void Model::renderEditMesh(const std::string& meshName)
 
 	//render true colors
 	glBindFramebuffer(GL_FRAMEBUFFER, modelTrueFbo);
-	updateVertexData();
+	glBindVertexArray(vao);
 	shader.setInt("mode", 5);
 	shader.setMat4("projection", glm::mat4(1.0f));
 	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);

@@ -40,12 +40,13 @@ void RotationDeformer::modelUpdate(std::unordered_map<std::string, float>& param
 		children[i]->updateTransform(paramValues);
 		if (children[i]->type != ModelPart::PartType::mesh)
 			children[i]->modelUpdate(paramValues);
+		children[i]->updateVertexData();
 	}
 }
 
 void RotationDeformer::render()
 {
-	updateVertexData();
+	glBindVertexArray(vao);
 	glDrawElements(GL_LINES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
 }
 
