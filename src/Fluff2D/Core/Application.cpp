@@ -188,6 +188,7 @@ void Application::update()
 
 				if (editingMesh)
 				{
+					model->meshMap[selectedParts[0]]->updateVertexData();
 					model->renderEditMesh(selectedParts[0]);
 
 					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

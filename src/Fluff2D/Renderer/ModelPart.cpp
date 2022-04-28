@@ -75,6 +75,9 @@ void ModelPart::updateTransform(std::unordered_map<std::string, float>& paramVal
 			localVertexPositions[i] = vPos + originalVertexPositions[i];
 		}
 	}
+	else
+		for (int i = 0; i < localVertexPositions.size(); i++)
+			localVertexPositions[i] = originalVertexPositions[i];
 
 	pos = finalPos;
 	rotation = finalRotation;
