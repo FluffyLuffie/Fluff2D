@@ -364,126 +364,62 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 		case 1:
 			layerBytes[imageLayersRead].resize(layerRects[layerNum].w * layerRects[layerNum].h * 4);
 
-			if (rectangles[imageLayersRead].flipped)
+			//channel order is ARGB in psd, RGBA in png
+			for (int channel = 0; channel < 4; channel++)
 			{
-				//channel order is ARGB in psd, RGBA in png
-				for (int channel = 0; channel < 4; channel++)
+				if (channel == 0)
+					channelOffset = 3;
+				else
+					channelOffset = channel - 1;
+
+				//read each row's byte count
+				for (int i = 0; i < layerRects[layerNum].h; i++)
 				{
-					if (channel == 0)
-						channelOffset = 3;
-					else
-						channelOffset = channel - 1;
+					pf.read(buffer, 2);
+					channelBytesLeft += ((buffer[0] & 0xFF) << 8) | (buffer[1] & 0xFF);
+				}
 
-					//read each row's byte count
-					for (int i = 0; i < layerRects[layerNum].h; i++)
-					{
-						pf.read(buffer, 2);
-						channelBytesLeft += ((buffer[0] & 0xFF) << 8) | (buffer[1] & 0xFF);
-					}
+				while (channelBytesLeft > 1)
+				{
+					//read the count
+					pf.read(buffer, 1);
+					channelBytesLeft--;
 
-					while (channelBytesLeft > 1)
+					//RLE compressed part
+					if ((int)buffer[0] < 0)
 					{
-						//read the count
-						pf.read(buffer, 1);
+						pf.read(buffer + 1, 1);
 						channelBytesLeft--;
-
-						//RLE compressed part
-						if ((int)buffer[0] < 0)
+						for (int i = 0; i < -buffer[0] + 1; i++)
+						{
+							layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w
+								+ (pixelsRead / layerRects[layerNum].w) * layerRects[layerNum].w)
+								* 4 + channelOffset] = buffer[1];
+							pixelsRead++;
+						}
+					}
+					//not RLE compressed part
+					else
+					{
+						for (int i = 0; i < buffer[0] + 1; i++)
 						{
 							pf.read(buffer + 1, 1);
 							channelBytesLeft--;
 
-							for (int i = 0; i < -buffer[0] + 1; i++)
-							{
-								layerBytes[imageLayersRead][(pixelsRead / layerRects[layerNum].w
-									+ (layerRects[layerNum].w - 1 - pixelsRead % layerRects[layerNum].w) * layerRects[layerNum].h)
-									* 4 + channelOffset] = buffer[1];
-								pixelsRead++;
-							}
-						}
-						//not RLE compressed part
-						else
-						{
-							for (int i = 0; i < buffer[0] + 1; i++)
-							{
-								pf.read(buffer + 1, 1);
-								channelBytesLeft--;
-
-								layerBytes[imageLayersRead][(pixelsRead / layerRects[layerNum].w
-									+ (layerRects[layerNum].w - 1 - pixelsRead % layerRects[layerNum].w) * (layerRects[layerNum].h))
-									* 4 + channelOffset] = buffer[1];
-								pixelsRead++;
-							}
+							layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w
+								+ (pixelsRead / layerRects[layerNum].w) * layerRects[layerNum].w)
+								* 4 + channelOffset] = buffer[1];
+							pixelsRead++;
 						}
 					}
-
-					//skip over the compression bits, why does it have it for each channel except for the last one? idk
-					if (channel != 3)
-						pf.seekg(2, std::ios::cur);
-
-					channelBytesLeft = 0;
-					pixelsRead = 0;
 				}
-			}
-			else
-			{
-				//channel order is ARGB in psd, RGBA in png
-				for (int channel = 0; channel < 4; channel++)
-				{
-					if (channel == 0)
-						channelOffset = 3;
-					else
-						channelOffset = channel - 1;
 
-					//read each row's byte count
-					for (int i = 0; i < layerRects[layerNum].h; i++)
-					{
-						pf.read(buffer, 2);
-						channelBytesLeft += ((buffer[0] & 0xFF) << 8) | (buffer[1] & 0xFF);
-					}
+				//skip over the compression bits, why does it have it for each channel except for the last one? idk
+				if (channel != 3)
+					pf.seekg(2, std::ios::cur);
 
-					while (channelBytesLeft > 1)
-					{
-						//read the count
-						pf.read(buffer, 1);
-						channelBytesLeft--;
-
-						//RLE compressed part
-						if ((int)buffer[0] < 0)
-						{
-							pf.read(buffer + 1, 1);
-							channelBytesLeft--;
-							for (int i = 0; i < -buffer[0] + 1; i++)
-							{
-								layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w
-									+ (pixelsRead / layerRects[layerNum].w) * layerRects[layerNum].w)
-									* 4 + channelOffset] = buffer[1];
-								pixelsRead++;
-							}
-						}
-						//not RLE compressed part
-						else
-						{
-							for (int i = 0; i < buffer[0] + 1; i++)
-							{
-								pf.read(buffer + 1, 1);
-								channelBytesLeft--;
-
-								layerBytes[imageLayersRead][(pixelsRead % layerRects[layerNum].w
-									+ (pixelsRead / layerRects[layerNum].w) * layerRects[layerNum].w)
-									* 4 + channelOffset] = buffer[1];
-								pixelsRead++;
-							}
-						}
-					}
-
-					//skip over the compression bits, why does it have it for each channel except for the last one? idk
-					if (channel != 3)
-						pf.seekg(2, std::ios::cur);
-
-					channelBytesLeft = 0;
-					pixelsRead = 0;
-				}
+				channelBytesLeft = 0;
+				pixelsRead = 0;
 			}
 
 			model->modelMeshes[imageLayersRead]->name = layerRects[layerNum].layerName;
@@ -516,7 +452,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 	int imageLayer = 0;
 
 	//shove all layer textures into a single texture atlas
-	Log::info("Generating texture atlas");
+	Log::info("Generating texture atlas of size (%d, %d)", model->atlasWidth, model->atlasHeight);
 	//for each texture
 	for (int i = 0; i < layerRects.size(); i++)
 	{
@@ -524,7 +460,6 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 		{
 			if (!rectangles[imageLayer].flipped)
 			{
-				//for each row
 				for (int row = 0; row < layerRects[i].h; row++)
 				{
 					memcpy(&atlasBytes[0]
@@ -536,15 +471,10 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			}
 			else
 			{
-				//for each row
-				for (int row = 0; row < layerRects[i].w; row++)
-				{
-					memcpy(&atlasBytes[0]
-						+ (rectangles[imageLayer].x
-							+ (model->atlasHeight - rectangles[imageLayer].y - row - 1) * model->atlasWidth)
-						* 4,
-						&layerBytes[imageLayer][row * layerRects[i].h * 4], layerRects[i].h * 4);
-				}
+				for (int y = 0; y < layerRects[i].h; y++)
+					for (int x = 0; x < layerRects[i].w; x++)
+						for (int j = 0; j < 4; j++)
+							atlasBytes[(rectangles[imageLayer].x + y + (model->atlasHeight - rectangles[imageLayer].y - layerRects[i].w + x) * model->atlasWidth) * 4 + j] = layerBytes[imageLayer][(x + y * layerRects[i].w) * 4 + j];
 			}
 			imageLayer++;
 		}
@@ -568,7 +498,7 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 
 	//writing to png
 	//stbi_write_png("saves/testExports/textureAtlas.png", model->atlasWidth, model->atlasHeight, 4, &(atlasBytes[0]), model->atlasWidth * 4);
-	//Log::logInfo("Finished generating texture atlas (%d %d)", model->atlasWidth, model->atlasHeight);
+	Log::info("Finished generating texture atlas (%d %d)", model->atlasWidth, model->atlasHeight);
 	return true;
 }
 

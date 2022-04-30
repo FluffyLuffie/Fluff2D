@@ -357,6 +357,14 @@ void Application::init()
 	style = &ImGui::GetStyle();
 	style->Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.9f, 0.9f, 0.9f, 0.2f);
 	style->Colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.0f);
+
+	/*
+	int temp = 0;
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &temp);
+	std::cout << "GL_MAX_TEXTURE_SIZE: " << temp << std::endl;
+	glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &temp);
+	std::cout << "GL_MAX_ARRAY_TEXTURE_LAYERS: " << temp << std::endl;
+	*/
 }
 
 void Application::checkRunning()
@@ -639,8 +647,8 @@ void Application::drawImGui()
 
 		if (ImGui::Button("Temp Mesh Test") && meshGeneratorValid && model)
 		{
-			for (int i = 0; i < selectedParts.size(); i++)
-				model->meshMap[selectedParts[i]]->autoMesh(TextureLoader::tempDirectory, model->atlasWidth, model->atlasHeight, 3, 8, 30, 50, 0);
+			for (int i = 0; i < model->modelMeshes.size(); i++)
+				model->modelMeshes[i]->autoMesh(TextureLoader::tempDirectory, model->atlasWidth, model->atlasHeight, 5, 8, 20, 50, 0);
 		}
 
 		static int boxCount[2] = { 5, 5 };
