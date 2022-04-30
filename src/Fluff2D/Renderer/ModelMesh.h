@@ -47,8 +47,5 @@ public:
 private:
 	int atlasPositionX = 0, atlasPositionY = 0, textureWidth = 0, textureHeight = 0;
 	bool flipped = false;
-
-	//for automesh
-	bool isValidLine(const std::vector<unsigned char> &texBytes, unsigned int p1, unsigned int p2);
 };
 

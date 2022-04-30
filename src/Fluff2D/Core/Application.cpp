@@ -648,7 +648,7 @@ void Application::drawImGui()
 		if (ImGui::Button("Temp Mesh Test") && meshGeneratorValid && model)
 		{
 			for (int i = 0; i < model->modelMeshes.size(); i++)
-				model->modelMeshes[i]->autoMesh(TextureLoader::tempDirectory, model->atlasWidth, model->atlasHeight, 5, 8, 20, 50, 0);
+				model->modelMeshes[i]->autoMesh(TextureLoader::tempDirectory, model->atlasWidth, model->atlasHeight, 6, 8, 20, 50, 0);
 		}
 
 		static int boxCount[2] = { 5, 5 };
@@ -885,7 +885,7 @@ void Application::drawImGui()
 
 					if (ImGui::BeginPopupModal("Auto Mesh Generator", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 					{
-						static int edgeOut = 3, edgeIn = 8, edgeSpacing = 30, insideSpacing = 50, alphaThreshold = 0;
+						static int edgeOut = 6, edgeIn = 8, edgeSpacing = 30, insideSpacing = 50, alphaThreshold = 0;
 						ImGui::InputInt("Outer Edge", &edgeOut);
 						ImGui::InputInt("Inner Edge", &edgeIn);
 						ImGui::InputInt("Edge Spacing", &edgeSpacing);

@@ -197,7 +197,7 @@ void ModelMesh::removeVertex(int index)
 //TODO: find a better way for reducing the number of vertices
 void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, int atlasHeight, int edgeOut, int edgeIn, int edgeSpacing, int insideSpacing, unsigned char threshold)
 {
-	auto compareAngle = [](glm::vec2 p1, glm::vec2 p2) { return atan2(p1.y, p1.x) < atan2(p2.y, p2.x); };
+	auto compareAngle = [](glm::ivec2 p1, glm::ivec2 p2) { return atan2(p1.y, p1.x) < atan2(p2.y, p2.x); };
 
 	std::ifstream textureFile = std::ifstream(directoryPath / (("f2d_") + std::to_string(textureIndex) + ".tmp"), std::ios::binary);
 	if (!textureFile.is_open())
@@ -217,12 +217,12 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 	const int height = trueHeight + 2 * edgeOut;
 	const int N = width * height;
 
-	std::vector<unsigned char> texBytes(N * 4);
+	std::vector<unsigned char> texBytes(textureWidth * textureHeight * 4);
 
-	textureFile.read((char*)&texBytes[0], N * 4);
+	textureFile.read((char*)&texBytes[0], textureWidth * textureHeight * 4);
 	textureFile.close();
 
-	std::vector<glm::vec2> tempVertices, finalVertices;
+	std::vector<glm::ivec2> tempVertices, finalVertices;
 
 	std::vector<unsigned char> originalAlpha;
 	originalAlpha.resize(N);
@@ -278,7 +278,7 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 	}
 
 	for (int i = 0; i < pending.size(); i++)
-		tempVertices.push_back(glm::vec2(pending[i] % width - trueWidth / 2 - edgeOut, pending[i] / width - trueHeight / 2 - edgeOut));
+		tempVertices.push_back(glm::ivec2(pending[i] % width - trueWidth / 2 - edgeOut, pending[i] / width - trueHeight / 2 - edgeOut));
 
 	std::sort(tempVertices.begin(), tempVertices.end(), compareAngle);
 	for (int i = 0; i < tempVertices.size(); i++)
@@ -332,7 +332,7 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 	}
 
 	for (int i = 0; i < pending.size(); i++)
-		tempVertices.push_back(glm::vec2(pending[i] % width - trueWidth / 2 - edgeOut, pending[i] / width - trueHeight / 2 - edgeOut));
+		tempVertices.push_back(glm::ivec2(pending[i] % width - trueWidth / 2 - edgeOut, pending[i] / width - trueHeight / 2 - edgeOut));
 
 	std::sort(tempVertices.begin(), tempVertices.end(), compareAngle);
 	for (int i = 0; i < tempVertices.size(); i++)
@@ -368,7 +368,7 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 		}
 
 		for (int i = 0; i < pending.size(); i++)
-			tempVertices.push_back(glm::vec2(pending[i] % width - trueWidth / 2 - edgeOut, pending[i] / width - trueHeight / 2 - edgeOut));
+			tempVertices.push_back(glm::ivec2(pending[i] % width - trueWidth / 2 - edgeOut, pending[i] / width - trueHeight / 2 - edgeOut));
 
 		std::sort(tempVertices.begin(), tempVertices.end(), compareAngle);
 		for (int i = 0; i < tempVertices.size(); i++)
@@ -385,19 +385,71 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 		Triangulator::triangulate(vertices, indices);
 
 		//remove invisible triangles
-		/*
 		std::vector<unsigned int> newIndices;
 		newIndices.reserve(indices.size());
+		//std::cout << "O-size: " << originalAlpha.size() << std::endl;
 		for (int i = 0; i < indices.size(); i += 3)
 		{
 			bool isValid = false;
 			//for each line in the triangle, check if an opaque pixel exists
-			for (int j = 0; j < 3; j++)
-				if (isValidLine(texBytes, indices[i + j % 3], indices[i + (j + 1) % 3]))
+			for (int j = 0; j < 3 && !isValid; j++)
+			{
+				int p1 = indices[i + j % 3];
+				int p2 = indices[i + (j + 1) % 3];
+				int deltaX = finalVertices[p2].x - finalVertices[p1].x;
+				int deltaY = finalVertices[p2].y - finalVertices[p1].y;
+
+				if (abs(deltaX) > abs(deltaY))
 				{
-					isValid = true;
-					break;
+					if (deltaX > 0)
+					{
+						for (int k = 0; k < deltaX; k++)
+						{
+							if (originalAlpha[finalVertices[p1].x + trueWidth / 2 + edgeOut + k + (finalVertices[p1].y + trueHeight / 2 + edgeOut + deltaY * k / deltaX) * width] > threshold)
+							{
+								isValid = true;
+								break;
+							}
+						}
+					}
+					else
+					{
+						for (int k = 0; k > deltaX; k--)
+						{
+							if (originalAlpha[finalVertices[p1].x + trueWidth / 2 + edgeOut + k + (finalVertices[p1].y + trueHeight / 2 + edgeOut + deltaY * k / deltaX) * width] > threshold)
+							{
+								isValid = true;
+								break;
+							}
+						}
+					}
 				}
+				else
+				{
+					if (deltaY > 0)
+					{
+						for (int k = 0; k < deltaY; k++)
+						{
+							if (originalAlpha[finalVertices[p1].x + trueWidth / 2 + edgeOut + deltaX * k / deltaY + (finalVertices[p1].y + trueHeight / 2 + edgeOut + k) * width] > threshold)
+							{
+								isValid = true;
+								break;
+							}
+						}
+					}
+					else
+					{
+						for (int k = 0; k > deltaY; k--)
+						{
+							if (originalAlpha[finalVertices[p1].x + trueWidth / 2 + edgeOut + deltaX * k / deltaY + (finalVertices[p1].y + trueHeight / 2 + edgeOut + k) * width] > threshold)
+							{
+								isValid = true;
+								break;
+							}
+						}
+					}
+				}
+			}
 			if (isValid)
 				for (int j = 0; j < 3; j++)
 					newIndices.push_back(indices[i + j]);
@@ -405,7 +457,6 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 
 		if (newIndices.size() > 2)
 			indices = newIndices;
-		*/
 	}
 	else
 		Log::error("Auto Mesh Failed");
@@ -417,22 +468,4 @@ glm::vec2 ModelMesh::posToTexCoord(const glm::vec2& vPos, int atlasWidth, int at
 		return glm::vec2((atlasPositionX + textureWidth / 2.0f - vPos.y) / atlasWidth, (atlasHeight - atlasPositionY - textureHeight / 2.0f + vPos.x) / atlasHeight);
 	else
 		return glm::vec2((atlasPositionX + textureWidth / 2.0f + vPos.x) / atlasWidth, (atlasHeight - atlasPositionY - textureHeight / 2.0f + vPos.y) / atlasHeight);
-}
-
-bool ModelMesh::isValidLine(const std::vector<unsigned char>& texBytes, unsigned int p1, unsigned int p2)
-{
-	float deltaX = abs(originalVertexPositions[p1].x - originalVertexPositions[p2].x);
-	float deltaY = abs(originalVertexPositions[p1].y - originalVertexPositions[p2].y);
-	if (deltaX > deltaY)
-	{
-		for (int i = 0; i < deltaX; i++)
-		{
-			//if (texBytes[])
-		}
-	}
-	else
-	{
-
-	}
-	return false;
 }
