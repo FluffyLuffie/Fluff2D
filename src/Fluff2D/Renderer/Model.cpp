@@ -973,13 +973,16 @@ void Model::render()
 
 	//mouse picking
 	shader.setInt("mode", 3);
-	glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	for (auto const& [meshRenderOrder, meshIndex] : renderOrderMap)
 	{
-		shader.setInt("ID", meshIndex + 1);
-
 		if (modelMeshes[meshIndex]->visible)
 		{
+			shader.setInt("ID", meshIndex + 1);
+			if (modelMeshes[meshIndex]->blendMode != 0 || modelMeshes[meshIndex]->clipMeshes.size())
+				glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_ONE);
+			else
+				glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
 			modelMeshes[meshIndex]->render();
 		}
 	}

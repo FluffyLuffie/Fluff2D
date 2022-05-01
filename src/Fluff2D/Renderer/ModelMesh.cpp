@@ -203,7 +203,7 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 	if (!textureFile.is_open())
 		Log::error("Temporary texture path not found");
 
-	int offsets[][2] = { { 0, -1}, {-1,  0}, { 1,  0}, { 0,  1} };
+	int offsets[][2] = { {0, -1}, {-1,  0}, {1,  0}, {0,  1} };
 
 	int trueWidth = textureWidth;
 	int trueHeight = textureHeight;
@@ -230,7 +230,6 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 		for (int x = 0; x < trueWidth; x++)
 			originalAlpha[x + edgeOut + width * (height - edgeOut - y - 1)] = texBytes[(x + y * trueWidth) * 4 + 3];
 
-	std::vector<unsigned char> filled = originalAlpha;
 	std::vector<unsigned char> queued = originalAlpha;
 
 	std::vector<int> pending;
@@ -260,7 +259,6 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 
 		for (int i = 0; i < pending.size(); i++)
 		{
-			filled[pending[i]] = 255;
 			int x = pending[i] % width;
 			int y = pending[i] / width;
 
@@ -287,7 +285,6 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 	tempVertices.clear();
 
 	//inner edge
-	filled = originalAlpha;
 	queued = originalAlpha;
 	pending.clear();
 
@@ -313,7 +310,6 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 
 		for (int i = 0; i < pending.size(); i++)
 		{
-			filled[pending[i]] = 0;
 			queued[pending[i]] = 0;
 			int x = pending[i] % width;
 			int y = pending[i] / width;
@@ -349,7 +345,6 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 
 			for (int i = 0; i < pending.size(); i++)
 			{
-				filled[pending[i]] = 0;
 				queued[pending[i]] = 0;
 				int x = pending[i] % width;
 				int y = pending[i] / width;
