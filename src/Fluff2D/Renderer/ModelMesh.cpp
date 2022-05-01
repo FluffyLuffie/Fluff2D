@@ -203,7 +203,7 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 	if (!textureFile.is_open())
 		Log::error("Temporary texture path not found");
 
-	int offsets[][2] = { {0, -1}, {-1,  0}, {1,  0}, {0,  1} };
+	int offsets[][2] = { {-1, 0}, {1,  0}, {0,  -1}, {0,  1}, {-1, -1}, {1,  -1}, {-1,  1}, {1,  1} };
 
 	int trueWidth = textureWidth;
 	int trueHeight = textureHeight;
@@ -230,20 +230,21 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 		for (int x = 0; x < trueWidth; x++)
 			originalAlpha[x + edgeOut + width * (height - edgeOut - y - 1)] = texBytes[(x + y * trueWidth) * 4 + 3];
 
+	std::vector<unsigned char> edge(N);
 	std::vector<unsigned char> queued = originalAlpha;
 
-	std::vector<int> pending;
-	std::vector<int> pendingNext;
+	std::vector<int> pending, pendingNext, pendingEdgeNext;
 
 	pending.reserve(N);
 	pendingNext.reserve(N);
+	pendingEdgeNext.reserve(N);
 
 	//outer edge
 	for (int y = edgeOut - 1; y < height - edgeOut + 1; y++)
 		for (int x = edgeOut - 1; x < width - edgeOut + 1; x++)
 			if (originalAlpha[x + y * width] <= threshold)
 			{
-				for (int i = 0; i < 4; i++)
+				for (int i = 0; i < 8; i++)
 				{
 					int adjX = x + offsets[i][0], adjY = y + offsets[i][1];
 					if (originalAlpha[adjX + adjY * width] > threshold)
@@ -253,16 +254,15 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 					}
 				}
 			}
+
 	for (int loop = 0; loop < edgeOut - 1; loop++)
 	{
-		pendingNext.clear();
-
 		for (int i = 0; i < pending.size(); i++)
 		{
 			int x = pending[i] % width;
 			int y = pending[i] / width;
 
-			for (int j = 0; j < 4; j++)
+			for (int j = 0; j < 8; j++)
 			{
 				int adjX = x + offsets[j][0], adjY = y + offsets[j][1];
 				if (queued[adjX + adjY * width] <= threshold)
@@ -273,18 +273,55 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 			}
 		}
 		pending.swap(pendingNext);
+		pendingNext.clear();
 	}
 
 	for (int i = 0; i < pending.size(); i++)
-		tempVertices.push_back(glm::ivec2(pending[i] % width - trueWidth / 2 - edgeOut, pending[i] / width - trueHeight / 2 - edgeOut));
+		edge[pending[i]] = true;
 
-	std::sort(tempVertices.begin(), tempVertices.end(), compareAngle);
+	//ordered by closest to previous neighbor
+	for (int i = 0; i < pending.size(); i++)
+	{
+		if (!edge[pending[i]])
+			continue;
+		edge[pending[i]] = false;
+		pendingNext.push_back(pending[i]);
+
+		int nextNeighbor = pending[i];
+		while (nextNeighbor > -1)
+		{
+			int foundNeighbor = -1;
+			for (int j = 0; j < 4; j++)
+			{
+				int x = nextNeighbor % width;
+				int y = nextNeighbor / width;
+				if (x + offsets[j][0] < 0 || x + offsets[j][0] >= width || y + offsets[j][1] < 0 || y + offsets[j][1] >= height)
+					continue;
+
+				int neighbor = nextNeighbor + offsets[j][0] + offsets[j][1] * width;
+				if(edge[neighbor])
+				{
+					edge[neighbor] = false;
+					foundNeighbor = neighbor;
+					pendingNext.push_back(foundNeighbor);
+					break;
+				}
+			}
+			nextNeighbor = foundNeighbor;
+		}
+	}
+
+	for (int i = 0; i < pendingNext.size(); i++)
+		tempVertices.push_back(glm::ivec2(pendingNext[i] % width - trueWidth / 2 - edgeOut, pendingNext[i] / width - trueHeight / 2 - edgeOut));
+	pendingNext.clear();
+
 	for (int i = 0; i < tempVertices.size(); i++)
 		if (i % edgeSpacing == 0)
 			finalVertices.push_back(tempVertices[i]);
 	tempVertices.clear();
 
 	//inner edge
+	edge = std::vector<unsigned char>(N);
 	queued = originalAlpha;
 	pending.clear();
 
@@ -306,10 +343,9 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 
 	for (int loop = 0; loop < edgeIn - 1; loop++)
 	{
-		pendingNext.clear();
-
 		for (int i = 0; i < pending.size(); i++)
 		{
+			edge[pending[i]] = 0;
 			queued[pending[i]] = 0;
 			int x = pending[i] % width;
 			int y = pending[i] / width;
@@ -325,12 +361,49 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 			}
 		}
 		pending.swap(pendingNext);
+		pendingNext.clear();
 	}
 
+	//ordered by closest to previous neighbor
+	edge = std::vector<unsigned char>(N);
 	for (int i = 0; i < pending.size(); i++)
-		tempVertices.push_back(glm::ivec2(pending[i] % width - trueWidth / 2 - edgeOut, pending[i] / width - trueHeight / 2 - edgeOut));
+		edge[pending[i]] = true;
 
-	std::sort(tempVertices.begin(), tempVertices.end(), compareAngle);
+	for (int i = 0; i < pending.size(); i++)
+	{
+		if (!edge[pending[i]])
+			continue;
+		edge[pending[i]] = false;
+		pendingNext.push_back(pending[i]);
+
+		int nextNeighbor = pending[i];
+		while (nextNeighbor > -1)
+		{
+			int foundNeighbor = -1;
+			for (int j = 0; j < 8; j++)
+			{
+				int x = nextNeighbor % width;
+				int y = nextNeighbor / width;
+				if (x + offsets[j][0] < 0 || x + offsets[j][0] >= width || y + offsets[j][1] < 0 || y + offsets[j][1] >= height)
+					continue;
+
+				int neighbor = nextNeighbor + offsets[j][0] + offsets[j][1] * width;
+				if (edge[neighbor])
+				{
+					edge[neighbor] = false;
+					foundNeighbor = neighbor;
+					pendingNext.push_back(foundNeighbor);
+					break;
+				}
+			}
+			nextNeighbor = foundNeighbor;
+		}
+	}
+
+	for (int i = 0; i < pendingNext.size(); i++)
+		tempVertices.push_back(glm::ivec2(pendingNext[i] % width - trueWidth / 2 - edgeOut, pendingNext[i] / width - trueHeight / 2 - edgeOut));
+	pendingNext.clear();
+
 	for (int i = 0; i < tempVertices.size(); i++)
 		if (i % edgeSpacing == 0)
 			finalVertices.push_back(tempVertices[i]);
@@ -341,8 +414,6 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 	{
 		for (int loop = 0; loop < insideSpacing - 1; loop++)
 		{
-			pendingNext.clear();
-
 			for (int i = 0; i < pending.size(); i++)
 			{
 				queued[pending[i]] = 0;
@@ -360,14 +431,51 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 				}
 			}
 			pending.swap(pendingNext);
+			pendingNext.clear();
 		}
 
+		//ordered by closest to previous neighbor
+		edge = std::vector<unsigned char>(N);
 		for (int i = 0; i < pending.size(); i++)
-			tempVertices.push_back(glm::ivec2(pending[i] % width - trueWidth / 2 - edgeOut, pending[i] / width - trueHeight / 2 - edgeOut));
+			edge[pending[i]] = true;
 
-		std::sort(tempVertices.begin(), tempVertices.end(), compareAngle);
+		for (int i = 0; i < pending.size(); i++)
+		{
+			if (!edge[pending[i]])
+				continue;
+			edge[pending[i]] = false;
+			pendingNext.push_back(pending[i]);
+
+			int nextNeighbor = pending[i];
+			while (nextNeighbor > -1)
+			{
+				int foundNeighbor = -1;
+				for (int j = 0; j < 8; j++)
+				{
+					int x = nextNeighbor % width;
+					int y = nextNeighbor / width;
+					if (x + offsets[j][0] < 0 || x + offsets[j][0] >= width || y + offsets[j][1] < 0 || y + offsets[j][1] >= height)
+						continue;
+
+					int neighbor = nextNeighbor + offsets[j][0] + offsets[j][1] * width;
+					if (edge[neighbor])
+					{
+						edge[neighbor] = false;
+						foundNeighbor = neighbor;
+						pendingNext.push_back(foundNeighbor);
+						break;
+					}
+				}
+				nextNeighbor = foundNeighbor;
+			}
+		}
+
+		for (int i = 0; i < pendingNext.size(); i++)
+			tempVertices.push_back(glm::ivec2(pendingNext[i] % width - trueWidth / 2 - edgeOut, pendingNext[i] / width - trueHeight / 2 - edgeOut));
+		pendingNext.clear();
+
 		for (int i = 0; i < tempVertices.size(); i++)
-			if (i % insideSpacing == 0)
+			if (i % edgeSpacing == 0)
 				finalVertices.push_back(tempVertices[i]);
 		tempVertices.clear();
 	}
