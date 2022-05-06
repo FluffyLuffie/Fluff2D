@@ -44,6 +44,7 @@ private:
 	bool draggingVertices = false;
 	bool panningCamera = false;
 	bool editingMesh = false;
+	bool forceShowVertices = false;
 
 	const int EVENT_FRAMES = 3;
 	int eventFramesCount = 0;
@@ -51,6 +52,8 @@ private:
 	int manualKeyIndex = -1;
 	float manualKeyvalue = 0.0f;
 	int dragMod = 0;
+
+	int manualVertexMode = 0;
 
 	ImGuiStyle* style = nullptr;
 

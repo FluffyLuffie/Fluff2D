@@ -214,18 +214,34 @@ void Model::renderSelectedVertices()
 
 	glBindVertexArray(selectedVertexVao);
 	glBindBuffer(GL_ARRAY_BUFFER, selectedVertexVbo);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(VertexSpecifier), (void*)0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, selectedVertexEbo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int), rectLineIndices, GL_DYNAMIC_DRAW);
 
 	//might group all the vertices into a single draw call if it becomes slow, just testing for now
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
-		if (partMap[selectedVertices[i].partName]->vertices.size() > selectedVertices[i].index)
-		{
-			glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex), &partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index], GL_DYNAMIC_DRAW);
-			glDrawElements(GL_POINTS, GLsizei(1), GL_UNSIGNED_INT, 0);
-		}
+		glBufferData(GL_ARRAY_BUFFER, sizeof(VertexSpecifier), &partMap[selectedVertices[i].partName]->vertices[selectedVertices[i].index], GL_DYNAMIC_DRAW);
+		glDrawElements(GL_POINTS, GLsizei(1), GL_UNSIGNED_INT, 0);
+	}
+}
+
+void Model::forceRenderVertices(const std::string& meshName)
+{
+	shader.setVec3("uiColor", Settings::meshPointSelectedColor);
+	shader.setFloat("pointSize", static_cast<float>(Settings::meshPointBorderSize * 2 + Settings::meshPointSize));
+
+	glBindVertexArray(selectedVertexVao);
+	glBindBuffer(GL_ARRAY_BUFFER, selectedVertexVbo);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, selectedVertexEbo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int), rectLineIndices, GL_DYNAMIC_DRAW);
+
+	//might group all the vertices into a single draw call if it becomes slow, just testing for now
+	for (int i = 0; i < meshMap[meshName]->vertices.size(); i++)
+	{
+		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2), &meshMap[meshName]->vertices[i].position, GL_DYNAMIC_DRAW);
+		glDrawElements(GL_POINTS, GLsizei(1), GL_UNSIGNED_INT, 0);
 	}
 }
 

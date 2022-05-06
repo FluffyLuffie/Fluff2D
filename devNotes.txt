@@ -8,8 +8,8 @@ Deleting keyvalues/keyforms.
 Physics.
 Saving model for editor.
 Right clicking stuff does something.
-[Maunal triangles] Manual vertices placer.
-[Invisible triangle remover] Auto vertices placer.
+[Make everything automatic for ease?] Manual vertices placer.
+[Done] Auto vertices placer.
 Japanese translation.
 Model exporter.
 [Done] Model view window/tab instead of rending to main frame.

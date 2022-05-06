@@ -78,58 +78,67 @@ void Application::update()
 				{
 					if (Event::isHovered && selectedParts.size())
 					{
-						//testing stuff, move somewhere else later
 						closestVertexIndex = model->findClosestVertex(selectedParts, &selectedPartNum);
-						if (closestVertexIndex != -1)
+
+						if (editingMesh && manualVertexMode == 0)
 						{
-							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-							{
-								dragMod = Event::mod;
-
-								oldMouseCoord = glm::inverse(Camera2D::projection) * glm::vec4(Event::viewportMouseCoord.x * 2.0f / currentFbSize.x - 1.0f, Event::viewportMouseCoord.y * 2.0f / currentFbSize.y - 1.0f, 0.0f, 1.0f);;
-
-								//if clicked vertex is not in selected vertices, clear
-								if (GLFW_MOD_CONTROL != dragMod && std::find(model->selectedVertices.begin(), model->selectedVertices.end(), VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex)) == model->selectedVertices.end())
-								{
-									model->selectedVertices.clear();
-								}
-
-								//if selected vertex's part has parameters or is a rotation deformer, or in mesh edit mode
-								if ((model->partMap[selectedParts[selectedPartNum]]->keyforms.size() || model->partMap[selectedParts[selectedPartNum]]->type == ModelPart::PartType::rotationDeformer) && !editingMesh)
-								{
-									model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
-									model->updateOriginalVertexPositions();
-								}
-								else if (editingMesh)
-								{
-									model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
-									model->updateOriginalMeshPositions();
-								}
-							}
-							else if (editingMesh && ImGui::IsMouseDown(ImGuiMouseButton_Right) && model->meshMap[selectedParts[0]]->vertices.size() > 3)
-								model->meshMap[selectedParts[0]]->removeVertex(closestVertexIndex);
-						}
-						//if clicked on nothing
-						else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-						{
-							model->selectedVertices.clear();
-
-							if (editingMesh)
+							//add new vertex
+							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && closestVertexIndex == -1)
 							{
 								glm::vec2 lPos = glm::inverse(Camera2D::projection) * glm::vec4(Event::viewportMouseCoord.x * 2.0f / currentFbSize.x - 1.0f, Event::viewportMouseCoord.y * 2.0f / currentFbSize.y - 1.0f, 0.0f, 1.0f);;
 
 								model->meshMap[selectedParts[0]]->addMeshVertex(lPos - model->meshMap[selectedParts[0]]->originalPos, model->atlasWidth, model->atlasHeight);
 								Triangulator::triangulate(model->meshMap[selectedParts[0]]->vertices, model->meshMap[selectedParts[0]]->indices);
+								model->meshMap[selectedParts[0]]->removeInvisibleTriangles(TextureLoader::tempDirectory, 0);
+							}
 
-								//model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[0], static_cast<int>(model->meshMap[selectedParts[0]]->vertices.size()) - 1));
-								//model->updateOriginalMeshPositions();
+							if (ImGui::IsMouseDown(ImGuiMouseButton_Right) && closestVertexIndex != -1 && model->meshMap[selectedParts[0]]->vertices.size() > 3)
+							{
+								model->meshMap[selectedParts[0]]->removeVertex(closestVertexIndex);
+								model->meshMap[selectedParts[0]]->removeInvisibleTriangles(TextureLoader::tempDirectory, 0);
+							}
+						}
+						else 
+						{
+							if (closestVertexIndex != -1)
+							{
+								if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+								{
+									dragMod = Event::mod;
+
+									oldMouseCoord = glm::inverse(Camera2D::projection) * glm::vec4(Event::viewportMouseCoord.x * 2.0f / currentFbSize.x - 1.0f, Event::viewportMouseCoord.y * 2.0f / currentFbSize.y - 1.0f, 0.0f, 1.0f);
+
+									//if clicked vertex is not in selected vertices, clear
+									if (GLFW_MOD_CONTROL != dragMod && std::find(model->selectedVertices.begin(), model->selectedVertices.end(), VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex)) == model->selectedVertices.end())
+									{
+										model->selectedVertices.clear();
+									}
+
+									//if selected vertex's part has parameters or is a rotation deformer, and not in mesh edit mode
+									if ((model->partMap[selectedParts[selectedPartNum]]->keyforms.size() || model->partMap[selectedParts[selectedPartNum]]->type == ModelPart::PartType::rotationDeformer) && !editingMesh)
+									{
+										model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
+										model->updateOriginalVertexPositions();
+									}
+									//if manual move vertex mode
+									else if (editingMesh && manualVertexMode == 1)
+									{
+										model->selectedVertices.emplace_back(VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex));
+										model->updateOriginalMeshPositions();
+									}
+								}
+							}
+							//if clicked on nothing
+							else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+							{
+								model->selectedVertices.clear();
 							}
 						}
 					}
 
 					if (Event::isFocused && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != dragMod)
 					{
-						if (editingMesh)
+						if (editingMesh && manualVertexMode == 1)
 						{
 							model->moveMeshVertices(oldMouseCoord, dragMod);
 							draggingVertices = true;
@@ -172,9 +181,6 @@ void Application::update()
 
 				if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
 				{
-					if (draggingVertices && editingMesh)
-						Triangulator::triangulate(model->meshMap[selectedParts[0]]->vertices, model->meshMap[selectedParts[0]]->indices);
-
 					draggingVertices = false;
 					if (!Event::keyDown(GLFW_KEY_SPACE))
 						panningCamera = false;
@@ -193,7 +199,11 @@ void Application::update()
 
 					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 					model->renderMeshVertices(selectedParts[0]);
-					model->renderSelectedVertices();
+
+					if (forceShowVertices)
+						model->forceRenderVertices(selectedParts[0]);
+					if (manualVertexMode == 1)
+						model->renderSelectedVertices();
 					if (closestVertexIndex != -1)
 						model->renderClosestVertex(selectedParts[selectedPartNum], closestVertexIndex);
 				}
@@ -867,6 +877,14 @@ void Application::drawImGui()
 		{
 			if (editingMesh)
 			{
+				if (ImGui::RadioButton("Add/remove vertices", &manualVertexMode, 0))
+					model->selectedVertices.clear();
+				ImGui::SameLine();
+				if (ImGui::RadioButton("Move vertices", &manualVertexMode, 1))
+					model->selectedVertices.clear();
+
+				ImGui::Checkbox("Force show vertices", &forceShowVertices);
+
 				if (ImGui::Button("Done"))
 				{
 					model->selectedVertices.clear();

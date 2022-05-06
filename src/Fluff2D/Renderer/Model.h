@@ -70,6 +70,7 @@ public:
 	void renderMeshVertices(const std::string &meshName);
 	void renderHighlightedMesh();
 	void renderSelectedVertices();
+	void forceRenderVertices(const std::string& meshName);
 	void moveSelectedVertices(const glm::vec2 &originalMouseCoord, int dragMod);
 	void moveMeshVertices(const glm::vec2& originalMouseCoord, int dragMod);
 	void updateOriginalVertexPositions();

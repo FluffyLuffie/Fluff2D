@@ -181,7 +181,7 @@ void ModelMesh::removeVertex(int index)
 
 		//shift the position of keyforms
 		std::unordered_map<int, glm::vec2> temp;
-		for (auto const &[i, v] : keyforms[i].deltaVertices)
+		for (auto const& [i, v] : keyforms[i].deltaVertices)
 		{
 			if (i > index)
 				temp[i - 1] = v;
@@ -197,8 +197,6 @@ void ModelMesh::removeVertex(int index)
 //TODO: find a better way for reducing the number of vertices
 void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, int atlasHeight, int edgeOut, int edgeIn, int edgeSpacing, int insideSpacing, unsigned char threshold)
 {
-	auto compareAngle = [](glm::ivec2 p1, glm::ivec2 p2) { return atan2(p1.y, p1.x) < atan2(p2.y, p2.x); };
-
 	std::ifstream textureFile = std::ifstream(directoryPath / (("f2d_") + std::to_string(textureIndex) + ".tmp"), std::ios::binary);
 	if (!textureFile.is_open())
 		Log::error("Temporary texture path not found");
@@ -486,83 +484,122 @@ void ModelMesh::autoMesh(std::filesystem::path directoryPath, int atlasWidth, in
 		for (int i = 0; i < finalVertices.size(); i++)
 			addMeshVertex(finalVertices[i], atlasWidth, atlasHeight);
 		Triangulator::triangulate(vertices, indices);
+		removeInvisibleTriangles(directoryPath, threshold);
+	}
+	else
+		Log::error("Auto Mesh Failed");
+}
 
-		//remove invisible triangles
-		std::vector<unsigned int> newIndices;
-		newIndices.reserve(indices.size());
-		//std::cout << "O-size: " << originalAlpha.size() << std::endl;
-		for (int i = 0; i < indices.size(); i += 3)
+void ModelMesh::removeInvisibleTriangles(std::filesystem::path directoryPath, unsigned char threshold)
+{
+	std::ifstream textureFile = std::ifstream(directoryPath / (("f2d_") + std::to_string(textureIndex) + ".tmp"), std::ios::binary);
+	if (!textureFile.is_open())
+		Log::error("Temporary texture path not found");
+
+	int offsets[][2] = { {-1, 0}, {1,  0}, {0,  -1}, {0,  1}, {-1, -1}, {1,  -1}, {-1,  1}, {1,  1} };
+
+	int width = textureWidth;
+	int height = textureHeight;
+	if (flipped)
+	{
+		width = textureHeight;
+		height = textureWidth;
+	}
+
+	const int N = width * height;
+
+	std::vector<unsigned char> texBytes(textureWidth * textureHeight * 4);
+
+	textureFile.read((char*)&texBytes[0], textureWidth * textureHeight * 4);
+	textureFile.close();
+
+	std::vector<unsigned char> originalAlpha;
+	originalAlpha.resize(N);
+	for (int y = 0; y < height; y++)
+		for (int x = 0; x < width; x++)
+			originalAlpha[x + width * (height - y - 1)] = texBytes[(x + y * width) * 4 + 3];
+
+	//remove invisible triangles
+	std::vector<unsigned int> newIndices;
+	newIndices.reserve(indices.size());
+	//std::cout << "O-size: " << originalAlpha.size() << std::endl;
+	for (int i = 0; i < indices.size(); i += 3)
+	{
+		bool isValid = false;
+		//for each line in the triangle, check if an opaque pixel exists
+		for (int j = 0; j < 3 && !isValid; j++)
 		{
-			bool isValid = false;
-			//for each line in the triangle, check if an opaque pixel exists
-			for (int j = 0; j < 3 && !isValid; j++)
-			{
-				int p1 = indices[i + j % 3];
-				int p2 = indices[i + (j + 1) % 3];
-				int deltaX = finalVertices[p2].x - finalVertices[p1].x;
-				int deltaY = finalVertices[p2].y - finalVertices[p1].y;
+			int p1 = indices[i + j % 3];
+			int p2 = indices[i + (j + 1) % 3];
+			int deltaX = originalVertexPositions[p2].x - originalVertexPositions[p1].x;
+			int deltaY = originalVertexPositions[p2].y - originalVertexPositions[p1].y;
 
-				if (abs(deltaX) > abs(deltaY))
+			if (abs(deltaX) > abs(deltaY))
+			{
+				if (deltaX > 0)
 				{
-					if (deltaX > 0)
+					for (int k = 0; k < deltaX; k++)
 					{
-						for (int k = 0; k < deltaX; k++)
+						int x = originalVertexPositions[p1].x + width / 2 + k;
+						int y = originalVertexPositions[p1].y + height / 2 + deltaY * k / deltaX;
+						if (x >= 0 && x < width && y >= 0 && y < height && originalAlpha[x + y * width] > threshold)
 						{
-							if (originalAlpha[finalVertices[p1].x + trueWidth / 2 + edgeOut + k + (finalVertices[p1].y + trueHeight / 2 + edgeOut + deltaY * k / deltaX) * width] > threshold)
-							{
-								isValid = true;
-								break;
-							}
-						}
-					}
-					else
-					{
-						for (int k = 0; k > deltaX; k--)
-						{
-							if (originalAlpha[finalVertices[p1].x + trueWidth / 2 + edgeOut + k + (finalVertices[p1].y + trueHeight / 2 + edgeOut + deltaY * k / deltaX) * width] > threshold)
-							{
-								isValid = true;
-								break;
-							}
+							isValid = true;
+							break;
 						}
 					}
 				}
 				else
 				{
-					if (deltaY > 0)
+					for (int k = 0; k > deltaX; k--)
 					{
-						for (int k = 0; k < deltaY; k++)
+						int x = originalVertexPositions[p1].x + width / 2 + k;
+						int y = originalVertexPositions[p1].y + height / 2 + deltaY * k / deltaX;
+						if (x >= 0 && x < width && y >= 0 && y < height && originalAlpha[x + y * width] > threshold)
 						{
-							if (originalAlpha[finalVertices[p1].x + trueWidth / 2 + edgeOut + deltaX * k / deltaY + (finalVertices[p1].y + trueHeight / 2 + edgeOut + k) * width] > threshold)
-							{
-								isValid = true;
-								break;
-							}
-						}
-					}
-					else
-					{
-						for (int k = 0; k > deltaY; k--)
-						{
-							if (originalAlpha[finalVertices[p1].x + trueWidth / 2 + edgeOut + deltaX * k / deltaY + (finalVertices[p1].y + trueHeight / 2 + edgeOut + k) * width] > threshold)
-							{
-								isValid = true;
-								break;
-							}
+							isValid = true;
+							break;
 						}
 					}
 				}
 			}
-			if (isValid)
-				for (int j = 0; j < 3; j++)
-					newIndices.push_back(indices[i + j]);
+			else
+			{
+				if (deltaY > 0)
+				{
+					for (int k = 0; k < deltaY; k++)
+					{
+						int x = originalVertexPositions[p1].x + width / 2 + deltaX * k / deltaY;
+						int y = originalVertexPositions[p1].y + height / 2 + k;
+						if (x >= 0 && x < width && y >= 0 && y < height && originalAlpha[x + y * width] > threshold)
+						{
+							isValid = true;
+							break;
+						}
+					}
+				}
+				else
+				{
+					for (int k = 0; k > deltaY; k--)
+					{
+						int x = originalVertexPositions[p1].x + width / 2 + deltaX * k / deltaY;
+						int y = originalVertexPositions[p1].y + height / 2 + k;
+						if (x >= 0 && x < width && y >= 0 && y < height && originalAlpha[x + y * width] > threshold)
+						{
+							isValid = true;
+							break;
+						}
+					}
+				}
+			}
 		}
-
-		if (newIndices.size() > 2)
-			indices = newIndices;
+		if (isValid)
+			for (int j = 0; j < 3; j++)
+				newIndices.push_back(indices[i + j]);
 	}
-	else
-		Log::error("Auto Mesh Failed");
+
+	if (newIndices.size() > 2)
+		indices = newIndices;
 }
 
 glm::vec2 ModelMesh::posToTexCoord(const glm::vec2& vPos, int atlasWidth, int atlasHeight)

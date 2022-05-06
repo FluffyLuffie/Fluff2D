@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 #include <fstream>
 #include <sstream>
 #include <filesystem>
@@ -40,7 +39,8 @@ public:
 
 	void startMeshEdit();
 	void removeVertex(int index);
-	void autoMesh(std::filesystem::path texturePath, int atlasWidth, int atlasHeight, int edgeOut, int edgeIn, int edgeSpacing, int insideSpacing, unsigned char threshold);
+	void autoMesh(std::filesystem::path directoryPath, int atlasWidth, int atlasHeight, int edgeOut, int edgeIn, int edgeSpacing, int insideSpacing, unsigned char threshold);
+	void removeInvisibleTriangles(std::filesystem::path directoryPath, unsigned char threshold);
 
 	glm::vec2 posToTexCoord(const glm::vec2& vPos, int atlasWidth, int atlasHeight);
 
