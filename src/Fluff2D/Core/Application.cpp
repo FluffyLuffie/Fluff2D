@@ -565,10 +565,10 @@ void Application::drawImGui()
 				model->addRotationDeformer("TestRotation", selectedParts);
 				selectedParts.clear();
 
-				model->addKeyform("headMain", "headX", 0.0f);
-				model->addKeyform("headMain", "headX", model->paramMap["headX"]->maxValue);
-				model->addKeyform("headMain", "headY", 0.0f);
-				model->addKeyform("headMain", "headY", model->paramMap["headY"]->maxValue);
+				model->partMap["headMain"]->addKeyform("headX", 0.0f);
+				model->partMap["headMain"]->addKeyform("headX", model->paramMap["headX"]->maxValue);
+				model->partMap["headMain"]->addKeyform("headY", 0.0f);
+				model->partMap["headMain"]->addKeyform("headY", model->paramMap["headY"]->maxValue);
 				model->partMap["headMain"]->keyforms[0].deltaPosition = glm::vec2(0.0f, 0.0f);
 				model->partMap["headMain"]->keyforms[1].deltaPosition = glm::vec2(100.0f, 0.0f);
 				model->partMap["headMain"]->keyforms[2].deltaPosition = glm::vec2(0.0f, 100.0f);
@@ -596,6 +596,8 @@ void Application::drawImGui()
 				model->partMap["headMain"]->keyforms[6].scale = glm::vec2(1.0f, 2.0f);
 				model->partMap["headMain"]->keyforms[7].scale = glm::vec2(1.0f, 2.0f);
 				*/
+
+				model->calculateModelParam();
 			}
 			if (ImGui::MenuItem("Open test dog"))
 				initializeModelFromPsd("tempPsdTest/testDog.psd");
@@ -950,59 +952,44 @@ void Application::drawImGui()
 	{
 		if (ImGui::BeginMenuBar())
 		{
-			if (ImGui::BeginMenu("2##Add 2 Keyvalues"))
+			if (ImGui::Button("2##Add 2 Keyvalues"))
 			{
-				for (int i = 0; i < model->paramNames.size(); i++)
+				//check if param name exists
+				if (model->paramMap.find(selectedParam) != model->paramMap.end())
 				{
-					if (ImGui::MenuItem(model->paramNames[i].c_str()))
+					for (int i = 0; i < selectedParts.size(); i++)
 					{
-						for (int j = 0; j < selectedParts.size(); j++)
-						{
-							model->addKeyform(selectedParts[j], model->paramNames[i], model->paramMap[model->paramNames[i]]->minValue);
-							model->addKeyform(selectedParts[j], model->paramNames[i], model->paramMap[model->paramNames[i]]->maxValue);
-						}
+						model->partMap[selectedParts[i]]->addKeyform(selectedParam, model->paramMap[selectedParam]->minValue);
+						model->partMap[selectedParts[i]]->addKeyform(selectedParam, model->paramMap[selectedParam]->maxValue);
 					}
+					model->calculateModelParam();
 				}
-				ImGui::EndMenu();
 			}
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Add 2 Keyvalues");
 
-			if (ImGui::BeginMenu("3##Add 3 Keyvalues"))
+			if (ImGui::Button("3##Add 3 Keyvalues"))
 			{
-				for (int i = 0; i < model->paramNames.size(); i++)
+				if (model->paramMap.find(selectedParam) != model->paramMap.end())
 				{
-					if (ImGui::MenuItem(model->paramNames[i].c_str()))
+					for (int i = 0; i < selectedParts.size(); i++)
 					{
-						for (int j = 0; j < selectedParts.size(); j++)
-						{
-							model->addKeyform(selectedParts[j], model->paramNames[i], model->paramMap[model->paramNames[i]]->minValue);
-							model->addKeyform(selectedParts[j], model->paramNames[i], model->paramMap[model->paramNames[i]]->defaultValue);
-							model->addKeyform(selectedParts[j], model->paramNames[i], model->paramMap[model->paramNames[i]]->maxValue);
-						}
+						model->partMap[selectedParts[i]]->addKeyform(selectedParam, model->paramMap[selectedParam]->minValue);
+						model->partMap[selectedParts[i]]->addKeyform(selectedParam, model->paramMap[selectedParam]->defaultValue);
+						model->partMap[selectedParts[i]]->addKeyform(selectedParam, model->paramMap[selectedParam]->maxValue);
 					}
+					model->calculateModelParam();
 				}
-				ImGui::EndMenu();
 			}
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Add 3 Keyvalues");
 
-			if (ImGui::BeginMenu("M##Manual Keyvalues"))
-			{
-				for (int i = 0; i < model->paramNames.size(); i++)
-				{
-					if (ImGui::MenuItem(model->paramNames[i].c_str()) && selectedParts.size())
-					{
-						manualKeyIndex = i;
-						manualKeyvalue = model->paramMap[model->paramNames[i]]->defaultValue;
-					}
-				}
-				ImGui::EndMenu();
-			}
+			if (ImGui::Button("M##Manual Keyvalues") && model->paramMap.find(selectedParam) != model->paramMap.end())
+				manualKeyEditing = true;
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Manual Keyvalues");
 
-			if (manualKeyIndex != -1)
+			if (manualKeyEditing)
 				ImGui::OpenPopup("Manual Keyvalues");
 
 			if (ImGui::BeginPopupModal("Manual Keyvalues", NULL, ImGuiWindowFlags_AlwaysAutoResize))
@@ -1010,18 +997,41 @@ void Application::drawImGui()
 				ImGui::InputFloat("Keyvalue", &manualKeyvalue);
 				ImGui::SameLine();
 				if (ImGui::Button("Add"))
+				{
 					for (int i = 0; i < selectedParts.size(); i++)
-						model->addKeyform(selectedParts[i], model->paramNames[manualKeyIndex], std::clamp(manualKeyvalue, model->paramMap[model->paramNames[manualKeyIndex]]->minValue, model->paramMap[model->paramNames[manualKeyIndex]]->maxValue));
+						model->partMap[selectedParts[i]]->addKeyform(selectedParam, std::clamp(manualKeyvalue, model->paramMap[selectedParam]->minValue, model->paramMap[selectedParam]->maxValue));
+					model->calculateModelParam();
+				}
+
+				if (selectedParts.size() == 1)
+				{
+					ImGui::Text("Remove keyvalues");
+					auto temp = std::find(model->partMap[selectedParts[0]]->paramNames.begin(), model->partMap[selectedParts[0]]->paramNames.end(), selectedParam);
+					if (temp != model->partMap[selectedParts[0]]->paramNames.end())
+					{
+						int paramIndex = static_cast<int>(temp - model->partMap[selectedParts[0]]->paramNames.begin());
+						for (int i = 0; i < model->partMap[selectedParts[0]]->paramKeyvalues[paramIndex].size(); i++)
+						{
+							if (ImGui::Button(std::to_string(model->partMap[selectedParts[0]]->paramKeyvalues[paramIndex][i]).c_str()))
+							{
+								model->partMap[selectedParts[0]]->removeKeyform(selectedParam, i);
+								model->calculateModelParam();
+							}
+							if (i + 1 < model->partMap[selectedParts[0]]->paramKeyvalues[paramIndex].size())
+								ImGui::SameLine();
+						}
+					}
+				}
 
 				if (ImGui::Button("Close"))
 				{
-					manualKeyIndex = -1;
+					manualKeyEditing = false;
 					ImGui::CloseCurrentPopup();
 				}
 				ImGui::EndPopup();
 			}
 
-			if (ImGui::BeginMenu("D##Delete Keyvalues"))
+			if (ImGui::Button("D##Delete Keyvalues") && model->paramMap.find(selectedParam) != model->paramMap.end())
 			{
 				if (selectedParts.size())
 				{
@@ -1048,16 +1058,12 @@ void Application::drawImGui()
 
 					for (int i = 0; i < commonParamNames.size(); i++)
 					{
-						if (ImGui::MenuItem(model->paramNames[i].c_str()))
+						for (int j = 0; j < selectedParts.size(); j++)
 						{
-							for (int j = 0; j < selectedParts.size(); j++)
-							{
-								model->partMap[selectedParts[j]]->removeParameter(commonParamNames[i]);
-							}
+							model->partMap[selectedParts[j]]->removeParameter(commonParamNames[i]);
 						}
 					}
 				}
-				ImGui::EndMenu();
 			}
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Delete Keyvalues");
@@ -1126,7 +1132,8 @@ void Application::drawImGui()
 				}
 			}
 
-			ImGui::SliderParam(model->paramNames[i].c_str(), &model->paramValues[model->paramNames[i]], model->paramMap[model->paramNames[i]]->minValue, model->paramMap[model->paramNames[i]]->maxValue, model->paramMap[model->paramNames[i]]->keyValues, commonKeyvalues);
+			if (ImGui::SliderParam(model->paramNames[i].c_str(), &model->paramValues[model->paramNames[i]], model->paramMap[model->paramNames[i]]->minValue, model->paramMap[model->paramNames[i]]->maxValue, model->paramMap[model->paramNames[i]]->keyValues, commonKeyvalues, selectedParam == model->paramNames[i]))
+				selectedParam = model->paramNames[i];
 		}
 	}
 	ImGui::End();

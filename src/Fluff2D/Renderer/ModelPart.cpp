@@ -170,14 +170,120 @@ void ModelPart::calculateKeyformIndex(std::unordered_map<std::string, float>& pa
 	keyformIndex = index;
 }
 
-void ModelPart::removeKeyform(std::string paramName, float keyvalue)
+void ModelPart::addKeyform(const std::string& paramName, float keyvalue)
 {
-	int paramPos = static_cast<int>(std::find(paramNames.begin(), paramNames.end(), paramName) - paramNames.begin());
+	bool paramExists = false;
 
-	//paramNames.erase(remove(paramNames.begin(), paramNames.end(), paramName), paramNames.end());
+	int paramNameIndex;
+	auto it = std::find(paramNames.begin(), paramNames.end(), paramName);
+
+	//if first keyform for parameter name
+	if (it == paramNames.end())
+	{
+		paramNameIndex = static_cast<int>(paramNames.size());
+		paramNames.push_back(paramName);
+	}
+	else
+	{
+		paramNameIndex = static_cast<int>(it - paramNames.begin());
+		paramExists = true;
+	}
+
+	paramKeyvalues.resize(paramNames.size());
+	paramWeights.resize(paramNames.size());
+
+	//if keyval already exists
+	if (std::find(paramKeyvalues[paramNameIndex].begin(), paramKeyvalues[paramNameIndex].end(), keyvalue) != paramKeyvalues[paramNameIndex].end())
+		return;
+
+	paramKeyvalues[paramNameIndex].push_back(keyvalue);
+	std::sort(paramKeyvalues[paramNameIndex].begin(), paramKeyvalues[paramNameIndex].end());
+
+	keyformsPerDimension.resize(paramNames.size());
+	int keyformInterpolateCount = 1, totalKeyformCount = 1, prevKeyformCount = static_cast<int>(keyforms.size());
+	for (int i = 0; i < paramKeyvalues.size(); i++)
+	{
+		keyformInterpolateCount *= 2;
+		keyformsPerDimension[i] = totalKeyformCount;
+		totalKeyformCount *= static_cast<int>(paramKeyvalues[i].size());
+	}
+	keyformWeights.resize(keyformInterpolateCount);
+	keyformIndices.resize(keyformInterpolateCount);
+
+	//for first keyform, use this
+	if (!keyforms.size())
+	{
+		keyforms.push_back(KeyformData(pos - basePos, rotation - baseRotation, scale - baseScale, renderOrder - baseRenderOrder, color - baseColor));
+		return;
+	}
+
+	//don't need to do stuff if first keyvalue for a parameter
+	if (!paramExists)
+		return;
+
+	//copy/move keyforms
+	std::vector<KeyformData> newKeyforms;
+	newKeyforms.reserve(totalKeyformCount);
+	std::vector<int> paramCounter(paramKeyvalues.size() + 1, 0);
+
+	int keyvalueIndex = static_cast<int>(std::find(paramKeyvalues[paramNameIndex].begin(), paramKeyvalues[paramNameIndex].end(), keyvalue) - paramKeyvalues[paramNameIndex].begin());
+	for (int i = 0, oldI = 0; i < totalKeyformCount; i++)
+	{
+		//TODO: take into account neighbor keyvalues
+		if (paramCounter[paramNameIndex] == keyvalueIndex)
+		{
+			newKeyforms.push_back(KeyformData());
+		}
+		else
+		{
+			newKeyforms.push_back(keyforms[oldI]);
+			oldI++;
+		}
+
+		paramCounter[0]++;
+		for (int j = 0; j < paramKeyvalues.size(); j++)
+			if (paramCounter[j] == paramKeyvalues[j].size())
+			{
+				paramCounter[j] = 0;
+				paramCounter[j + 1]++;
+			}
+	}
+
+	keyforms = newKeyforms;
 }
 
-void ModelPart::removeParameter(std::string paramName)
+void ModelPart::removeKeyform(const std::string& paramName, int keyIndex)
 {
-	//for each keyvalue in parameter, call removeKeyform
+	int paramIndex = static_cast<int>(std::find(paramNames.begin(), paramNames.end(), paramName) - paramNames.begin());
+
+	if (paramKeyvalues[paramIndex].size() == 1)
+	{
+		removeParameter(paramName);
+		return;
+	}
+
+	std::vector<int> paramCounter(paramKeyvalues.size() + 1, 0);
+	std::vector<KeyformData> newKeyforms;
+
+	for (int i = 0; i < keyforms.size(); i++)
+	{
+		if (paramCounter[paramIndex] != keyIndex)
+			newKeyforms.push_back(keyforms[i]);
+
+		paramCounter[0]++;
+		for (int j = 0; j < paramKeyvalues.size(); j++)
+			if (paramCounter[j] == paramKeyvalues[j].size())
+			{
+				paramCounter[j] = 0;
+				paramCounter[j + 1]++;
+			}
+	}
+
+	paramKeyvalues[paramIndex].erase(paramKeyvalues[paramIndex].begin() + keyIndex);
+	keyforms = newKeyforms;
+}
+
+void ModelPart::removeParameter(const std::string& paramName)
+{
+	std::cout << "removeParameter not done" << std::endl;
 }

@@ -172,7 +172,6 @@ bool TextureLoader::loadPsdFile(const char* fileName, std::shared_ptr<Model> mod
 			pf.seekg(3, std::ios::cur);
 		}
 
-
 		//folder divider names hopefully start with this, Clip Studio Paint is "</Layer set", Krita is "</Layer group>"
 		if (layerRects[layerNum].layerName.compare(0, 7, "</Layer") == 0)
 		{

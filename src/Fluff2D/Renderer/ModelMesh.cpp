@@ -531,8 +531,8 @@ void ModelMesh::removeInvisibleTriangles(std::filesystem::path directoryPath, un
 		{
 			int p1 = indices[i + j % 3];
 			int p2 = indices[i + (j + 1) % 3];
-			int deltaX = originalVertexPositions[p2].x - originalVertexPositions[p1].x;
-			int deltaY = originalVertexPositions[p2].y - originalVertexPositions[p1].y;
+			int deltaX = static_cast<int>(originalVertexPositions[p2].x - originalVertexPositions[p1].x);
+			int deltaY = static_cast<int>(originalVertexPositions[p2].y - originalVertexPositions[p1].y);
 
 			if (abs(deltaX) > abs(deltaY))
 			{
@@ -540,8 +540,8 @@ void ModelMesh::removeInvisibleTriangles(std::filesystem::path directoryPath, un
 				{
 					for (int k = 0; k < deltaX; k++)
 					{
-						int x = originalVertexPositions[p1].x + width / 2 + k;
-						int y = originalVertexPositions[p1].y + height / 2 + deltaY * k / deltaX;
+						int x = static_cast<int>(originalVertexPositions[p1].x) + width / 2 + k;
+						int y = static_cast<int>(originalVertexPositions[p1].y) + height / 2 + deltaY * k / deltaX;
 						if (x >= 0 && x < width && y >= 0 && y < height && originalAlpha[x + y * width] > threshold)
 						{
 							isValid = true;
@@ -553,8 +553,8 @@ void ModelMesh::removeInvisibleTriangles(std::filesystem::path directoryPath, un
 				{
 					for (int k = 0; k > deltaX; k--)
 					{
-						int x = originalVertexPositions[p1].x + width / 2 + k;
-						int y = originalVertexPositions[p1].y + height / 2 + deltaY * k / deltaX;
+						int x = static_cast<int>(originalVertexPositions[p1].x) + width / 2 + k;
+						int y = static_cast<int>(originalVertexPositions[p1].y) + height / 2 + deltaY * k / deltaX;
 						if (x >= 0 && x < width && y >= 0 && y < height && originalAlpha[x + y * width] > threshold)
 						{
 							isValid = true;
@@ -569,8 +569,8 @@ void ModelMesh::removeInvisibleTriangles(std::filesystem::path directoryPath, un
 				{
 					for (int k = 0; k < deltaY; k++)
 					{
-						int x = originalVertexPositions[p1].x + width / 2 + deltaX * k / deltaY;
-						int y = originalVertexPositions[p1].y + height / 2 + k;
+						int x = static_cast<int>(originalVertexPositions[p1].x) + width / 2 + deltaX * k / deltaY;
+						int y = static_cast<int>(originalVertexPositions[p1].y) + height / 2 + k;
 						if (x >= 0 && x < width && y >= 0 && y < height && originalAlpha[x + y * width] > threshold)
 						{
 							isValid = true;
@@ -582,8 +582,8 @@ void ModelMesh::removeInvisibleTriangles(std::filesystem::path directoryPath, un
 				{
 					for (int k = 0; k > deltaY; k--)
 					{
-						int x = originalVertexPositions[p1].x + width / 2 + deltaX * k / deltaY;
-						int y = originalVertexPositions[p1].y + height / 2 + k;
+						int x = static_cast<int>(originalVertexPositions[p1].x) + width / 2 + deltaX * k / deltaY;
+						int y = static_cast<int>(originalVertexPositions[p1].y) + height / 2 + k;
 						if (x >= 0 && x < width && y >= 0 && y < height && originalAlpha[x + y * width] > threshold)
 						{
 							isValid = true;

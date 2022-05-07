@@ -3,12 +3,12 @@
 [Concave corners a bit weird but otherwise fine] Moving points inside warp deformers.
 [Done] Clicking on meshes selects them
 [Done] Parameters actually do something.
-Adding new keyvalues to existing keyforms.
-Deleting keyvalues/keyforms.
+[Make it so that it has default values] Adding new keyvalues to existing keyforms.
+[Keyvalues done] Deleting keyvalues/keyforms.
 Physics.
 Saving model for editor.
 Right clicking stuff does something.
-[Make everything automatic for ease?] Manual vertices placer.
+[Everything automatic, make manual triangles?] Manual vertices placer.
 [Done] Auto vertices placer.
 Japanese translation.
 Model exporter.
@@ -16,7 +16,7 @@ Model exporter.
 
 ***If have time***
 [Done] Inverse clipping.
-[Add and multiply done. Maybe overlay?] Blending modes.
+[More modes?] Blending modes.
 Bezier for warp transforms.
 Save settings in a file and read when launched.
 [Very buggy] Moving model object hierarchy by dragging.
@@ -34,11 +34,11 @@ Option to lock UI.
 Compute shader?
 
 ***Values affected by parameters***
-*All*
+*All parts*
 Position (vec2)
 Rotation (float)
 Scale (vec2)
-*Mesh and Warp*
+*Mesh and Warp deformers*
 Vertex positions(int, vec2)
 *Mesh*
 Render order (int)

@@ -19,7 +19,7 @@ struct KeyformData
 	int deltaRenderOrder;
 	glm::vec4 deltaColor;
 
-	KeyformData(glm::vec2 p = glm::vec2(), float r = 0.0f, glm::vec2 s = glm::vec2(), int ro = 0, glm::vec4 c = glm::vec4(1.0f))
+	KeyformData(glm::vec2 p = glm::vec2(), float r = 0.0f, glm::vec2 s = glm::vec2(), int ro = 0, glm::vec4 c = glm::vec4())
 	{
 		deltaPosition = p;
 		deltaRotation = r;
@@ -64,7 +64,6 @@ public:
 	std::vector<glm::vec2> originalVertexPositions;
 	std::vector<unsigned int> indices;
 
-	//std::map<std::string, std::vector<glm::vec2>> paramPos;
 	std::vector<KeyformData> keyforms;
 	std::vector<int> keyformsPerDimension;
 	std::vector<int> keyformIndices;
@@ -89,8 +88,9 @@ public:
 
 	//returns -1 if not on keyform
 	void calculateKeyformIndex(std::unordered_map<std::string, float>& paramValues);
-	void removeKeyform(std::string paramName, float keyvalue);
-	void removeParameter(std::string paramName);
+	void addKeyform(const std::string& paramName, float keyvalue);
+	void removeKeyform(const std::string &paramName, int keyIndex);
+	void removeParameter(const std::string &paramName);
 
 protected:
 	unsigned int vbo = 0, ebo = 0;

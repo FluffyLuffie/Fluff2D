@@ -286,8 +286,8 @@ namespace ImGui
 {
     //custom stuff
     void HelpMarker(const char* desc);
-    IMGUI_API bool SliderScalarParam(const char* label, ImGuiDataType data_type, void* p_data, const void* p_min, const void* p_max, const std::vector<float>& keyvalues, const std::vector<float>& partKeyvalues, const char* format = NULL, ImGuiSliderFlags flags = 0);
-    IMGUI_API bool SliderParam(const char* label, float* v, float v_min, float v_max, const std::vector<float>& keyvalues, const std::vector<float>& partKeyvalues, const char* format = "%.3f", ImGuiSliderFlags flags = 0);
+    IMGUI_API bool SliderScalarParam(const char* label, ImGuiDataType data_type, void* p_data, const void* p_min, const void* p_max, const std::vector<float>& keyvalues, const std::vector<float>& partKeyvalues, bool selected, const char* format = NULL, ImGuiSliderFlags flags = 0);
+    IMGUI_API bool SliderParam(const char* label, float* v, float v_min, float v_max, const std::vector<float>& keyvalues, const std::vector<float>& partKeyvalues, bool selected, const char* format = "%.3f", ImGuiSliderFlags flags = 0);
 
     // Context creation and access
     // - Each context create its own ImFontAtlas by default. You may instance one yourself and pass it to CreateContext() to share a font atlas between contexts.

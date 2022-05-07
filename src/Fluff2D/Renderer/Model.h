@@ -86,7 +86,6 @@ public:
 
 	void resetParams();
 	void calculateModelParam();
-	void addKeyform(const std::string& partName, const std::string& paramName, float keyvalue);
 
 	void updatePartMap();
 

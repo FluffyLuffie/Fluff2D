@@ -45,11 +45,13 @@ private:
 	bool panningCamera = false;
 	bool editingMesh = false;
 	bool forceShowVertices = false;
+	bool manualKeyEditing = false;
+
+	std::string selectedParam = "";
 
 	const int EVENT_FRAMES = 3;
 	int eventFramesCount = 0;
 
-	int manualKeyIndex = -1;
 	float manualKeyvalue = 0.0f;
 	int dragMod = 0;
 

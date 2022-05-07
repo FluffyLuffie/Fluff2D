@@ -8638,7 +8638,7 @@ IMGUI_API bool ImGui::SliderBehaviorParam(const ImRect& bb, ImGuiID id, void* p_
     return false;
 }
 
-IMGUI_API bool ImGui::SliderScalarParam(const char* label, ImGuiDataType data_type, void* p_data, const void* p_min, const void* p_max, const std::vector<float>& keyvalues, const std::vector<float>& partKeyvalues, const char* format, ImGuiSliderFlags flags)
+IMGUI_API bool ImGui::SliderScalarParam(const char* label, ImGuiDataType data_type, void* p_data, const void* p_min, const void* p_max, const std::vector<float>& keyvalues, const std::vector<float>& partKeyvalues, bool selected, const char* format, ImGuiSliderFlags flags)
 {
     ImGuiWindow* window = GetCurrentWindow();
     if (window->SkipItems)
@@ -8690,7 +8690,7 @@ IMGUI_API bool ImGui::SliderScalarParam(const char* label, ImGuiDataType data_ty
     }
 
     // Draw frame
-    const ImU32 frame_col = GetColorU32(g.ActiveId == id ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg);
+    const ImU32 frame_col = GetColorU32(g.ActiveId == id ||selected ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg);
     RenderNavHighlight(frame_bb, id);
     RenderFrame(frame_bb.Min + ImVec2(0.0f, label_size.y / 2.0f), frame_bb.Max - ImVec2(0.0f, label_size.y / 2.0f), frame_col, true, g.Style.FrameRounding);
 
@@ -8744,9 +8744,9 @@ IMGUI_API bool ImGui::SliderScalarParam(const char* label, ImGuiDataType data_ty
     return value_changed;
 }
 
-IMGUI_API bool ImGui::SliderParam(const char* label, float* v, float v_min, float v_max, const std::vector<float>& keyvalues, const std::vector<float>& partKeyvalues, const char* format, ImGuiSliderFlags flags)
+IMGUI_API bool ImGui::SliderParam(const char* label, float* v, float v_min, float v_max, const std::vector<float>& keyvalues, const std::vector<float>& partKeyvalues, bool selected, const char* format, ImGuiSliderFlags flags)
 {
-    return SliderScalarParam(label, ImGuiDataType_Float, v, &v_min, &v_max, keyvalues, partKeyvalues, format, flags);
+    return SliderScalarParam(label, ImGuiDataType_Float, v, &v_min, &v_max, keyvalues, partKeyvalues, selected, format, flags);
 }
 
 

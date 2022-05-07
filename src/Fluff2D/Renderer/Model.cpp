@@ -637,90 +637,19 @@ void Model::resetParams()
 
 void Model::calculateModelParam()
 {
-	paramNames.clear();
-	paramKeyvalues.clear();
+	//clear
+	for (int i = 0; i < paramNames.size(); i++)
+		paramMap[paramNames[i]]->keyValues.clear();
 
-	for (int i = 0; i < children.size(); i++)
-	{
-		for (int j = 0; j < children[i]->paramNames.size(); j++)
-		{
-			//if paramName not found, add
-			if (std::find(paramNames.begin(), paramNames.end(), children[i]->paramNames[j]) == paramNames.end())
-				paramNames.push_back(children[i]->paramNames[j]);
-
-			for (int k = 0; k < children[i]->paramKeyvalues[j].size(); k++)
-			{
-				//if value not found, add
-				int index = static_cast<int>(std::find(paramNames.begin(), paramNames.end(), children[i]->paramNames[j]) - paramNames.begin());
-				if (std::find(paramKeyvalues[index].begin(), paramKeyvalues[index].end(), children[i]->paramKeyvalues[j][k]) == paramKeyvalues[index].end())
-					paramKeyvalues[index].push_back(children[i]->paramKeyvalues[j][k]);
-			}
-		}
-	}
-}
-
-void Model::addKeyform(const std::string& partName, const std::string& paramName, float keyvalue)
-{
-	//might come up with system to deal with duplicate/deleted keyforms
-	//also copying values when adding keyforms to parts that already have keyforms
-	//0 is adding a new paramName
-	//1 is adding a keyvalue to an existing paramName
-	bool paramExists = false;
-
-	//add param to model
-	if (std::find(paramMap[paramName]->keyValues.begin(), paramMap[paramName]->keyValues.end(), keyvalue) == paramMap[paramName]->keyValues.end())
-	{
-		paramMap[paramName]->keyValues.push_back(keyvalue);
-		std::sort(paramMap[paramName]->keyValues.begin(), paramMap[paramName]->keyValues.end());
-	}
-
-	//add param to part
-	int paramNameIndex;
-	auto it = std::find(partMap[partName]->paramNames.begin(), partMap[partName]->paramNames.end(), paramName);
-	//if first keyform for parameter name
-	if (it == partMap[partName]->paramNames.end())
-	{
-		paramNameIndex = static_cast<int>(partMap[partName]->paramNames.size());
-		partMap[partName]->paramNames.push_back(paramName);
-	}
-	else
-	{
-		paramNameIndex = static_cast<int>(it - partMap[partName]->paramNames.begin());
-		paramExists = true;
-	}
-
-	partMap[partName]->paramKeyvalues.resize(partMap[partName]->paramNames.size());
-	partMap[partName]->paramWeights.resize(partMap[partName]->paramNames.size());
-	partMap[partName]->paramKeyvalues[paramNameIndex].push_back(keyvalue);
-	std::sort(partMap[partName]->paramKeyvalues[paramNameIndex].begin(), partMap[partName]->paramKeyvalues[paramNameIndex].end());
-
-	partMap[partName]->keyformsPerDimension.resize(partMap[partName]->paramNames.size());
-	int keyformInterpolateCount = 1, totalKeyformCount = 1, prevKeyformCount = static_cast<int>(partMap[partName]->keyforms.size());
-	for (int i = 0; i < partMap[partName]->paramKeyvalues.size(); i++)
-	{
-		keyformInterpolateCount *= 2;
-		partMap[partName]->keyformsPerDimension[i] = totalKeyformCount;
-		totalKeyformCount *= static_cast<int>(partMap[partName]->paramKeyvalues[i].size());
-	}
-	partMap[partName]->keyformWeights.resize(keyformInterpolateCount);
-	partMap[partName]->keyformIndices.resize(keyformInterpolateCount);
-
-	//copy/move keyforms
-	std::vector<KeyformData> newKeyform;
-	newKeyform.reserve(totalKeyformCount);
-
-	//if adding a new paramName, doesn't really do anything
-	//only need to do stuff if param already exists
-	if (paramExists)
-	{
-		int keyvalueIndex = static_cast<int>(std::find(partMap[partName]->paramKeyvalues[paramNameIndex].begin(), partMap[partName]->paramKeyvalues[paramNameIndex].end(), keyvalue) - partMap[partName]->paramKeyvalues[paramNameIndex].begin());
-	}
-
-	//partMap[partName]->keyforms = newKeyform;
-
-	//for first keyform, use this
-	partMap[partName]->keyforms.resize(totalKeyformCount, KeyformData(partMap[partName]->pos - partMap[partName]->basePos, partMap[partName]->rotation - partMap[partName]->baseRotation, partMap[partName]->scale - partMap[partName]->baseScale, partMap[partName]->renderOrder - partMap[partName]->baseRenderOrder, partMap[partName]->color - partMap[partName]->baseColor));
-
+	//check all keyvalues from parts
+	for (auto const& [partName, part] : partMap)
+		for (int i = 0; i < part->paramNames.size(); i++)
+			for (int j = 0; j < part->paramKeyvalues[i].size(); j++)
+				if (std::find(paramMap[part->paramNames[i]]->keyValues.begin(), paramMap[part->paramNames[i]]->keyValues.end(), part->paramKeyvalues[i][j]) == paramMap[part->paramNames[i]]->keyValues.end())
+				{
+					paramMap[part->paramNames[i]]->keyValues.push_back(part->paramKeyvalues[i][j]);
+					std::sort(paramMap[part->paramNames[i]]->keyValues.begin(), paramMap[part->paramNames[i]]->keyValues.end());
+				}
 }
 
 int Model::findClosestVertex(const std::vector<std::string>& selectedParts, int* partNum)
