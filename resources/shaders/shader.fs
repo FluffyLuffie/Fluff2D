@@ -54,6 +54,7 @@ void main()
 			if (fragColor.a == 0.0f)
 				discard;
 			meshID = ID;
+			fragColor.a *= texColor.a;
 			break;
 		case(4):
 			fragColor = texture(atlasTex, texCoord) * texColor;

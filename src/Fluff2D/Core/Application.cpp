@@ -109,7 +109,7 @@ void Application::update()
 									oldMouseCoord = glm::inverse(Camera2D::projection) * glm::vec4(Event::viewportMouseCoord.x * 2.0f / currentFbSize.x - 1.0f, Event::viewportMouseCoord.y * 2.0f / currentFbSize.y - 1.0f, 0.0f, 1.0f);
 
 									//if clicked vertex is not in selected vertices, clear
-									if (GLFW_MOD_CONTROL != dragMod && std::find(model->selectedVertices.begin(), model->selectedVertices.end(), VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex)) == model->selectedVertices.end())
+									if (!(GLFW_MOD_CONTROL & dragMod) && std::find(model->selectedVertices.begin(), model->selectedVertices.end(), VertexSpecifier(selectedParts[selectedPartNum], closestVertexIndex)) == model->selectedVertices.end())
 									{
 										model->selectedVertices.clear();
 									}
@@ -136,7 +136,7 @@ void Application::update()
 						}
 					}
 
-					if (Event::isFocused && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && GLFW_MOD_CONTROL != dragMod)
+					if (Event::isFocused && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && !(GLFW_MOD_CONTROL & dragMod))
 					{
 						if (editingMesh && manualVertexMode == 1)
 						{

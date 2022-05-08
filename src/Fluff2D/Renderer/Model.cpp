@@ -251,6 +251,15 @@ void Model::moveSelectedVertices(const glm::vec2 &originalMouseCoord, int dragMo
 
 	glm::vec4 mouseToScreen = glm::inverse(Camera2D::projection) * glm::vec4(Event::viewportMouseCoord.x * 2.0f / vpDim.x - 1.0f, Event::viewportMouseCoord.y * 2.0f / vpDim.y - 1.0f, 0.0f, 1.0f);
 
+	//if shift held, lock to x or y axis
+	if (Event::mod & GLFW_MOD_SHIFT)
+	{
+		if (abs(originalMouseCoord.x - mouseToScreen.x) > abs(originalMouseCoord.y - mouseToScreen.y))
+			mouseToScreen.y = originalMouseCoord.y;
+		else
+			mouseToScreen.x = originalMouseCoord.x;
+	}
+
 	for (int i = 0; i < selectedVertices.size(); i++)
 	{
 		if (partMap[selectedVertices[i].partName]->parent->type == ModelPart::PartType::warpDeformer)
@@ -286,7 +295,7 @@ void Model::moveSelectedVertices(const glm::vec2 &originalMouseCoord, int dragMo
 					}
 
 					//a bit off when in warped rect
-					if (dragMod == GLFW_MOD_ALT)
+					if (dragMod & GLFW_MOD_ALT)
 					{
 						auto r = std::dynamic_pointer_cast<RotationDeformer>(partMap[selectedVertices[i].partName]);
 
@@ -343,7 +352,7 @@ void Model::moveSelectedVertices(const glm::vec2 &originalMouseCoord, int dragMo
 					}
 
 					//keep children's global position
-					if (dragMod == GLFW_MOD_ALT)
+					if (dragMod & GLFW_MOD_ALT)
 					{
 						auto r = std::dynamic_pointer_cast<RotationDeformer>(partMap[selectedVertices[i].partName]);
 						r->changeCenterPoint(newPos - oldPos);
@@ -377,6 +386,15 @@ void Model::moveMeshVertices(const glm::vec2& originalMouseCoord, int dragMod)
 {
 	ImVec2 vpDim = ImGui::GetContentRegionAvail();
 	glm::vec2 mouseToScreen = glm::inverse(Camera2D::projection) * glm::vec4(Event::viewportMouseCoord.x * 2.0f / vpDim.x - 1.0f, Event::viewportMouseCoord.y * 2.0f / vpDim.y - 1.0f, 0.0f, 1.0f);
+
+	//if shift held, lock to x or y axis
+	if (Event::mod & GLFW_MOD_SHIFT)
+	{
+		if (abs(originalMouseCoord.x - mouseToScreen.x) > abs(originalMouseCoord.y - mouseToScreen.y))
+			mouseToScreen.y = originalMouseCoord.y;
+		else
+			mouseToScreen.x = originalMouseCoord.x;
+	}
 
 	glm::vec2 mouseDelta = mouseToScreen - originalMouseCoord;
 
@@ -923,6 +941,7 @@ void Model::render()
 		if (modelMeshes[meshIndex]->visible)
 		{
 			shader.setInt("ID", meshIndex + 1);
+			shader.setVec4("texColor", modelMeshes[meshIndex]->color);
 			if (modelMeshes[meshIndex]->blendMode != 0 || modelMeshes[meshIndex]->clipMeshes.size())
 				glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_ONE);
 			else

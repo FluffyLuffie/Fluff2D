@@ -1,27 +1,23 @@
 ***Things to add/fix***
-[Changing origin in warp deformers a bit off] Rotation deformers.
-[Concave corners a bit weird but otherwise fine] Moving points inside warp deformers.
-[Done] Clicking on meshes selects them
-[Done] Parameters actually do something.
 [Make it so that it has default values] Adding new keyvalues to existing keyforms.
 [Keyvalues done] Deleting keyvalues/keyforms.
+Keyform corner synthesizer.
+Keyform reflector/duplicator.
 Physics.
 Saving model for editor.
 Right clicking stuff does something.
-[Everything automatic, make manual triangles?] Manual vertices placer.
-[Done] Auto vertices placer.
 Japanese translation.
 Model exporter.
-[Done] Model view window/tab instead of rending to main frame.
-
-***If have time***
-[Done] Inverse clipping.
-[More modes?] Blending modes.
 Bezier for warp transforms.
 Save settings in a file and read when launched.
 [Very buggy] Moving model object hierarchy by dragging.
+
+***If have time***
+Changing rotation deformer origin in warp deformers is a bit off.
+[Concave corners a bit weird but otherwise fine] Moving points inside warp deformers.
+More blending modes?
+Multiple model windows?
 Make psd importer more reliable.
-[Done] Clean up fragment shader code.
 Code documentation.
 Editor and exported file documentation.
 
