@@ -15,55 +15,55 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Fluff2D\Renderer\WarpDeformer.cpp">
+    <ClCompile Include="src\Renderer\WarpDeformer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Renderer\RotationDeformer.cpp">
+    <ClCompile Include="src\Renderer\RotationDeformer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Renderer\ModelMesh.cpp">
+    <ClCompile Include="src\Renderer\ModelMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Renderer\TextureLoader.cpp">
+    <ClCompile Include="src\Renderer\TextureLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Events\Event.cpp">
+    <ClCompile Include="src\Events\Event.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Core\Application.cpp">
+    <ClCompile Include="src\Core\Application.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Core\Main.cpp">
+    <ClCompile Include="src\Core\Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Core\Window.cpp">
+    <ClCompile Include="src\Core\Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Renderer\ModelPart.cpp">
+    <ClCompile Include="src\Renderer\ModelPart.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Renderer\Model.cpp">
+    <ClCompile Include="src\Renderer\Model.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Renderer\Shader.cpp">
+    <ClCompile Include="src\Renderer\Shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Renderer\Vertex.cpp">
+    <ClCompile Include="src\Renderer\Vertex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Core\SaveSystem.cpp">
+    <ClCompile Include="src\Core\SaveSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Renderer\LayerRect.cpp">
+    <ClCompile Include="src\Renderer\LayerRect.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="dependencies\include\glad\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\UI\ModelPartUI.cpp">
+    <ClCompile Include="src\UI\ModelPartUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Core\Parameter.cpp">
+    <ClCompile Include="src\Core\Parameter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="dependencies\include\imgui\imgui.cpp">
@@ -87,25 +87,25 @@
     <ClCompile Include="dependencies\include\imgui\imgui_widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Core\Log.cpp">
+    <ClCompile Include="src\Core\Log.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Core\Settings.cpp">
+    <ClCompile Include="src\Core\Settings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\UI\Localization.cpp">
+    <ClCompile Include="src\UI\Localization.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Core\Object.cpp">
+    <ClCompile Include="src\Core\Object.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Renderer\Camera2D.cpp">
+    <ClCompile Include="src\Renderer\Camera2D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Renderer\RenderGroup.cpp">
+    <ClCompile Include="src\Renderer\RenderGroup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fluff2D\Renderer\Triangulator.cpp">
+    <ClCompile Include="src\Renderer\Triangulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -113,37 +113,37 @@
     <ClInclude Include="dependencies\stb_image\stb_image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Renderer\WarpDeformer.h">
+    <ClInclude Include="src\Renderer\WarpDeformer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Renderer\RotationDeformer.h">
+    <ClInclude Include="src\Renderer\RotationDeformer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Renderer\ModelMesh.h">
+    <ClInclude Include="src\Renderer\ModelMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Renderer\TextureLoader.h">
+    <ClInclude Include="src\Renderer\TextureLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Events\Event.h">
+    <ClInclude Include="src\Events\Event.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Core\Application.h">
+    <ClInclude Include="src\Core\Application.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Core\Window.h">
+    <ClInclude Include="src\Core\Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Renderer\ModelPart.h">
+    <ClInclude Include="src\Renderer\ModelPart.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Renderer\Model.h">
+    <ClInclude Include="src\Renderer\Model.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Renderer\Shader.h">
+    <ClInclude Include="src\Renderer\Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Renderer\Vertex.h">
+    <ClInclude Include="src\Renderer\Vertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="dependencies\stb_image\stb_image_write.h">
@@ -167,16 +167,16 @@
     <ClInclude Include="dependencies\rectpack2D\rect_structs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Core\SaveSystem.h">
+    <ClInclude Include="src\Core\SaveSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Renderer\LayerRect.h">
+    <ClInclude Include="src\Renderer\LayerRect.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\UI\ModelPartUI.h">
+    <ClInclude Include="src\UI\ModelPartUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Core\Parameter.h">
+    <ClInclude Include="src\Core\Parameter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="dependencies\include\imgui\imconfig.h">
@@ -203,28 +203,28 @@
     <ClInclude Include="dependencies\include\imgui\imstb_truetype.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Core\Log.h">
+    <ClInclude Include="src\Core\Log.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="dependencies\include\imgui_filebrowser\imfilebrowser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Core\Settings.h">
+    <ClInclude Include="src\Core\Settings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\UI\Localization.h">
+    <ClInclude Include="src\UI\Localization.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Core\Object.h">
+    <ClInclude Include="src\Core\Object.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Renderer\Camera2D.h">
+    <ClInclude Include="src\Renderer\Camera2D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Renderer\RenderGroup.h">
+    <ClInclude Include="src\Renderer\RenderGroup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fluff2D\Renderer\Triangulator.h">
+    <ClInclude Include="src\Renderer\Triangulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="dependencies\include\imgui\imgui_impl_opengl3_loader.h">

@@ -78,13 +78,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Dev\MyProjects\Fluff2D\dependencies\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Dev\MyProjects\Fluff2D\dependencies\lib\GLFW;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\Dev\MyProjects\Fluff2D\src;C:\Dev\MyProjects\Fluff2D\dependencies\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Dev\MyProjects\Fluff2D\dependencies\lib\GLFW;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -142,7 +142,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Dev\MyProjects\Fluff2D\src;C:\Dev\MyProjects\Fluff2D\dependencies\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Dev\MyProjects\Fluff2D\dependencies\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
@@ -157,8 +157,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\Fluff2D\Renderer\RenderGroup.cpp" />
-    <ClCompile Include="src\Fluff2D\Renderer\Camera2D.cpp" />
+    <ClCompile Include="src\Renderer\RenderGroup.cpp" />
+    <ClCompile Include="src\Renderer\Camera2D.cpp" />
     <ClCompile Include="dependencies\include\imgui\imgui.cpp" />
     <ClCompile Include="dependencies\include\imgui\imgui_demo.cpp" />
     <ClCompile Include="dependencies\include\imgui\imgui_draw.cpp" />
@@ -166,33 +166,33 @@
     <ClCompile Include="dependencies\include\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="dependencies\include\imgui\imgui_tables.cpp" />
     <ClCompile Include="dependencies\include\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="src\Fluff2D\Core\Object.cpp" />
-    <ClCompile Include="src\Fluff2D\UI\Localization.cpp" />
-    <ClCompile Include="src\Fluff2D\Core\Settings.cpp" />
-    <ClCompile Include="src\Fluff2D\Core\Log.cpp" />
+    <ClCompile Include="src\Core\Object.cpp" />
+    <ClCompile Include="src\UI\Localization.cpp" />
+    <ClCompile Include="src\Core\Settings.cpp" />
+    <ClCompile Include="src\Core\Log.cpp" />
     <ClCompile Include="dependencies\include\glad\glad.c" />
-    <ClCompile Include="src\Fluff2D\Core\Parameter.cpp" />
-    <ClCompile Include="src\Fluff2D\UI\ModelPartUI.cpp" />
-    <ClCompile Include="src\Fluff2D\Renderer\LayerRect.cpp" />
-    <ClCompile Include="src\Fluff2D\Core\SaveSystem.cpp" />
-    <ClCompile Include="src\Fluff2D\Renderer\Shader.cpp" />
-    <ClCompile Include="src\Fluff2D\Renderer\Model.cpp" />
-    <ClCompile Include="src\Fluff2D\Renderer\ModelPart.cpp" />
-    <ClCompile Include="src\Fluff2D\Core\Application.cpp" />
-    <ClCompile Include="src\Fluff2D\Core\Main.cpp" />
-    <ClCompile Include="src\Fluff2D\Events\Event.cpp" />
-    <ClCompile Include="src\Fluff2D\Renderer\ModelMesh.cpp" />
-    <ClCompile Include="src\Fluff2D\Renderer\RotationDeformer.cpp" />
-    <ClCompile Include="src\Fluff2D\Renderer\WarpDeformer.cpp" />
-    <ClCompile Include="src\Fluff2D\Renderer\TextureLoader.cpp" />
-    <ClCompile Include="src\Fluff2D\Core\Window.cpp" />
-    <ClCompile Include="src\Fluff2D\Renderer\Vertex.cpp" />
-    <ClCompile Include="src\Fluff2D\Renderer\Triangulator.cpp" />
+    <ClCompile Include="src\Core\Parameter.cpp" />
+    <ClCompile Include="src\UI\ModelPartUI.cpp" />
+    <ClCompile Include="src\Renderer\LayerRect.cpp" />
+    <ClCompile Include="src\Core\SaveSystem.cpp" />
+    <ClCompile Include="src\Renderer\Shader.cpp" />
+    <ClCompile Include="src\Renderer\Model.cpp" />
+    <ClCompile Include="src\Renderer\ModelPart.cpp" />
+    <ClCompile Include="src\Core\Application.cpp" />
+    <ClCompile Include="src\Core\Main.cpp" />
+    <ClCompile Include="src\Events\Event.cpp" />
+    <ClCompile Include="src\Renderer\ModelMesh.cpp" />
+    <ClCompile Include="src\Renderer\RotationDeformer.cpp" />
+    <ClCompile Include="src\Renderer\WarpDeformer.cpp" />
+    <ClCompile Include="src\Renderer\TextureLoader.cpp" />
+    <ClCompile Include="src\Core\Window.cpp" />
+    <ClCompile Include="src\Renderer\Vertex.cpp" />
+    <ClCompile Include="src\Renderer\Triangulator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dependencies\include\imgui\imgui_impl_opengl3_loader.h" />
-    <ClInclude Include="src\Fluff2D\Renderer\RenderGroup.h" />
-    <ClInclude Include="src\Fluff2D\Renderer\Camera2D.h" />
+    <ClInclude Include="src\Renderer\RenderGroup.h" />
+    <ClInclude Include="src\Renderer\Camera2D.h" />
     <ClInclude Include="dependencies\include\imgui\imconfig.h" />
     <ClInclude Include="dependencies\include\imgui\imgui.h" />
     <ClInclude Include="dependencies\include\imgui\imgui_impl_glfw.h" />
@@ -202,10 +202,10 @@
     <ClInclude Include="dependencies\include\imgui\imstb_textedit.h" />
     <ClInclude Include="dependencies\include\imgui\imstb_truetype.h" />
     <ClInclude Include="dependencies\include\imgui_filebrowser\imfilebrowser.h" />
-    <ClInclude Include="src\Fluff2D\Core\Object.h" />
-    <ClInclude Include="src\Fluff2D\UI\Localization.h" />
-    <ClInclude Include="src\Fluff2D\Core\Settings.h" />
-    <ClInclude Include="src\Fluff2D\Core\Log.h" />
+    <ClInclude Include="src\Core\Object.h" />
+    <ClInclude Include="src\UI\Localization.h" />
+    <ClInclude Include="src\Core\Settings.h" />
+    <ClInclude Include="src\Core\Log.h" />
     <ClInclude Include="dependencies\rectpack2D\best_bin_finder.h" />
     <ClInclude Include="dependencies\rectpack2D\finders_interface.h" />
     <ClInclude Include="dependencies\rectpack2D\empty_spaces.h" />
@@ -213,23 +213,23 @@
     <ClInclude Include="dependencies\rectpack2D\insert_and_split.h" />
     <ClInclude Include="dependencies\rectpack2D\rect_structs.h" />
     <ClInclude Include="dependencies\stb_image\stb_image_write.h" />
-    <ClInclude Include="src\Fluff2D\Core\Parameter.h" />
-    <ClInclude Include="src\Fluff2D\UI\ModelPartUI.h" />
-    <ClInclude Include="src\Fluff2D\Renderer\LayerRect.h" />
-    <ClInclude Include="src\Fluff2D\Core\SaveSystem.h" />
-    <ClInclude Include="src\Fluff2D\Renderer\Shader.h" />
-    <ClInclude Include="src\Fluff2D\Renderer\Model.h" />
-    <ClInclude Include="src\Fluff2D\Renderer\ModelPart.h" />
-    <ClInclude Include="src\Fluff2D\Core\Application.h" />
+    <ClInclude Include="src\Core\Parameter.h" />
+    <ClInclude Include="src\UI\ModelPartUI.h" />
+    <ClInclude Include="src\Renderer\LayerRect.h" />
+    <ClInclude Include="src\Core\SaveSystem.h" />
+    <ClInclude Include="src\Renderer\Shader.h" />
+    <ClInclude Include="src\Renderer\Model.h" />
+    <ClInclude Include="src\Renderer\ModelPart.h" />
+    <ClInclude Include="src\Core\Application.h" />
     <ClInclude Include="dependencies\stb_image\stb_image.h" />
-    <ClInclude Include="src\Fluff2D\Events\Event.h" />
-    <ClInclude Include="src\Fluff2D\Renderer\ModelMesh.h" />
-    <ClInclude Include="src\Fluff2D\Renderer\RotationDeformer.h" />
-    <ClInclude Include="src\Fluff2D\Renderer\WarpDeformer.h" />
-    <ClInclude Include="src\Fluff2D\Renderer\TextureLoader.h" />
-    <ClInclude Include="src\Fluff2D\Core\Window.h" />
-    <ClInclude Include="src\Fluff2D\Renderer\Vertex.h" />
-    <ClInclude Include="src\Fluff2D\Renderer\Triangulator.h" />
+    <ClInclude Include="src\Events\Event.h" />
+    <ClInclude Include="src\Renderer\ModelMesh.h" />
+    <ClInclude Include="src\Renderer\RotationDeformer.h" />
+    <ClInclude Include="src\Renderer\WarpDeformer.h" />
+    <ClInclude Include="src\Renderer\TextureLoader.h" />
+    <ClInclude Include="src\Core\Window.h" />
+    <ClInclude Include="src\Renderer\Vertex.h" />
+    <ClInclude Include="src\Renderer\Triangulator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

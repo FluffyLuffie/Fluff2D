@@ -942,7 +942,8 @@ void Model::render()
 		{
 			shader.setInt("ID", meshIndex + 1);
 			shader.setVec4("texColor", modelMeshes[meshIndex]->color);
-			if (modelMeshes[meshIndex]->blendMode != 0 || modelMeshes[meshIndex]->clipMeshes.size())
+			//TODO: fix alpha with invert clip
+			if (modelMeshes[meshIndex]->blendMode != 0 || (!modelMeshes[meshIndex]->invertClip && modelMeshes[meshIndex]->clipMeshes.size()))
 				glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_ONE);
 			else
 				glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
